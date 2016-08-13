@@ -5,6 +5,8 @@ enabling my accustomed line lengths of 72 for comments and 80 for code.
 
 using namespace BWAPI::Filter;
 
+typedef std::set<BWAPI::TilePosition> locationSet;
+
 int SUPPLY_REQUIRED = 0;
 BWAPI::Player SELF;
 BWAPI::Unit BASE_CENTER,  // The primary/initial base building.
@@ -14,6 +16,8 @@ BWAPI::UnitType WORKER_TYPE, SUPPLY_TYPE, ARMY_ENABLING_TECH_TYPE,
                 ARMY_UNIT_TYPE;
 // Indicates number already in construction/training for UnitType.
 std::map<BWAPI::UnitType, short> PENDING_UNIT_TYPE_COUNT;
+locationSet SCOUT_LOCATIONS;
+std::map<BWAPI::Player, locationSet> ENEMY_LOCATIONS;
 
 int getNumQueued(BWAPI::Unit trainingFacility)
 {
@@ -47,6 +51,7 @@ void GW::onStart()
             ARMY_UNIT_TYPE = BWAPI::UnitTypes::Zerg_Zergling;
             break;
     }
+    SCOUT_LOCATIONS = GW::collectScoutingLocations();
 }
 
 void GW::onFrame()
@@ -79,7 +84,22 @@ void GW::onFrame()
 void GW::onUnitCreate(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() != SELF)
-        return;  // Ignoring non-Owned Units.
+        return;  // Ignoring non-owned units.
+    BWAPI::UnitType unitType = Unit->getType();
+    if (unitType == SUPPLY_TYPE && ARMY_ENABLING_TECH) {
+        GW::attack(BASE_CENTER);
+    }
+    else if (unitType == ARMY_ENABLING_TECH_TYPE) {
+        BWAPI::Unitset workerUnits = BASE_CENTER->getUnitsInRadius(
+            900, IsWorker && IsOwned && !IsConstructing);
+        for (BWAPI::TilePosition scoutLocation: SCOUT_LOCATIONS) {
+            BWAPI::Unit Scout = *workerUnits.begin();
+            Scout->move(BWAPI::Position(scoutLocation));
+            Scout->gather(Scout->getClosestUnit(IsMineralField), true);
+            BWAPI::Broodwar->sendTextEx(true, "%d SCOUTING.", Unit->getID());
+            workerUnits.erase(Scout);
+        }
+    }
     BWAPI::Broodwar->sendTextEx(true, "%s: %d created.",
         Unit->getType().c_str(), Unit->getID());
     PENDING_UNIT_TYPE_COUNT[Unit->getType()]++;
@@ -88,6 +108,8 @@ void GW::onUnitCreate(BWAPI::Unit Unit)
 
 void GW::onUnitMorph(BWAPI::Unit Unit)
 {
+    if (Unit->getPlayer() != SELF)
+        return;  // Ignoring non-owned units.
     // Perhaps all Zerg units are morphed and more than once per unit.
     BWAPI::UnitType unitType = Unit->getType();
     if (unitType == BWAPI::UnitTypes::Zerg_Egg) {
@@ -95,9 +117,11 @@ void GW::onUnitMorph(BWAPI::Unit Unit)
         PENDING_UNIT_TYPE_COUNT[insideEggType]++;
         BWAPI::Broodwar->sendTextEx(true, "Morphing: %s.",
             insideEggType.c_str());
+        if (insideEggType == SUPPLY_TYPE && ARMY_ENABLING_TECH)
+            GW::attack(BASE_CENTER);
     }
     else if (unitType.isBuilding()) {
-        PENDING_UNIT_TYPE_COUNT[unitType]++;
+        GW::onUnitCreate(Unit);
         BWAPI::Broodwar->sendTextEx(true, "Morphing building: %s.",
             unitType.c_str());
     }
@@ -107,42 +131,78 @@ void GW::onUnitMorph(BWAPI::Unit Unit)
 void GW::onUnitComplete(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() != SELF)
-        return;  // Ignoring non-Owned Units.
+        return;  // Ignoring non-owned units.
     BWAPI::UnitType unitType = Unit->getType();
-    if (unitType == WORKER_TYPE)
+    if (unitType == WORKER_TYPE) {
         Unit->gather(Unit->getClosestUnit(IsMineralField));
-    else if (unitType == SUPPLY_TYPE)
+    }
+    else if (unitType == SUPPLY_TYPE) {
         SUPPLY_UNIT = Unit;
-    else if (unitType == ARMY_ENABLING_TECH_TYPE)
+    }
+    else if (unitType == ARMY_ENABLING_TECH_TYPE) {
         ARMY_ENABLING_TECH = Unit;
+    }
     PENDING_UNIT_TYPE_COUNT[unitType]--;
-    GW::setSupplyRequired(); // Always after adjustment to count.
+    GW::setSupplyRequired(); // Always after change to pending count.
 }
 
 void GW::onUnitDestroy(BWAPI::Unit Unit)
 {
-    BWAPI::Broodwar->sendTextEx(true, "%s: %d destroyed.",
-        Unit->getType().c_str(), Unit->getID());
+    BWAPI::Player owningPlayer = Unit->getPlayer();
+    BWAPI::UnitType unitType = Unit->getType();
+    if (owningPlayer == SELF) {
+        if (unitType == ARMY_ENABLING_TECH_TYPE) {
+            ARMY_ENABLING_TECH = nullptr;
+        }
+        else if (unitType.isResourceDepot()) {
+            BWAPI::Broodwar->sendText("gg, you've proven more superior.");
+            BWAPI::Broodwar->leaveGame();
+        }
+    }
+    else if (unitType.isBuilding() &&
+            ENEMY_LOCATIONS.find(owningPlayer) != ENEMY_LOCATIONS.end()) {
+        ENEMY_LOCATIONS[owningPlayer].erase(Unit->getTilePosition());
+        BWAPI::Broodwar->sendTextEx(true, "Enemy %s destroyed.",
+            Unit->getType().c_str());
+    }
 }
 
 void GW::onUnitDiscover(BWAPI::Unit Unit)
 {
+    BWAPI::Player owningPlayer = Unit->getPlayer();
+    if (owningPlayer == SELF)
+        return;  // Otherwise imprecisely repeats Create/Morph/Complete.
+    if (Unit->getType().isBuilding() &&
+            ENEMY_LOCATIONS.find(owningPlayer) != ENEMY_LOCATIONS.end())
+    {
+        ENEMY_LOCATIONS[owningPlayer].insert(Unit->getTilePosition());
+        BWAPI::Broodwar->sendTextEx(true, "Enemy %s discovered.",
+            Unit->getType().c_str());
+    }
 }
 
 void GW::onUnitEvade(BWAPI::Unit Unit)
 {
+    if (Unit->getPlayer() != SELF)
+        return;  // Ignoring non-owned units.
 }
 
 void GW::onUnitShow(BWAPI::Unit Unit)
 {
+    if (Unit->getPlayer() != SELF)
+        return;  // Ignoring non-owned units.
 }
 
 void GW::onUnitHide(BWAPI::Unit Unit)
 {
+    if (Unit->getPlayer() != SELF)
+        return;  // Ignoring non-owned units.
 }
 
 void GW::onUnitRenegade(BWAPI::Unit Unit)
 {
+    if (Unit->getPlayer() != SELF)
+        return;  // Ignoring non-owned units.
 }
 
 void GW::onNukeDetect(BWAPI::Position target)
@@ -157,8 +217,11 @@ void GW::onReceiveText(BWAPI::Player player, std::string text)
 {
 }
 
-void GW::onPlayerLeft(BWAPI::Player player)
+void GW::onPlayerLeft(BWAPI::Player Player)
 {
+    if (ENEMY_LOCATIONS.find(Player) != ENEMY_LOCATIONS.end()) {
+        ENEMY_LOCATIONS.erase(Player);
+    }
 }
 
 void GW::onSaveGame(std::string gameName)
@@ -169,13 +232,34 @@ void GW::onEnd(bool IsWinner)
 {
 }
 
+locationSet GW::collectScoutingLocations()
+{
+    typedef BWAPI::TilePosition tilePos;
+    tilePos myStart = SELF->getStartLocation();
+    locationSet Locations;
+    for (BWAPI::Player Enemy:BWAPI::Broodwar->enemies()) {
+        ENEMY_LOCATIONS[Enemy];
+        tilePos enemyPosition = Enemy->getStartLocation();
+        if (enemyPosition != BWAPI::TilePositions::None &&
+                enemyPosition != BWAPI::TilePositions::Unknown)
+            Locations.insert(enemyPosition);
+    }
+    if (Locations.empty()) {
+        // ? How to convert stl types to existing container?
+        for (tilePos Start:BWAPI::Broodwar->getStartLocations()) {
+            if (Start != myStart)
+                Locations.insert(Start);
+        }
+    }
+    return Locations;
+}
+
 void GW::setSupplyRequired()
 {
     int potentialSupply = PENDING_UNIT_TYPE_COUNT[SUPPLY_TYPE] * 16,
         totalPotentialSupply = SELF->supplyTotal() + potentialSupply;
     SUPPLY_REQUIRED = (SELF->supplyUsed() - totalPotentialSupply + 16) / 16;
 };
-
 
 void GW::constructUnit(BWAPI::UnitType constructableType)
 {
@@ -185,21 +269,36 @@ void GW::constructUnit(BWAPI::UnitType constructableType)
     // unaffordable or unit moving to the location.
     if (constructableType.mineralPrice() <= SELF->minerals() && 
             !(lastContractorUnit && lastContractorUnit->getOrder() == Issued)) {
-        if (lastContractorUnit) {
-            BWAPI::Broodwar->sendTextEx(true, "UnitID - %d, Order: %s.",
-                lastContractorUnit->getID(),
-                lastContractorUnit->getOrder().c_str());
-        }
         BWAPI::Unit contractorUnit = BASE_CENTER->getClosestUnit(
-            IsWorker && !IsCarryingMinerals);
+            IsWorker && !IsCarryingMinerals && IsOwned && !IsConstructing);
         BWAPI::TilePosition constructionLocation = (
             BWAPI::Broodwar->getBuildLocation(
                 constructableType, contractorUnit->getTilePosition()));
-        contractorUnit->build(constructableType, constructionLocation);
-        // Queues command to return to minerals. Does not work for Zerg.
-        contractorUnit->gather(BWAPI::Broodwar->getClosestUnit(
-            BWAPI::Position(constructionLocation), IsMineralField), true);
-        lastContractorUnit = contractorUnit;
+        if (contractorUnit && contractorUnit->canBuild(constructableType,
+                constructionLocation)) {
+            contractorUnit->build(constructableType, constructionLocation);
+            // Queues command to return to minerals. !Working for Zerg.
+            contractorUnit->gather(BWAPI::Broodwar->getClosestUnit(
+                BWAPI::Position(constructionLocation), IsMineralField), true);
+            lastContractorUnit = contractorUnit;
+        }
+    }
+}
+
+void GW::attack(BWAPI::Unit Unit)
+{
+    BWAPI::Unitset Attackers = Unit->getUnitsInRadius(
+        900, GetType == ARMY_UNIT_TYPE);
+    for (auto mapPair: ENEMY_LOCATIONS) {
+        // !! Loose access to Unit when it is in fog.
+        locationSet enemyLocations = mapPair.second;
+        if (!enemyLocations.empty() && !Attackers.empty()) {
+            BWAPI::TilePosition attackLocation = *enemyLocations.begin();
+            BWAPI::Broodwar->sendTextEx(true, "attacking location %d, %d.",
+                attackLocation.x, attackLocation.y);
+            Attackers.attack(BWAPI::Position(attackLocation));
+            break;
+        }
     }
 }
 
@@ -215,4 +314,6 @@ void GW::displayState()
         PENDING_UNIT_TYPE_COUNT[ARMY_ENABLING_TECH_TYPE]);
     BWAPI::Broodwar->drawTextScreen(3, 63, "BASE_CENTER Queue: %d",
         getNumQueued(BASE_CENTER));
+    BWAPI::Broodwar->drawTextScreen(3, 73, "SCOUT_LOCATIONS: %d",
+        SCOUT_LOCATIONS.size());
 }

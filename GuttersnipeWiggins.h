@@ -23,7 +23,9 @@ public:
     virtual void onEnd(bool isWinner);
 
 private:
+    std::set<BWAPI::TilePosition> collectScoutingLocations();
     void constructUnit(BWAPI::UnitType constructableType);
     void setSupplyRequired();
+    void attack(BWAPI::Unit);
     void displayState();
 };
