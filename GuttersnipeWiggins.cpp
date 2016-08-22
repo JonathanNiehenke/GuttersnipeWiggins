@@ -7,7 +7,7 @@ using namespace BWAPI::Filter;
 
 typedef std::set<BWAPI::TilePosition> locationSet;
 
-int SUPPLY_REQUIRED = 0;
+int AVAILABLE_SUPPLY = 0, WORKER_BUFFER = 0, ARMY_BUFFER = 0;
 BWAPI::Player SELF;
 BWAPI::Unit BASE_CENTER,  // The primary/initial base building.
             SUPPLY_UNIT = nullptr, // Required for Protoss construction.
@@ -35,8 +35,9 @@ void GW::onStart()
     BASE_CENTER = BWAPI::Broodwar->getClosestUnit(
         startPosition, IsResourceDepot);
     BWAPI::Race myRace = SELF->getRace();
-    WORKER_TYPE = myRace.getWorker();
     SUPPLY_TYPE = myRace.getSupplyProvider();
+    WORKER_TYPE = myRace.getWorker();
+    WORKER_BUFFER = GW::getUnitBuffer(WORKER_TYPE);
     switch (myRace) {
         case BWAPI::Races::Enum::Protoss:
             ARMY_ENABLING_TECH_TYPE = BWAPI::UnitTypes::Protoss_Gateway;
@@ -56,16 +57,17 @@ void GW::onStart()
 
 void GW::onFrame()
 {
+    const short queueSize = SELF->getRace() == BWAPI::Races::Zerg ? 2 : 1;
     GW::displayState(); // For debugging.
-    if (SUPPLY_REQUIRED > 0) {
+    if (AVAILABLE_SUPPLY <= WORKER_BUFFER + ARMY_BUFFER) {
         if (SUPPLY_TYPE.isBuilding()) 
             GW::constructUnit(SUPPLY_TYPE);
         else
             BASE_CENTER->train(SUPPLY_TYPE);  // Trains overlord.
     }
     else if (BASE_CENTER->canTrain(WORKER_TYPE) &&
-            getNumQueued(BASE_CENTER) < 2) { // Two larva for workers 
-        BASE_CENTER->train(WORKER_TYPE);     // allows for lings.
+            getNumQueued(BASE_CENTER) < queueSize) { // Allows lings by
+        BASE_CENTER->train(WORKER_TYPE); // Limiting larva for workers.
     }
     else if (!ARMY_ENABLING_TECH) { // Error, if continued while false.
         // Force every race the supply first requirement.
@@ -90,6 +92,7 @@ void GW::onUnitCreate(BWAPI::Unit Unit)
         GW::attack(BASE_CENTER);
     }
     else if (unitType == ARMY_ENABLING_TECH_TYPE) {
+        ARMY_BUFFER = getUnitBuffer(ARMY_UNIT_TYPE);
         BWAPI::Unitset workerUnits = BASE_CENTER->getUnitsInRadius(
             900, IsWorker && IsOwned && !IsConstructing);
         for (BWAPI::TilePosition scoutLocation: SCOUT_LOCATIONS) {
@@ -103,7 +106,8 @@ void GW::onUnitCreate(BWAPI::Unit Unit)
     BWAPI::Broodwar->sendTextEx(true, "%s: %d created.",
         Unit->getType().c_str(), Unit->getID());
     PENDING_UNIT_TYPE_COUNT[Unit->getType()]++;
-    GW::setSupplyRequired(); // Always after adjustment to count.
+    // Always after change to pending count.
+    AVAILABLE_SUPPLY = GW::getAvailableSupply();
 }
 
 void GW::onUnitMorph(BWAPI::Unit Unit)
@@ -115,17 +119,16 @@ void GW::onUnitMorph(BWAPI::Unit Unit)
     if (unitType == BWAPI::UnitTypes::Zerg_Egg) {
         BWAPI::UnitType insideEggType = Unit->getBuildType();
         PENDING_UNIT_TYPE_COUNT[insideEggType]++;
-        BWAPI::Broodwar->sendTextEx(true, "Morphing: %s.",
-            insideEggType.c_str());
         if (insideEggType == SUPPLY_TYPE && ARMY_ENABLING_TECH)
             GW::attack(BASE_CENTER);
+        BWAPI::Broodwar->sendTextEx(true, "Morphing: %s.",
+            insideEggType.c_str());
     }
     else if (unitType.isBuilding()) {
         GW::onUnitCreate(Unit);
         BWAPI::Broodwar->sendTextEx(true, "Morphing building: %s.",
             unitType.c_str());
     }
-    GW::setSupplyRequired(); // Always after adjustment to count.
 }
 
 void GW::onUnitComplete(BWAPI::Unit Unit)
@@ -143,7 +146,8 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
         ARMY_ENABLING_TECH = Unit;
     }
     PENDING_UNIT_TYPE_COUNT[unitType]--;
-    GW::setSupplyRequired(); // Always after change to pending count.
+    // Always after change to pending count.
+    AVAILABLE_SUPPLY = GW::getAvailableSupply();
 }
 
 void GW::onUnitDestroy(BWAPI::Unit Unit)
@@ -254,33 +258,67 @@ locationSet GW::collectScoutingLocations()
     return Locations;
 }
 
-void GW::setSupplyRequired()
+int GW::getAvailableSupply()
 {
-    int potentialSupply = PENDING_UNIT_TYPE_COUNT[SUPPLY_TYPE] * 16,
-        totalPotentialSupply = SELF->supplyTotal() + potentialSupply;
-    SUPPLY_REQUIRED = (SELF->supplyUsed() - totalPotentialSupply + 16) / 16;
-};
+    const int supply = SUPPLY_TYPE.supplyProvided();
+    int supplyConstructing = PENDING_UNIT_TYPE_COUNT[SUPPLY_TYPE] * supply;
+    return SELF->supplyTotal() + supplyConstructing - SELF->supplyUsed();
+}
+
+int GW::getUnitBuffer(BWAPI::UnitType unitType)
+{
+    const float supplyBuildTime = SUPPLY_TYPE.buildTime();
+    int unitSupply = unitType.supplyRequired(),
+        unitBuildTime = WORKER_TYPE.buildTime();
+    return std::ceil(supplyBuildTime / unitBuildTime) * unitSupply;
+}
 
 void GW::constructUnit(BWAPI::UnitType constructableType)
 {
-    const BWAPI::Order Issued = BWAPI::Orders::PlaceBuilding;
+    const BWAPI::Order
+        Position = BWAPI::Orders::Move,
+        Construct = BWAPI::Orders::PlaceBuilding,
+        // When unit completed previous order.
+        Waiting1 = BWAPI::Orders::Guard,
+        Waiting2 = BWAPI::Orders::PlayerGuard,
+        // When units occupies the same space.
+        Ignored = BWAPI::Orders::ResetCollision;
     static BWAPI::Unit lastContractorUnit = nullptr;
-    // Prevents preparing for and reissuing the order to construct while
-    // unaffordable or unit moving to the location.
-    if (constructableType.mineralPrice() <= SELF->minerals() && 
-            !(lastContractorUnit && lastContractorUnit->getOrder() == Issued)) {
-        BWAPI::Unit contractorUnit = BASE_CENTER->getClosestUnit(
-            IsWorker && !IsCarryingMinerals && IsOwned && !IsConstructing);
-        BWAPI::TilePosition constructionLocation = (
-            BWAPI::Broodwar->getBuildLocation(
-                constructableType, contractorUnit->getTilePosition()));
-        if (contractorUnit && contractorUnit->canBuild(constructableType,
-                constructionLocation)) {
+    static BWAPI::TilePosition lastBuildLocation = BWAPI::TilePositions::None;
+    BWAPI::Order recentOrder = lastContractorUnit
+        ? lastContractorUnit->getOrder() : BWAPI::Orders::None;
+    // Prevents reissuing the order to construct if already commanded
+    // or current minerals below building's preparation range.
+    if (!(recentOrder == Construct || recentOrder == Ignored) &&
+            SELF->minerals() >= constructableType.mineralPrice() - 24) {
+        BWAPI::Unit contractorUnit = nullptr;
+        BWAPI::TilePosition constructionLocation = BWAPI::TilePositions::None;
+        if (recentOrder == Position || recentOrder == Waiting1 ||
+                recentOrder == Waiting2) {
+            // lastContractorUnit was recently ordered into position.
+            contractorUnit = lastContractorUnit;
+            constructionLocation = lastBuildLocation;
+        }
+        else {
+            contractorUnit = BASE_CENTER->getClosestUnit(
+                IsWorker && !IsCarryingMinerals && IsOwned && !IsConstructing);
+            constructionLocation = BWAPI::Broodwar->getBuildLocation(
+                constructableType, contractorUnit->getTilePosition());
+        }
+        if (contractorUnit && contractorUnit->canBuild(
+                constructableType, constructionLocation)) {
             contractorUnit->build(constructableType, constructionLocation);
             // Queues command to return to minerals. !Working for Zerg.
             contractorUnit->gather(BWAPI::Broodwar->getClosestUnit(
                 BWAPI::Position(constructionLocation), IsMineralField), true);
             lastContractorUnit = contractorUnit;
+        }
+        else if ((recentOrder != Position || recentOrder != Waiting1 ||
+                recentOrder != Waiting2) && contractorUnit)
+        {
+            contractorUnit->move(BWAPI::Position(constructionLocation));
+            lastContractorUnit = contractorUnit;
+            lastBuildLocation = constructionLocation;
         }
     }
 }
@@ -290,7 +328,6 @@ void GW::attack(BWAPI::Unit Unit)
     BWAPI::Unitset Attackers = Unit->getUnitsInRadius(
         900, GetType == ARMY_UNIT_TYPE);
     for (auto mapPair: ENEMY_LOCATIONS) {
-        // !! Loose access to Unit when it is in fog.
         locationSet enemyLocations = mapPair.second;
         if (!enemyLocations.empty() && !Attackers.empty()) {
             BWAPI::TilePosition attackLocation = *enemyLocations.begin();
@@ -307,8 +344,8 @@ void GW::displayState()
     // Positioned below the fps information.
     BWAPI::Broodwar->drawTextScreen(3, 33, "APM %d", BWAPI::Broodwar->getAPM());
     BWAPI::Broodwar->drawTextScreen(3, 43,
-        "SUPPLY_REQUIRED: %d, pendingSupply %d" ,SUPPLY_REQUIRED,
-        PENDING_UNIT_TYPE_COUNT[SUPPLY_TYPE]);
+        "AVAILABLE_SUPPLY: %d, BUFFER: %d, pendingSupply %d, " ,AVAILABLE_SUPPLY,
+        WORKER_BUFFER + ARMY_BUFFER, PENDING_UNIT_TYPE_COUNT[SUPPLY_TYPE]);
     BWAPI::Broodwar->drawTextScreen(3, 53,
         "SUPPLY_UNIT: %s, pendingArmyBuild %d" , SUPPLY_UNIT ? "true" : "false",
         PENDING_UNIT_TYPE_COUNT[ARMY_ENABLING_TECH_TYPE]);

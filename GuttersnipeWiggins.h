@@ -25,7 +25,8 @@ public:
 private:
     std::set<BWAPI::TilePosition> collectScoutingLocations();
     void constructUnit(BWAPI::UnitType constructableType);
-    void setSupplyRequired();
+    int getAvailableSupply();
+    int getUnitBuffer(BWAPI::UnitType);
     void attack(BWAPI::Unit);
     void displayState();
 };
