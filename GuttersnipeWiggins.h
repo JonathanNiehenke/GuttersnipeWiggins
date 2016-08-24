@@ -27,6 +27,7 @@ private:
     void constructUnit(BWAPI::UnitType constructableType);
     int getAvailableSupply();
     int getUnitBuffer(BWAPI::UnitType);
+    void scout();
     void attack(BWAPI::Unit);
     void displayState();
 };
