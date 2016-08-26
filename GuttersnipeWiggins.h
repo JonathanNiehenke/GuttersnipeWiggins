@@ -28,6 +28,8 @@ private:
     int getAvailableSupply();
     int getUnitBuffer(BWAPI::UnitType);
     void scout();
-    void attack(BWAPI::Unit);
+    void attack_from(BWAPI::Position);
+    void GW::removeLocation(BWAPI::TilePosition Location);
+    void GW::removeLocation(BWAPI::Player Player, BWAPI::TilePosition Location);
     void displayState();
 };
