@@ -23,4 +23,5 @@ public:
     virtual void onEnd(bool isWinner);
 
 private:
+    std::vector<BWAPI::TilePosition> getMineralClusterLocations();
 };
