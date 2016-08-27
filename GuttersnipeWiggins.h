@@ -23,5 +23,14 @@ public:
     virtual void onEnd(bool isWinner);
 
 private:
+    std::set<BWAPI::TilePosition> collectScoutingLocations();
     std::vector<BWAPI::TilePosition> getMineralClusterLocations();
+    void constructUnit(BWAPI::UnitType constructableType);
+    int getAvailableSupply();
+    int getUnitBuffer(BWAPI::UnitType);
+    void scout();
+    void attack_from(BWAPI::Position);
+    void GW::removeLocation(BWAPI::TilePosition Location);
+    void GW::removeLocation(BWAPI::Player Player, BWAPI::TilePosition Location);
+    void displayState();
 };
