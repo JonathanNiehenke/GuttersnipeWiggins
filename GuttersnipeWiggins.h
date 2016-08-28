@@ -24,4 +24,6 @@ public:
 
 private:
     std::vector<BWAPI::TilePosition> getMineralClusterLocations();
+    void scoutBases();
+    BWAPI::TilePosition getExpansionLocation(BWAPI::Unit centerContractor);
 };

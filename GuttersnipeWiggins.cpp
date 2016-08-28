@@ -42,49 +42,59 @@ bool compareDistanceFrom::operator()(BWAPI::Unit unit1, BWAPI::Unit unit2)
             sourcePosition.getApproxDistance(unit2->getPosition()));
 }
 
-LocationVector GW::getMineralClusterLocations()
-{
-    // Sort static minerals into "Starcraft" defined groups.
-    std::map<int, std::vector<BWAPI::Unit>> groupedMinerals;
-    for (BWAPI::Unit Mineral: BWAPI::Broodwar->getStaticMinerals())
-        groupedMinerals[Mineral->getResourceGroup()].push_back(Mineral);
-    // Collect the location of a mineral in each group.
-    LocationVector clusterLocations;
-    for (auto mineralGroup: groupedMinerals) {
-        std::vector<BWAPI::Unit> mineralCluster = mineralGroup.second;
-        // Ignore mineral clusters used as destructable terrain.
-        if (mineralCluster.size() > 4) {
-            clusterLocations.push_back(
-                mineralCluster.back()->getTilePosition());
-        }
-    }
-    return clusterLocations;
-}
-
-BWAPI::TilePosition START_POSITION;
-LocationVector CLUSTER_LOCATIONS;
-
-void scoutBases()
-{
-    BWAPI::Unit mineralScout = BWAPI::Broodwar->getClosestUnit(
-        BWAPI::Position(START_POSITION), IsWorker);
-    mineralScout->stop();  // Because the following orders are queued.
-    for (auto mineralLocation: CLUSTER_LOCATIONS) {
-        mineralScout->move(BWAPI::Position(mineralLocation), true);
-    }
-}
+BWAPI::Player SELF;
+BWAPI::Unit BASE_CENTER;
+BWAPI::UnitType CENTER_TYPE, WORKER_TYPE;
+LocationVector BASE_LOCATIONS;
 
 void GW::onStart()
 {
-    START_POSITION = BWAPI::Broodwar->self()->getStartLocation();
-    CLUSTER_LOCATIONS = GW::getMineralClusterLocations();
-    std::sort(CLUSTER_LOCATIONS.begin(), CLUSTER_LOCATIONS.end(),
-        compareDistanceFrom(START_POSITION));
+    SELF = BWAPI::Broodwar->self();
+    BWAPI::TilePosition startLocation = SELF->getStartLocation();
+    BASE_CENTER = BWAPI::Broodwar->getClosestUnit(
+        BWAPI::Position(startLocation), IsResourceDepot);
+    BWAPI::Race myRace = SELF->getRace();
+    CENTER_TYPE = myRace.getCenter();
+    WORKER_TYPE = myRace.getWorker();
+    BASE_LOCATIONS = GW::getMineralClusterLocations();
+    std::sort(BASE_LOCATIONS.begin(), BASE_LOCATIONS.end(),
+        compareDistanceFrom(startLocation));
     scoutBases();
+}
+
+BWAPI::TilePosition GW::getExpansionLocation(BWAPI::Unit centerContractor)
+{
+    for (auto baseLocation: BASE_LOCATIONS) {
+        BWAPI::Position basePosition = BWAPI::Position(baseLocation);
+        if (centerContractor && centerContractor->hasPath(basePosition) &&
+            !BWAPI::Broodwar->getClosestUnit(basePosition, IsResourceDepot, 300))
+        {
+            return BWAPI::Broodwar->getBuildLocation(
+                    CENTER_TYPE, BWAPI::TilePosition(baseLocation));
+        }
+    }
+    return BWAPI::TilePositions::Invalid;
 }
 
 void GW::onFrame()
 {
+    const int centerPrice = CENTER_TYPE.mineralPrice();
+    static bool buildingExpansion = false;
+    if (SELF->minerals() >= centerPrice && !buildingExpansion) {
+        BWAPI::Unit centerContractor = BASE_CENTER->getClosestUnit(
+            IsWorker && IsOwned);
+        BWAPI::TilePosition expansionLocation = GW::getExpansionLocation(
+            centerContractor);
+        if (expansionLocation != BWAPI::TilePositions::Invalid) {
+            buildingExpansion = centerContractor->build(
+                CENTER_TYPE, expansionLocation);
+        }
+        else {
+            BWAPI::Broodwar->sendTextEx(true, "Invalid location");
+        }
+        BWAPI::Broodwar->sendTextEx(true, "buildingExpansion: %s",
+            buildingExpansion ? "true" : "false");
+    }
 }
 
 void GW::onUnitCreate(BWAPI::Unit Unit)
@@ -97,6 +107,9 @@ void GW::onUnitMorph(BWAPI::Unit Unit)
 
 void GW::onUnitComplete(BWAPI::Unit Unit)
 {
+    BWAPI::UnitType unitType = Unit->getType();
+    if (unitType == WORKER_TYPE && Unit->getOrder() != BWAPI::Orders::Stop)
+        Unit->gather(Unit->getClosestUnit(IsMineralField));
 }
 
 void GW::onUnitDestroy(BWAPI::Unit Unit)
@@ -146,3 +159,35 @@ void GW::onSaveGame(std::string gameName)
 void GW::onEnd(bool IsWinner)
 {
 }
+
+LocationVector GW::getMineralClusterLocations()
+{
+    // Sort static minerals into "Starcraft" defined groups.
+    std::map<int, BWAPI::Unitset> groupedMinerals;
+    for (BWAPI::Unit Mineral: BWAPI::Broodwar->getStaticMinerals())
+        groupedMinerals[Mineral->getResourceGroup()].insert(Mineral);
+    // Collect the location of a mineral in each group.
+    LocationVector clusterLocations;
+    for (auto mineralGroup: groupedMinerals) {
+        BWAPI::Unitset mineralCluster = mineralGroup.second;
+        // Ignore mineral clusters used as destructible terrain.
+        if (mineralCluster.size() > 4) {
+            clusterLocations.push_back(
+                BWAPI::TilePosition(mineralCluster.getPosition()));
+        }
+    }
+    return clusterLocations;
+}
+
+void GW::scoutBases()
+{
+    BWAPI::Unit mineralScout = BASE_CENTER->getClosestUnit(IsWorker);
+    mineralScout->stop();  // Because the following orders are queued.
+    for (auto baseLocation: BASE_LOCATIONS) {
+        BWAPI::Position targetPosition = BWAPI::Position(baseLocation);
+        // Ignore terrain inaccessible positions.
+        if (mineralScout->hasPath(targetPosition))
+            mineralScout->move(targetPosition, true);
+    }
+}
+
