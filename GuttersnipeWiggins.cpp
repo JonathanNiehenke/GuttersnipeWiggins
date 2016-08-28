@@ -156,6 +156,8 @@ void GW::onStart()
     }
     SCOUT_LOCATIONS = GW::collectScoutingLocations();
     CLUSTER_LOCATIONS = GW::getMineralClusterLocations();
+    std::sort(CLUSTER_LOCATIONS.begin(), CLUSTER_LOCATIONS.end(),
+        compareDistanceFrom(startPosition));
 }
 
 void GW::onFrame()
@@ -164,7 +166,7 @@ void GW::onFrame()
     GW::displayState(); // For debugging.
     if (AVAILABLE_SUPPLY <= WORKER_BUFFER + ARMY_BUFFER) {
         // Pylon and supply depot are buildings, unlike overlords.
-        if (SUPPLY_TYPE.isBuilding()) 
+        if (SUPPLY_TYPE.isBuilding())
             GW::constructUnit(SUPPLY_TYPE);
         else
             TRAINING[SUPPLY_TYPE].produceSingleUnit(SUPPLY_TYPE);
@@ -493,23 +495,35 @@ void GW::scout()
 
 }
 
-void scoutBases()
+void GW::scoutLocations(LocationVector mineralLocations)
 {
     BWAPI::Unit mineralScout = BASE_CENTER->getClosestUnit(
         IsWorker && !IsCarryingMinerals && IsOwned && !IsConstructing);
     mineralScout->stop();  // Because the following orders are queued.
-    for (auto mineralLocation: CLUSTER_LOCATIONS) {
+    for (auto mineralLocation: mineralLocations) {
         mineralScout->move(BWAPI::Position(mineralLocation), true);
     }
+    BWAPI::Broodwar->sendTextEx(true, "%d SCOUTING.",
+        mineralScout->getID());
+}
+
+void GW::attackLocations(
+        BWAPI::Unitset unitGroup, LocationVector mineralLocations)
+{
+    std::sort(mineralLocations.begin(), mineralLocations.end(),
+        compareDistanceFrom(unitGroup.getPosition()));
+    for (auto mineralLocation: mineralLocations)
+        unitGroup.attack(BWAPI::Position(mineralLocation), true);
 }
 
 void GW::attack_from(BWAPI::Position Position)
 {
     BWAPI::Unitset Attackers = BWAPI::Broodwar->getUnitsInRadius(
         Position, 900, GetType == ARMY_UNIT_TYPE);
+    bool attackersAvailable = !Attackers.empty();
     for (auto mapPair: ENEMY_LOCATIONS) {
         locationSet enemyLocations = mapPair.second;
-        if (!enemyLocations.empty() && !Attackers.empty()) {
+        if (attackersAvailable && !enemyLocations.empty()) {
             BWAPI::TilePosition attackLocation = *enemyLocations.begin();
             BWAPI::Broodwar->sendTextEx(true, "attacking location %d, %d.",
                 attackLocation.x, attackLocation.y);
@@ -517,6 +531,8 @@ void GW::attack_from(BWAPI::Position Position)
             break;
         }
     }
+    if (attackersAvailable)
+        attackLocations(Attackers, CLUSTER_LOCATIONS);
 }
 
 void GW::removeLocation(BWAPI::TilePosition Location)

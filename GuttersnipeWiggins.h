@@ -29,6 +29,9 @@ private:
     int getAvailableSupply();
     int getUnitBuffer(BWAPI::UnitType);
     void scout();
+    void scoutLocations(std::vector<BWAPI::TilePosition> mineralLocations);
+    void attackLocations(
+        BWAPI::Unitset, std::vector<BWAPI::TilePosition> mineralLocations);
     void attack_from(BWAPI::Position);
     void GW::removeLocation(BWAPI::TilePosition Location);
     void GW::removeLocation(BWAPI::Player Player, BWAPI::TilePosition Location);
