@@ -25,12 +25,19 @@ public:
 private:
     std::set<BWAPI::TilePosition> collectScoutingLocations();
     std::vector<BWAPI::TilePosition> getMineralClusterLocations();
-    void constructUnit(BWAPI::UnitType constructableType);
     int getAvailableSupply();
     int getUnitBuffer(BWAPI::UnitType);
     void scout();
     void attack_from(BWAPI::Position);
-    void GW::removeLocation(BWAPI::TilePosition Location);
-    void GW::removeLocation(BWAPI::Player Player, BWAPI::TilePosition Location);
+    void removeLocation(BWAPI::TilePosition Location);
+    void removeLocation(BWAPI::Player Player, BWAPI::TilePosition Location);
+    int getContractorTask(BWAPI::Unit contractorUnit);
+    void constructUnit(BWAPI::UnitType constructableType);
+    void constructUnit(
+        BWAPI::UnitType constructableType,
+        BWAPI::TilePosition constructionLocation,
+        BWAPI::Unit contractorUnit);
+    BWAPI::TilePosition getExpansionLocation(BWAPI::Unit centerContractor);
+    void constructExpansion();
     void displayState();
 };
