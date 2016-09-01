@@ -24,13 +24,16 @@ public:
 
 private:
     std::vector<BWAPI::TilePosition> getMineralClusterLocations();
+    BWAPI::Unit getUnitCreator(BWAPI::Unit developingUnit);
     void scoutBases();
     int getContractorTask(BWAPI::Unit contractorUnit);
-    void constructUnit(
-        BWAPI::UnitType constructableType,
-        BWAPI::TilePosition constructionLocation,
-        BWAPI::Unit contractorUnit);
     BWAPI::TilePosition getExpansionLocation(
         BWAPI::Unit centerContractor);
+    void constructUnit(BWAPI::UnitType,
+        BWAPI::TilePosition constructionLocation,
+        BWAPI::Unit contractorUnit,
+        int Task);
+    void constructUnit(BWAPI::UnitType constructableType);
     void constructExpansion();
+    void displayState();
 };
