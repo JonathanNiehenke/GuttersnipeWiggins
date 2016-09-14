@@ -23,7 +23,7 @@ public:
     virtual void onEnd(bool isWinner);
 
 private:
-    std::vector<BWAPI::TilePosition> getMineralClusterLocations();
+    std::vector<std::pair<BWAPI::Position, BWAPI::Unitset>> getMapMinerals();
     BWAPI::Unit getUnitCreator(BWAPI::Unit developingUnit);
     void scoutBases();
     int getContractorTask(BWAPI::Unit contractorUnit);
