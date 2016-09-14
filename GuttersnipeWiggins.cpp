@@ -5,7 +5,7 @@ enabling my accustomed line lengths of 72 for comments and 80 for code.
 
 using namespace BWAPI::Filter;
 
-typedef std::vector<BWAPI::TilePosition> locationVector;
+typedef std::pair<BWAPI::Position, BWAPI::Unitset> PositionedUnits;
 typedef std::set<BWAPI::TilePosition> locationSet;
 
 class compareDistanceFrom
@@ -19,9 +19,12 @@ class compareDistanceFrom
             { sourcePosition = BWAPI::Position(location); }
         compareDistanceFrom(BWAPI::Unit unit)
             { sourcePosition = unit->getPosition(); }
+        compareDistanceFrom(BWAPI::Unitset units)
+            { sourcePosition = units.getPosition(); }
         bool operator()(BWAPI::Position Pos1, BWAPI::Position Pos2);
         bool operator()(BWAPI::TilePosition tPos1, BWAPI::TilePosition tPos2);
-        bool operator()(BWAPI::Unit unitV1, BWAPI::Unit unitV2);
+        bool operator()(BWAPI::Unit u1, BWAPI::Unit u2);
+        bool operator()(BWAPI::Unitset u1, BWAPI::Unitset u2);
 };
 
 bool compareDistanceFrom::operator()(BWAPI::Position Pos1, BWAPI::Position Pos2)
@@ -37,10 +40,70 @@ bool compareDistanceFrom::operator()(
             sourcePosition.getApproxDistance(BWAPI::Position(tPos2)));
 }
 
-bool compareDistanceFrom::operator()(BWAPI::Unit unit1, BWAPI::Unit unit2)
+bool compareDistanceFrom::operator()(BWAPI::Unit u1, BWAPI::Unit u2)
 {
-    return (sourcePosition.getApproxDistance(unit1->getPosition()) <
-            sourcePosition.getApproxDistance(unit2->getPosition()));
+    return (sourcePosition.getApproxDistance(u1->getPosition()) <
+            sourcePosition.getApproxDistance(u2->getPosition()));
+}
+
+bool compareDistanceFrom::operator()(BWAPI::Unitset u1, BWAPI::Unitset u2)
+{
+    return (sourcePosition.getApproxDistance(u1.getPosition()) <
+            sourcePosition.getApproxDistance(u2.getPosition()));
+}
+
+
+class EcoBase
+{
+    private:
+        // About 3 miners per 2 minerals + 1 miner per 5 minerals.
+        const float minersPerMineral = 1.625;  // 13 per 8.
+        BWAPI::Unit Center = nullptr;
+        std::vector<BWAPI::Unit> Minerals;
+        int minerCap = 0, minerCount = 0, mineralIndex = 0;
+    public:
+        EcoBase(BWAPI::Unit center, BWAPI::Unitset mineralCluster);
+        BWAPI::Unit getCenter()
+            { return Center; }
+        int getMinerCount()
+            { return minerCount; }
+        int getMinerCap()
+            { return minerCap; }
+        bool belowCap()
+            { return minerCount < minerCap; }
+        void assignMiner(BWAPI::Unit minerUnit);
+        void releaseMiner(BWAPI::Unit minerUnit);
+        void removeMineral(BWAPI::Unit Mineral);
+};
+
+EcoBase::EcoBase(BWAPI::Unit center, BWAPI::Unitset mineralCluster)
+{
+    Center = center;
+    Minerals.assign(mineralCluster.begin(), mineralCluster.end());
+    std::sort(Minerals.begin(), Minerals.end(), compareDistanceFrom(center));
+    minerCap = Minerals.size() * minersPerMineral;
+}
+
+void EcoBase::assignMiner(BWAPI::Unit minerUnit)
+{
+    ++minerCount;
+    minerUnit->gather(Minerals[mineralIndex++ % Minerals.size()]);
+}
+
+void EcoBase::releaseMiner(BWAPI::Unit minerUnit)
+{
+    --minerCount;
+    minerUnit->stop();
+}
+
+void EcoBase::removeMineral(BWAPI::Unit Mineral)
+{
+    auto itEnd = Minerals.end(),
+         itFound = find(Minerals.begin(), itEnd, Mineral);
+    if (itFound != itEnd) {
+        Minerals.erase(itFound);
+    minerCap = Minerals.size() * minersPerMineral;
+    }
 }
 
 
@@ -104,17 +167,63 @@ void UnitTraining::produceUnits(BWAPI::UnitType unitType)
 }
 
 
+namespace Production
+{
+    
+    bool isIdle(BWAPI::Unit Facility)
+    {
+        // Zerg hatchery is always idle so determine with larva.
+        // Negate larva for Protoss and Terran with producesLarva.
+        return (Facility->isIdle() && !(Facility->getType().producesLarva() &&
+                Facility->getLarva().empty()));
+    }
+
+    bool canProduce(std::vector<EcoBase*> EcoBases)
+    {
+        for (EcoBase *Base: EcoBases) {
+            if (Base->belowCap() && isIdle(Base->getCenter()))
+                return true;
+        }
+        return false;
+    }
+
+    // For overlords.
+    void produceSingleUnit(std::vector<EcoBase*> EcoBases,
+        BWAPI::UnitType unitType)
+    {
+        for (EcoBase *Base: EcoBases) {
+            BWAPI::Unit Center = Base->getCenter();
+            if (Base->belowCap() && isIdle(Center)) {
+                Center->train(unitType);
+                break;
+            }
+        }
+    }
+
+    void produceUnits(std::vector<EcoBase*> EcoBases, BWAPI::UnitType unitType)
+    {
+        for (EcoBase *Base: EcoBases) {
+            BWAPI::Unit Center = Base->getCenter();
+            if (Base->belowCap() && isIdle(Center))
+                Center->train(unitType);
+        }
+    }
+
+}
+
+
 int AVAILABLE_SUPPLY = 0, WORKER_BUFFER = 0, ARMY_BUFFER = 0;
 BWAPI::Player SELF;
 BWAPI::Unit BASE_CENTER,  // The primary/initial base building.
             SUPPLY_UNIT = nullptr; // Required for Protoss construction.
 BWAPI::UnitType CENTER_TYPE, WORKER_TYPE, SUPPLY_TYPE, ARMY_ENABLING_TECH_TYPE,
                 ARMY_UNIT_TYPE;
-locationVector MINERAL_LOCATIONS;
+std::vector<PositionedUnits> MAP_MINERALS;
 // Indicates number already in construction/training for UnitType.
 std::map<BWAPI::UnitType, short> PENDING_UNIT_TYPE_COUNT;
+std::unordered_map<BWAPI::Unit, BWAPI::Unit> UNIT_CREATOR;
+std::vector<EcoBase*> MY_BASES;
 locationSet SCOUT_LOCATIONS;
-locationVector CLUSTER_LOCATIONS;
 std::map<BWAPI::Player, locationSet> ENEMY_LOCATIONS;
 std::map<BWAPI::UnitType, UnitTraining> TRAINING;
 
@@ -137,9 +246,6 @@ void GW::onStart()
     CENTER_TYPE = myRace.getCenter();
     SUPPLY_TYPE = myRace.getSupplyProvider();
     WORKER_TYPE = myRace.getWorker();
-    TRAINING[WORKER_TYPE].includeFacility(BASE_CENTER);
-    // Used only by Zerg.
-    TRAINING[SUPPLY_TYPE].includeFacility(BASE_CENTER);
     WORKER_BUFFER = GW::getUnitBuffer(WORKER_TYPE);
     switch (myRace) {
         case Races::Enum::Protoss: // Enum for constant value.
@@ -155,16 +261,23 @@ void GW::onStart()
             ARMY_UNIT_TYPE = UnitTypes::Zerg_Zergling;
             break;
     }
+    MAP_MINERALS = GW::getMapMinerals();
+    auto startPosition = BWAPI::Position(startLocation);
+    std::sort(MAP_MINERALS.begin(), MAP_MINERALS.end(),
+        [startPosition](PositionedUnits pu1, PositionedUnits pu2)
+        {
+            return (startPosition.getApproxDistance(pu1.first) <
+                    startPosition.getApproxDistance(pu2.first));
+        });
     SCOUT_LOCATIONS = GW::collectScoutingLocations();
-    MINERAL_LOCATIONS = GW::getMineralClusterLocations();
-    std::sort(MINERAL_LOCATIONS.begin(), MINERAL_LOCATIONS.end(),
-        compareDistanceFrom(startLocation));
+    // Workaround cause initial workers may complete before the BASE_CENTER.
+    MY_BASES.push_back(new EcoBase(BASE_CENTER, MAP_MINERALS.front().second));
 }
 
 void GW::onFrame()
 {
-    const int latency = BWAPI::Broodwar->getLatency();
-    const int centerPrice = CENTER_TYPE.mineralPrice(),
+    const int latency = BWAPI::Broodwar->getLatency(),
+              centerPrice = CENTER_TYPE.mineralPrice(),
               armyFacilityPrice = ARMY_ENABLING_TECH_TYPE.mineralPrice();
     GW::displayState(); // For debugging.
     if (BWAPI::Broodwar->getFrameCount() % latency)
@@ -174,17 +287,19 @@ void GW::onFrame()
         if (SUPPLY_TYPE.isBuilding()) 
             GW::constructUnit(SUPPLY_TYPE);
         else
-            TRAINING[SUPPLY_TYPE].produceSingleUnit(SUPPLY_TYPE);
+            Production::produceSingleUnit(MY_BASES, SUPPLY_TYPE);
     }
-    else if (TRAINING[WORKER_TYPE].canProduce()) {
-        TRAINING[WORKER_TYPE].produceUnits(WORKER_TYPE);
+    else if (Production::canProduce(MY_BASES)) {
+        Production::produceUnits(MY_BASES, WORKER_TYPE);
     }
     else if (TRAINING[ARMY_UNIT_TYPE].canProduce()) {
         TRAINING[ARMY_UNIT_TYPE].produceUnits(ARMY_UNIT_TYPE);
     }
-    // else if (SELF->minerals() >= centerPrice - 48) {
-        // GW::constructExpansion();
-    // }
+    else if (std::all_of(MY_BASES.begin(), MY_BASES.end(),
+        [](EcoBase *Base) { return !Base->belowCap(); }))
+    {
+        GW::constructExpansion();
+    }
     else if (SUPPLY_UNIT && (SELF->minerals() > armyFacilityPrice * 2 ||
             !TRAINING[ARMY_UNIT_TYPE].isAvailable())) {
         // Allows multiple Gateways and Barracks, unlike spawning pool.
@@ -207,6 +322,9 @@ void GW::onUnitCreate(BWAPI::Unit Unit)
     BWAPI::UnitType unitType = Unit->getType();
     if (unitType == SUPPLY_TYPE && TRAINING[ARMY_UNIT_TYPE].isAvailable()) {
         GW::attack_from(BASE_CENTER->getPosition());
+    }
+    else if (Unit->getType() == WORKER_TYPE) {
+        UNIT_CREATOR[Unit] = Unit->getClosestUnit(IsResourceDepot, 0);
     }
     else if (unitType == ARMY_ENABLING_TECH_TYPE) {
         if (!TRAINING[ARMY_UNIT_TYPE].isAvailable())
@@ -236,7 +354,10 @@ void GW::onUnitMorph(BWAPI::Unit Unit)
     BWAPI::UnitType unitType = Unit->getType();
     if (unitType == BWAPI::UnitTypes::Zerg_Egg) {
         BWAPI::UnitType insideEggType = Unit->getBuildType();
-        if (insideEggType == SUPPLY_TYPE &&
+        if (insideEggType == WORKER_TYPE) {
+            UNIT_CREATOR[Unit] = Unit->getClosestUnit(IsResourceDepot, 64);
+        }
+        else if (insideEggType == SUPPLY_TYPE &&
                 TRAINING[ARMY_UNIT_TYPE].isAvailable())
             GW::attack_from(BASE_CENTER->getPosition());
         // BWAPI::Broodwar->sendTextEx(true, "Morphing: %s.",
@@ -273,15 +394,35 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
         return;  // Ignoring non-owned units.
     BWAPI::UnitType unitType = Unit->getType();
     if (unitType == WORKER_TYPE) {
-        Unit->gather(Unit->getClosestUnit(IsMineralField));
+        BWAPI::Unit cUnit = UNIT_CREATOR[Unit];
+        auto foundIt = std::find_if(MY_BASES.begin(), MY_BASES.end(),
+            [cUnit](EcoBase *Base){ return Base->getCenter() == cUnit; });
+        if (foundIt != MY_BASES.end())
+            (*foundIt)->assignMiner(Unit);
+        else // Should only be initial units.
+            MY_BASES.front()->assignMiner(Unit);
     }
     else if (unitType == SUPPLY_TYPE) {
         SUPPLY_UNIT = Unit;
+    }
+    // Excludes Lair and Hive which I assume are resource depots.
+    // Also don't duplicated BASE_CENTER EcoBase, done at onStart.
+    else if (unitType == CENTER_TYPE && Unit != BASE_CENTER) {
+        // Append to MY_BASES after finding nearest mineralCluster.
+        for (PositionedUnits mineralCluster: MAP_MINERALS) {
+            BWAPI::Unit center = BWAPI::Broodwar->getClosestUnit(
+                mineralCluster.first, IsResourceDepot, 300);
+            if (center == Unit) {
+                MY_BASES.push_back(new EcoBase(Unit, mineralCluster.second));
+                break;
+            }
+        }
     }
     // else {
         // BWAPI::Broodwar->sendTextEx(true, "Exceptional completion: %s.",
             // unitType.c_str());
     // }
+    UNIT_CREATOR.erase(Unit);
     PENDING_UNIT_TYPE_COUNT[unitType]--;
     // Always after change to pending count.
     AVAILABLE_SUPPLY = GW::getAvailableSupply();
@@ -300,9 +441,20 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
         else if (unitType == ARMY_ENABLING_TECH_TYPE) {
             TRAINING[ARMY_UNIT_TYPE].removeFacility(Unit);
         }
+        // ??
         else if (unitType.producesLarva()){
             TRAINING[ARMY_UNIT_TYPE].removeFacility(Unit);
         }
+        else if (unitType.isResourceDepot()) {
+            // Includes potential Lair or Hive with isResourceDepot.
+            auto foundIt = std::find_if(MY_BASES.begin(), MY_BASES.end(),
+                [Unit](EcoBase *Base){ return Base->getCenter() == Unit; });
+            if (foundIt != MY_BASES.end()) {
+                delete *foundIt;
+                MY_BASES.erase(foundIt);
+            }
+        }
+        // ??
     }
     else if (unitType.isBuilding()) {
         GW::removeLocation(owningPlayer, Unit->getTilePosition());
@@ -328,26 +480,24 @@ void GW::onUnitDiscover(BWAPI::Unit Unit)
 
 void GW::onUnitEvade(BWAPI::Unit Unit)
 {
-    if (Unit->getPlayer() != SELF)
-        return;  // Ignoring non-owned units.
+    if (Unit->getPlayer() == SELF)
+        return;  // Ignoring owned units.
 }
 
 void GW::onUnitShow(BWAPI::Unit Unit)
 {
-    if (Unit->getPlayer() != SELF)
-        return;  // Ignoring non-owned units.
+    if (Unit->getPlayer() == SELF)
+        return;  // Ignoring owned units.
 }
 
 void GW::onUnitHide(BWAPI::Unit Unit)
 {
-    if (Unit->getPlayer() != SELF)
-        return;  // Ignoring non-owned units.
+    if (Unit->getPlayer() == SELF)
+        return;  // Ignoring owned units.
 }
 
 void GW::onUnitRenegade(BWAPI::Unit Unit)
 {
-    if (Unit->getPlayer() != SELF)
-        return;  // Ignoring non-owned units.
 }
 
 void GW::onNukeDetect(BWAPI::Position target)
@@ -375,6 +525,10 @@ void GW::onSaveGame(std::string gameName)
 
 void GW::onEnd(bool IsWinner)
 {
+    for (EcoBase *Base: MY_BASES) {
+        delete Base;
+        Base = nullptr;
+    }
 }
 
 locationSet GW::collectScoutingLocations()
@@ -399,23 +553,21 @@ locationSet GW::collectScoutingLocations()
     return Locations;
 }
 
-locationVector GW::getMineralClusterLocations()
+std::vector<PositionedUnits> GW::getMapMinerals()
 {
     // Group static minerals into "Starcraft" defined groups.
     std::map<int, BWAPI::Unitset> groupedMinerals;
     for (BWAPI::Unit Mineral: BWAPI::Broodwar->getStaticMinerals())
         groupedMinerals[Mineral->getResourceGroup()].insert(Mineral);
-    // Collect the location of each of the minerals groups.
-    locationVector clusterLocations;
+    std::vector<PositionedUnits> mapMinerals;
     for (auto mineralGroup: groupedMinerals) {
         BWAPI::Unitset mineralCluster = mineralGroup.second;
-        // Ignore mineral clusters used as destructible terrain.
-        if (mineralCluster.size() > 4) {
-            clusterLocations.push_back(
-                BWAPI::TilePosition(mineralCluster.getPosition()));
-        }
+        // Ignore mineral clusters possibly used as terrain.
+        if (mineralCluster.size() > 4)
+            mapMinerals.push_back(std::make_pair(
+                mineralCluster.getPosition(), mineralCluster));
     }
-    return clusterLocations;
+    return mapMinerals;
 }
 
 int GW::getAvailableSupply()
@@ -494,72 +646,40 @@ int GW::getContractorTask(BWAPI::Unit contractorUnit)
             Task = Position;
             break;
         default:
-            BWAPI::Broodwar->sendTextEx(true, "Current order %s, Minerals %d.",
-                currentOrder.c_str(), SELF->minerals());
             Task = Other;
     }
     return Task;
 }
 
-void GW::constructUnit(BWAPI::UnitType constructableType)
+BWAPI::TilePosition GW::getExpansionLocation(BWAPI::Unit centerContractor)
 {
-    const BWAPI::Order
-        Position = BWAPI::Orders::Move,
-        Construct = BWAPI::Orders::PlaceBuilding,
-        // When unit completed previous order.
-        shortWait = BWAPI::Orders::Guard,
-        longWait = BWAPI::Orders::PlayerGuard,
-        // When worker occupies the same space as another unit.
-        Ignored = BWAPI::Orders::ResetCollision;
-    static BWAPI::Unit lastContractorUnit = nullptr;
-    static BWAPI::TilePosition lastBuildLocation = BWAPI::TilePositions::None;
-    BWAPI::Order recentOrder = lastContractorUnit
-        ? lastContractorUnit->getOrder() : BWAPI::Orders::None;
-    // Prevents reissuing the order to construct if already commanded
-    // or current minerals below building's preparation range.
-    if (!(recentOrder == Construct || recentOrder == Ignored) &&
-            SELF->minerals() >= constructableType.mineralPrice() - 16) {
-        BWAPI::Unit contractorUnit = nullptr;
-        BWAPI::TilePosition constructionLocation = BWAPI::TilePositions::None;
-        if (recentOrder == Position || recentOrder == shortWait ||
-                recentOrder == longWait) {
-            // lastContractorUnit was recently ordered into position.
-            contractorUnit = lastContractorUnit;
-            constructionLocation = lastBuildLocation;
-        }
-        else {
-            contractorUnit = BASE_CENTER->getClosestUnit(
-                IsWorker && !IsCarryingMinerals && IsOwned && !IsConstructing);
-            constructionLocation = BWAPI::Broodwar->getBuildLocation(
-                constructableType, contractorUnit->getTilePosition());
-        }
-        if (contractorUnit && contractorUnit->canBuild(
-                constructableType, constructionLocation)) {
-            contractorUnit->build(constructableType, constructionLocation);
-            // Queues command to return to minerals. !Working for Zerg.
-            contractorUnit->gather(BWAPI::Broodwar->getClosestUnit(
-                BWAPI::Position(constructionLocation), IsMineralField), true);
-            lastContractorUnit = contractorUnit;
-        }
-        // Prevent reissuing unit to reposition.
-        else if (contractorUnit && (recentOrder != Position ||
-                recentOrder != shortWait || recentOrder != longWait))
+    BWAPI::TilePosition expansionLocation = BWAPI::TilePositions::Invalid;
+    for (PositionedUnits mineralCluster: MAP_MINERALS) {
+        BWAPI::Position avgMineralPosition = mineralCluster.first;
+        auto avgMineralLocation = BWAPI::TilePosition(avgMineralPosition);
+        if (centerContractor && centerContractor->hasPath(avgMineralPosition) &&
+            !BWAPI::Broodwar->isExplored(avgMineralLocation))
         {
-            contractorUnit->move(BWAPI::Position(constructionLocation));
-            lastContractorUnit = contractorUnit;
-            lastBuildLocation = constructionLocation;
+            // #Improve, shortest of maximium mining distance.
+            expansionLocation = BWAPI::Broodwar->getBuildLocation(
+                CENTER_TYPE, avgMineralLocation);
+            break;
         }
     }
+    return expansionLocation;
 }
 
 void GW::constructUnit(BWAPI::UnitType constructableType,
-    BWAPI::TilePosition constructionLocation, BWAPI::Unit contractorUnit)
+    BWAPI::TilePosition constructionLocation, BWAPI::Unit contractorUnit,
+    int Task = -1)
 {
-    enum {Position = 1, Build};
-    switch (GW::getContractorTask(contractorUnit)) {
+    enum {Unexceptable = -1, Position = 1, Build};
+    if (Task == Unexceptable)
+        Task = GW::getContractorTask(contractorUnit);
+    switch (Task) {
         case Position:
             if (contractorUnit->canBuild(
-                    constructableType, constructionLocation))
+                constructableType, constructionLocation))
             {
                 contractorUnit->build(constructableType, constructionLocation);
                 // Queues command to return to minerals. !Working for Zerg.
@@ -575,49 +695,62 @@ void GW::constructUnit(BWAPI::UnitType constructableType,
     }
 }
 
-BWAPI::TilePosition GW::getExpansionLocation(BWAPI::Unit centerContractor)
+void GW::constructUnit(BWAPI::UnitType constructableType)
 {
-    BWAPI::TilePosition expansionLocation = BWAPI::TilePositions::Invalid;
-    for (auto baseLocation: MINERAL_LOCATIONS) {
-        BWAPI::Position basePosition = BWAPI::Position(baseLocation);
-        if (centerContractor && centerContractor->hasPath(basePosition) &&
-            !BWAPI::Broodwar->isExplored(baseLocation))
-        {
-            expansionLocation = BWAPI::Broodwar->getBuildLocation(
-                CENTER_TYPE, baseLocation);
-            break;
-        }
+    enum {Position = 1, Build};
+    static BWAPI::Unit contractorUnit = nullptr;
+    static BWAPI::TilePosition constructionLocation = BWAPI::TilePositions::None;
+    int Task = GW::getContractorTask(contractorUnit);
+    switch (Task) {
+        case Position:
+            GW::constructUnit(
+                constructableType, constructionLocation, contractorUnit, Task);
+        case Build:
+            break;  // Do not reissue command;
+        default:
+            contractorUnit = BASE_CENTER->getClosestUnit(IsWorker);
+            BWAPI::TilePosition desiredLocation = (
+                !(constructionLocation == BWAPI::TilePositions::None &&
+                    contractorUnit)
+                ? constructionLocation : contractorUnit->getTilePosition());
+            constructionLocation = BWAPI::Broodwar->getBuildLocation(
+                constructableType, desiredLocation);
+            if (constructionLocation != BWAPI::TilePositions::Invalid)
+                contractorUnit->move(BWAPI::Position(constructionLocation));
     }
-    return expansionLocation;
 }
-
+    
 void GW::constructExpansion()
 {
     enum {Position = 1, Build};
     static BWAPI::Unit centerContractor = nullptr;
     static BWAPI::TilePosition expansionLocation = (
         BWAPI::TilePositions::Invalid);
-    switch (GW::getContractorTask(centerContractor)) {
+    int Task = GW::getContractorTask(centerContractor);
+    switch (Task) {
         case Position:
-            bool isVisible;  // Prevents error C2360.
+            bool isVisible;  // Prevents error C2360 by not initalizing.
             isVisible = BWAPI::Broodwar->isVisible(expansionLocation);
             if (isVisible && BWAPI::Broodwar->getClosestUnit(
                     BWAPI::Position(expansionLocation), IsResourceDepot, 300))
             {
                 expansionLocation = GW::getExpansionLocation(centerContractor);
-                centerContractor->move(BWAPI::Position(expansionLocation));
+                if (expansionLocation != BWAPI::TilePositions::Invalid)
+                    centerContractor->move(BWAPI::Position(expansionLocation));
             }
             else if (isVisible) {
                 GW::constructUnit(
-                    CENTER_TYPE, expansionLocation, centerContractor);
+                    CENTER_TYPE, expansionLocation, centerContractor, Task);
             }
         case Build:
             break;  // Do not reissue command;
         default:
             centerContractor = BASE_CENTER->getClosestUnit(IsWorker);
             expansionLocation = GW::getExpansionLocation(centerContractor);
-            if (expansionLocation != BWAPI::TilePositions::Invalid)
+            if (expansionLocation != BWAPI::TilePositions::Invalid) {
+                MY_BASES.front()->releaseMiner(centerContractor);
                 centerContractor->move(BWAPI::Position(expansionLocation));
+            }
     }
 }
 
@@ -634,24 +767,28 @@ void GW::displayState()
         "armyFacilites %d, pendingArmyBuild: %d",
         TRAINING[ARMY_UNIT_TYPE].facilityCount(),
         PENDING_UNIT_TYPE_COUNT[ARMY_ENABLING_TECH_TYPE]);
-    BWAPI::Broodwar->drawTextScreen(3, 33,
-        "workerFacilities %d, BASE_CENTER Queue: %d.",
-        TRAINING[WORKER_TYPE].facilityCount(), getNumQueued(BASE_CENTER));
     BWAPI::Broodwar->drawTextScreen(3, 43, "SCOUT_LOCATIONS: %d",
         SCOUT_LOCATIONS.size());
-    int screenPosition = 63;
+    int row = 63;
+    for (EcoBase *Base: MY_BASES) {
+        BWAPI::Broodwar->drawTextScreen(3, row,
+            "ID %d  minerCount %d   minerCap %d   belowCap %s",
+            Base->getCenter()->getID(), Base->getMinerCount(),
+            Base->getMinerCap(), (Base->belowCap() ? "true" : "false"));
+        row += 10;
+    }
+    row += 5;
     for (auto playerLocations: ENEMY_LOCATIONS) {
         BWAPI::Player Player = playerLocations.first;
         locationSet Locations = playerLocations.second;
-        BWAPI::Broodwar->drawTextScreen(3, screenPosition,
+        BWAPI::Broodwar->drawTextScreen(3, row,
             "%s: %s, locationCount %d", Player->getName().c_str(),
             Player->getRace().c_str(), Locations.size());
         for (auto Location: Locations) {
-            screenPosition += 10;
-            BWAPI::Broodwar->drawTextScreen(3, screenPosition,
+            row += 10;
+            BWAPI::Broodwar->drawTextScreen(3, row,
                 "(%d, %d)", Location.x, Location.y);
         }
-        screenPosition += 15;
+        row += 15;
     }
 }
-

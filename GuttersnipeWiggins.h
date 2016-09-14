@@ -23,6 +23,7 @@ public:
     virtual void onEnd(bool isWinner);
 
 private:
+    std::vector<std::pair<BWAPI::Position, BWAPI::Unitset>> getMapMinerals();
     std::set<BWAPI::TilePosition> collectScoutingLocations();
     std::vector<BWAPI::TilePosition> getMineralClusterLocations();
     int getAvailableSupply();
@@ -32,12 +33,13 @@ private:
     void removeLocation(BWAPI::TilePosition Location);
     void removeLocation(BWAPI::Player Player, BWAPI::TilePosition Location);
     int getContractorTask(BWAPI::Unit contractorUnit);
-    void constructUnit(BWAPI::UnitType constructableType);
-    void constructUnit(
-        BWAPI::UnitType constructableType,
+    BWAPI::TilePosition getExpansionLocation(
+        BWAPI::Unit centerContractor);
+    void constructUnit(BWAPI::UnitType,
         BWAPI::TilePosition constructionLocation,
-        BWAPI::Unit contractorUnit);
-    BWAPI::TilePosition getExpansionLocation(BWAPI::Unit centerContractor);
+        BWAPI::Unit contractorUnit,
+        int Task);
+    void constructUnit(BWAPI::UnitType constructableType);
     void constructExpansion();
     void displayState();
 };
