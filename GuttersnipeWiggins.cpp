@@ -103,7 +103,7 @@ void EcoBase::removeMineral(BWAPI::Unit Mineral)
          itFound = find(Minerals.begin(), itEnd, Mineral);
     if (itFound != itEnd) {
         Minerals.erase(itFound);
-    minerCap = Minerals.size() * minersPerMineral;
+        minerCap = Minerals.size() * minersPerMineral;
     }
 }
 
@@ -688,19 +688,30 @@ int GW::getContractorTask(BWAPI::Unit contractorUnit)
 
 BWAPI::TilePosition GW::getExpansionLocation(BWAPI::Unit centerContractor)
 {
-    BWAPI::TilePosition expansionLocation = BWAPI::TilePositions::Invalid;
-    for (PositionedUnits mineralCluster: MAP_MINERALS) {
-        BWAPI::Position avgMineralPosition = mineralCluster.first;
-        auto avgMineralLocation = BWAPI::TilePosition(avgMineralPosition);
-        if (centerContractor && centerContractor->hasPath(avgMineralPosition) &&
-            !BWAPI::Broodwar->isExplored(avgMineralLocation))
-        {
-            // #Improve, shortest of maximium mining distance.
-            expansionLocation = BWAPI::Broodwar->getBuildLocation(
-                CENTER_TYPE, avgMineralLocation);
-            break;
-        }
+    //! Function may cause performance lag.
+    const int indexMax = MAP_MINERALS.size();
+    static int expandIndex = 0;
+    auto expansionLocation = BWAPI::TilePositions::Invalid;
+    if (!centerContractor)
+        return expansionLocation;
+    // Wrap around iteration of MAP_MINERALS positons.
+    int indexCycle = expandIndex + indexMax;
+    BWAPI::Position avgMineralPosition;
+    BWAPI::TilePosition avgMineralLocation;
+    do {
+        avgMineralPosition = MAP_MINERALS[expandIndex % indexMax].first;
+        avgMineralLocation = BWAPI::TilePosition(avgMineralPosition);
+        ++expandIndex;
     }
+    while (BWAPI::Broodwar->isVisible(avgMineralLocation) &&
+           !centerContractor->hasPath(avgMineralPosition) &&
+           expandIndex < indexCycle);
+    // If all avgMineralPositions are unacceptable.
+    if (expandIndex != indexCycle) {
+        expansionLocation = BWAPI::Broodwar->getBuildLocation(
+            CENTER_TYPE, avgMineralLocation, 24);
+    }
+    ++expandIndex;  // Prevent immediate duplication of return.
     return expansionLocation;
 }
 
