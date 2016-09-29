@@ -32,7 +32,9 @@ private:
     void scoutLocations(std::vector<BWAPI::TilePosition> mineralLocations);
     void attackLocations(
         BWAPI::Unitset, std::vector<BWAPI::TilePosition> mineralLocations);
-    void attack_from(BWAPI::Position);
+    void GW::appendAttackers();
+    void GW::attackEnemy(BWAPI::Unitset Attackers);
+    void GW::attackUnit(BWAPI::Unitset Attackers, BWAPI::Unit targetUnit);
     void GW::removeLocation(BWAPI::TilePosition Location);
     void GW::removeLocation(BWAPI::Player Player, BWAPI::TilePosition Location);
     void displayState();
