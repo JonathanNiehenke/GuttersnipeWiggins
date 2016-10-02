@@ -23,6 +23,9 @@ public:
     virtual void onEnd(bool isWinner);
 
 private:
+    void GW::manageProduction();
+    void GW::manageAttackGroups();
+    void GW::combatMicro();
     std::set<BWAPI::TilePosition> collectScoutingLocations();
     std::vector<BWAPI::TilePosition> getMineralClusterLocations();
     void constructUnit(BWAPI::UnitType constructableType);

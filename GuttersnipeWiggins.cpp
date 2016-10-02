@@ -68,7 +68,7 @@ int compareEnemyTargets::getDurability(BWAPI::Unit unit)
 
 int compareEnemyTargets::getDamage(BWAPI::UnitType unitType)
 {
-    // Zealots have two vollies per attack so damage factor is included.
+    // Zealots have two volleys per attack so damage factor is included.
     // Hydralisks have explosive damage so damage type is included.
     BWAPI::WeaponType unitWeapon = unitType.groundWeapon();
     return (unitWeapon.damageAmount() * unitWeapon.damageFactor() *
@@ -80,7 +80,7 @@ BWAPI::Unit compareEnemyTargets::operator()(BWAPI::Unit u1, BWAPI::Unit u2)
 {
     // Target to reduce incoming damage. So filter the focus to those
     // who deal greater damage, about to die or closer.
-    // Assume most inequal unit types have different damage output.
+    // Assume most unequal unit types have different damage output.
     BWAPI::UnitType u1Type = u1->getType(), u2Type = u2->getType();
     if (u1Type != u2Type) {
         int u1Damage = getDamage(u1Type), u2Damage = getDamage(u2Type);
@@ -221,77 +221,15 @@ void GW::onStart()
 
 void GW::onFrame()
 {
-    const short armyFacilityPrice = ARMY_ENABLING_TECH_TYPE.mineralPrice();
     GW::displayState(); // For debugging.
-    if (AVAILABLE_SUPPLY <= WORKER_BUFFER + ARMY_BUFFER) {
-        // Pylon and supply depot are buildings, unlike overlords.
-        if (SUPPLY_TYPE.isBuilding())
-            GW::constructUnit(SUPPLY_TYPE);
-        else
-            TRAINING[SUPPLY_TYPE].produceSingleUnit(SUPPLY_TYPE);
-    }
-    else if (TRAINING[WORKER_TYPE].canProduce()) {
-        TRAINING[WORKER_TYPE].produceUnits(WORKER_TYPE);
-    }
-    else if (TRAINING[ARMY_UNIT_TYPE].canProduce()) {
-        TRAINING[ARMY_UNIT_TYPE].produceUnits(ARMY_UNIT_TYPE);
-    }
-    else if (SUPPLY_UNIT && (SELF->minerals() > armyFacilityPrice * 1.5 ||
-            !TRAINING[ARMY_UNIT_TYPE].isAvailable())) {
-        // Allows multiple Gateways and Barracks, unlike spawning pool.
-        if (ARMY_ENABLING_TECH_TYPE.canProduce()) {
-            GW::constructUnit(ARMY_ENABLING_TECH_TYPE);
-        }
-        // Build hatcharies in-place of multiple spawning pools.
-        else if (TRAINING[ARMY_UNIT_TYPE].isAvailable() ||
-                PENDING_UNIT_TYPE_COUNT[ARMY_ENABLING_TECH_TYPE])
-        {
-            GW::constructUnit(BWAPI::UnitTypes::Zerg_Hatchery);
-        }
-        // Build a single spawning pool after all the filtering.
-        else
-            GW::constructUnit(ARMY_ENABLING_TECH_TYPE);
-    }
-    ATTACK_GROUPS.erase(
-        remove_if(ATTACK_GROUPS.begin(), ATTACK_GROUPS.end(),
-            [](BWAPI::Unitset Attackers) {
-                return Attackers.getPosition() == BWAPI::Positions::Origin;
-            }),
-        ATTACK_GROUPS.end());
-    for (BWAPI::Unitset Attackers: ATTACK_GROUPS) {
-        BWAPI::Position attackerPos = Attackers.getPosition();
-        BWAPI::Broodwar->registerEvent(
-            [attackerPos](BWAPI::Game*){
-                BWAPI::Broodwar->drawCircleMap(attackerPos, 5,
-                    BWAPI::Color(0, 255, 0), true);
-                BWAPI::Broodwar->drawCircleMap(attackerPos, 600,
-                    BWAPI::Color(0, 0, 255), false);
-            },
-            nullptr,
-            1
-            );
-        BWAPI::Unit targetUnit = BWAPI::Broodwar->getBestUnit(
-            compareEnemyTargets(attackerPos), IsEnemy && IsDetected,
-            attackerPos, 600);
-        if (targetUnit) {
-            BWAPI::Broodwar->registerEvent(
-                [targetUnit](BWAPI::Game*)
-                    {
-                        BWAPI::Broodwar->drawCircleMap(
-                            targetUnit->getPosition(), 3,
-                            BWAPI::Color(255, 0, 0), true);
-                    },
-                nullptr, 1);
-            GW::attackUnit(Attackers, targetUnit);
-        }
-        else if (std::any_of(Attackers.begin(), Attackers.end(),
-            [](BWAPI::Unit unit)
-                {
-                    return (unit->getOrder() == BWAPI::Orders::PlayerGuard);
-                }))
-        {
-            GW::attackEnemy(Attackers);
-        }
+    switch(BWAPI::Broodwar->getFrameCount() % 3) {
+        case 0: GW::manageProduction();
+            break;
+        case 1: GW::manageAttackGroups();
+            break;
+        case 2: GW::combatMicro();
+            break;
+        default: break;
     }
 }
 
@@ -309,8 +247,6 @@ void GW::onUnitCreate(BWAPI::Unit Unit)
         TRAINING[ARMY_UNIT_TYPE].includeFacility(Unit);
         ARMY_BUFFER = getUnitBuffer(ARMY_UNIT_TYPE);
     }
-    // BWAPI::Broodwar->sendTextEx(true, "%s: %d created.",
-        // Unit->getType().c_str(), Unit->getID());
     PENDING_UNIT_TYPE_COUNT[Unit->getType()]++;
     // Always after change to pending count.
     AVAILABLE_SUPPLY = GW::getAvailableSupply();
@@ -319,7 +255,7 @@ void GW::onUnitCreate(BWAPI::Unit Unit)
 void GW::onUnitMorph(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() != SELF) {
-        // Because geyer structures are never destroyed.
+        // Because geyser structures are never destroyed.
         if (Unit->getType() == BWAPI::UnitTypes::Resource_Vespene_Geyser) {
             BWAPI::Broodwar->sendTextEx(true, "Removing (%d, %d)",
                 Unit->getTilePosition().x, Unit->getTilePosition().y);
@@ -333,8 +269,6 @@ void GW::onUnitMorph(BWAPI::Unit Unit)
         if (insideEggType == SUPPLY_TYPE &&
                 TRAINING[ARMY_UNIT_TYPE].isAvailable())
             GW::appendAttackers();
-        // BWAPI::Broodwar->sendTextEx(true, "Morphing: %s.",
-            // insideEggType.c_str());
         PENDING_UNIT_TYPE_COUNT[insideEggType]++;
         // Always after change to pending count.
         AVAILABLE_SUPPLY = GW::getAvailableSupply();
@@ -352,12 +286,6 @@ void GW::onUnitMorph(BWAPI::Unit Unit)
             GW::scout();
         }
         ARMY_BUFFER = getUnitBuffer(ARMY_UNIT_TYPE);
-        // BWAPI::Broodwar->sendTextEx(true, "Morphing building: %s.",
-            // unitType.c_str());
-    }
-    else {
-        // BWAPI::Broodwar->sendTextEx(true, "Exceptional morph: %s.",
-            // unitType.c_str());
     }
 }
 
@@ -372,10 +300,6 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
     else if (unitType == SUPPLY_TYPE) {
         SUPPLY_UNIT = Unit;
     }
-    // else {
-        // BWAPI::Broodwar->sendTextEx(true, "Exceptional completion: %s.",
-            // unitType.c_str());
-    // }
     PENDING_UNIT_TYPE_COUNT[unitType]--;
     // Always after change to pending count.
     AVAILABLE_SUPPLY = GW::getAvailableSupply();
@@ -388,7 +312,11 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
     if (owningPlayer == SELF) {
         if (!Unit->isCompleted())
             PENDING_UNIT_TYPE_COUNT[Unit->getType()]--;
-        if (unitType == BWAPI::UnitTypes::Zerg_Spawning_Pool ||
+        if (unitType == ARMY_UNIT_TYPE) {
+            for_each(ATTACK_GROUPS.begin(), ATTACK_GROUPS.end(),
+                [Unit](BWAPI::Unitset &Attackers){ Attackers.erase(Unit); });
+        }
+        else if (unitType == BWAPI::UnitTypes::Zerg_Spawning_Pool ||
                 Unit == BASE_CENTER) {
             BWAPI::Broodwar->sendText("gg, you've proven more superior.");
             BWAPI::Broodwar->leaveGame();
@@ -402,8 +330,6 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
     }
     else if (unitType.isBuilding()) {
         GW::removeLocation(owningPlayer, Unit->getTilePosition());
-        // BWAPI::Broodwar->sendTextEx(true, "Enemy %s destroyed at (%d, %d).",
-            // Unit->getType().c_str());
     }
 }
 
@@ -416,8 +342,6 @@ void GW::onUnitDiscover(BWAPI::Unit Unit)
             ENEMY_LOCATIONS.find(owningPlayer) != ENEMY_LOCATIONS.end())
     {
         ENEMY_LOCATIONS[owningPlayer].insert(Unit->getTilePosition());
-        // BWAPI::Broodwar->sendTextEx(true, "Enemy %s discovered.",
-            // Unit->getType().c_str());
     }
 }
 
@@ -498,6 +422,113 @@ void GW::onEnd(bool IsWinner)
 {
 }
 
+void GW::manageProduction()
+{
+    const short armyFacilityPrice = ARMY_ENABLING_TECH_TYPE.mineralPrice();
+    if (AVAILABLE_SUPPLY <= WORKER_BUFFER + ARMY_BUFFER) {
+        // Pylon and supply depot are buildings, unlike overlords.
+        if (SUPPLY_TYPE.isBuilding())
+            GW::constructUnit(SUPPLY_TYPE);
+        else
+            TRAINING[SUPPLY_TYPE].produceSingleUnit(SUPPLY_TYPE);
+    }
+    else if (TRAINING[WORKER_TYPE].canProduce()) {
+        TRAINING[WORKER_TYPE].produceUnits(WORKER_TYPE);
+    }
+    else if (TRAINING[ARMY_UNIT_TYPE].canProduce()) {
+        TRAINING[ARMY_UNIT_TYPE].produceUnits(ARMY_UNIT_TYPE);
+    }
+    else if (SUPPLY_UNIT && (SELF->minerals() > armyFacilityPrice * 1.5 ||
+            !TRAINING[ARMY_UNIT_TYPE].isAvailable())) {
+        // Allows multiple Gateways and Barracks, unlike spawning pool.
+        if (ARMY_ENABLING_TECH_TYPE.canProduce()) {
+            GW::constructUnit(ARMY_ENABLING_TECH_TYPE);
+        }
+        // Build hatcheries in-place of multiple spawning pools.
+        else if (TRAINING[ARMY_UNIT_TYPE].isAvailable() ||
+                PENDING_UNIT_TYPE_COUNT[ARMY_ENABLING_TECH_TYPE])
+        {
+            GW::constructUnit(BWAPI::UnitTypes::Zerg_Hatchery);
+        }
+        // Build a single spawning pool after all the filtering.
+        else
+            GW::constructUnit(ARMY_ENABLING_TECH_TYPE);
+    }
+}
+
+void GW::manageAttackGroups()
+{
+    if (BASE_CENTER->getClosestUnit(IsEnemy, 900))
+        appendAttackers();  // Enemy is inside base assemble defenders.
+    std::vector<BWAPI::Position> groupPositions;
+    for (BWAPI::Unitset &Attackers: ATTACK_GROUPS) {
+        BWAPI::Position groupPosition = Attackers.getPosition();
+        auto endIt = groupPositions.end(),
+             foundIt = std::find_if(groupPositions.begin(), endIt,
+                [groupPosition](BWAPI::Position Pos)
+                    { return groupPosition.getApproxDistance(Pos) < 350; });
+        if (foundIt != endIt) {
+            // Unifies attack groups, for improved attack coordination.
+            int itemIndex =  foundIt - groupPositions.begin();
+            auto agIt = ATTACK_GROUPS.begin() + itemIndex;
+            agIt->insert(Attackers.begin(), Attackers.end());
+            Attackers.clear();
+        }
+        else {
+            groupPositions.push_back(groupPosition);
+        }
+    }
+    ATTACK_GROUPS.erase(
+        std::remove_if(ATTACK_GROUPS.begin(), ATTACK_GROUPS.end(),
+            [](BWAPI::Unitset Attackers) {
+                return Attackers.empty();
+            }),
+        ATTACK_GROUPS.end());
+}
+
+void GW::combatMicro()
+{
+    for (BWAPI::Unitset Attackers: ATTACK_GROUPS) {
+        BWAPI::Position attackerPos = Attackers.getPosition();
+        BWAPI::Unit targetUnit = BWAPI::Broodwar->getBestUnit(
+            compareEnemyTargets(attackerPos),
+            IsEnemy && IsDetected && !IsFlying, attackerPos, 600);
+        // Live debugging info.
+        BWAPI::Broodwar->registerEvent(
+            [attackerPos](BWAPI::Game*){
+                // Green circle for average attacker position.
+                BWAPI::Broodwar->drawCircleMap(attackerPos, 5,
+                    BWAPI::Color(0, 255, 0), true);
+                // Blue circle for targetUnit range.
+                BWAPI::Broodwar->drawCircleMap(attackerPos, 600,
+                    BWAPI::Color(0, 0, 255), false);
+            },
+            nullptr,
+            1
+            );
+        if (targetUnit) {
+            GW::attackUnit(Attackers, targetUnit);
+            // Red circle for targetUnit.
+            BWAPI::Broodwar->registerEvent(
+                [targetUnit](BWAPI::Game*)
+                    {
+                        BWAPI::Broodwar->drawCircleMap(
+                            targetUnit->getPosition(), 3,
+                            BWAPI::Color(255, 0, 0), true);
+                    },
+                nullptr, 1);
+        }
+        else if (std::any_of(Attackers.begin(), Attackers.end(),
+            [](BWAPI::Unit unit)
+                {
+                    return (unit->getOrder() == BWAPI::Orders::PlayerGuard);
+                }))
+        {
+            GW::attackEnemy(Attackers);
+        }
+    }
+}
+
 locationSet GW::collectScoutingLocations()
 {
     typedef BWAPI::TilePosition tilePos;
@@ -511,7 +542,6 @@ locationSet GW::collectScoutingLocations()
             Locations.insert(enemyPosition);
     }
     if (Locations.empty()) {
-        // ? How to convert stl types to existing container?
         for (tilePos Start:BWAPI::Broodwar->getStartLocations()) {
             if (Start != myStart)
                 Locations.insert(Start);
@@ -530,7 +560,7 @@ LocationVector GW::getMineralClusterLocations()
     LocationVector clusterLocations;
     for (auto mineralGroup: groupedMinerals) {
         std::vector<BWAPI::Unit> mineralCluster = mineralGroup.second;
-        // Ignore mineral clusters used as destructable terrain.
+        // Ignore mineral clusters used as destructible terrain.
         if (mineralCluster.size() > 4) {
             clusterLocations.push_back(
                 mineralCluster.back()->getTilePosition());
@@ -548,7 +578,7 @@ int GW::getAvailableSupply()
 
 int GW::getUnitBuffer(BWAPI::UnitType unitType)
 {
-    // Preventing repedative convertion into a float by using a float.
+    // Preventing repetitive conversion into a float by using a float.
     const float supplyBuildTime = SUPPLY_TYPE.buildTime();
     int unitSupply = unitType.supplyRequired(),
         unitBuildTime = unitType.buildTime(),
@@ -616,8 +646,6 @@ void GW::scout()
         BWAPI::Unit Scout = *workerUnits.begin();
         Scout->move(BWAPI::Position(scoutLocation));
         Scout->gather(Scout->getClosestUnit(IsMineralField), true);
-        // BWAPI::Broodwar->sendTextEx(true, "%d SCOUTING.", Scout->getID());
-        // workerUnits.erase(Scout);
     }
 
 }
@@ -653,17 +681,19 @@ void GW::attackLocations(
 
 void GW::attackEnemy(BWAPI::Unitset Attackers)
 {
-    bool attackersAvailable = !Attackers.empty();
+    if (Attackers.empty())
+        return;  // Without attackers there is no attacking the enemy.
     for (auto mapPair: ENEMY_LOCATIONS) {
         locationSet enemyLocations = mapPair.second;
-        if (attackersAvailable && !enemyLocations.empty()) {
-            BWAPI::TilePosition attackLocation = *enemyLocations.begin();
-            Attackers.attack(BWAPI::Position(attackLocation));
-            break;
+        auto closestLocationIt = std::min_element(
+            enemyLocations.begin(), enemyLocations.end(),
+            compareDistanceFrom(Attackers.getPosition()));
+        if (closestLocationIt != enemyLocations.end()) {
+            Attackers.attack(BWAPI::Position(*closestLocationIt));
+            return;  // The job is done.
         }
     }
-    if (attackersAvailable)
-        attackLocations(Attackers, CLUSTER_LOCATIONS);
+    attackLocations(Attackers, CLUSTER_LOCATIONS);
 }
 
 void GW::attackUnit(BWAPI::Unitset Attackers, BWAPI::Unit targetUnit) {
@@ -673,7 +703,7 @@ void GW::attackUnit(BWAPI::Unitset Attackers, BWAPI::Unit targetUnit) {
             unit->getLastCommandFrame());
         if (sinceCommandFrame <= latency || unit->isAttackFrame())
         {
-            return;  // Prevent attack interuption.
+            return;  // Prevent attack interruption.
         }
         BWAPI::UnitCommand lastCmd = unit->getLastCommand();
         BWAPI::Unit attackingUnit = lastCmd.getTarget();
@@ -683,8 +713,7 @@ void GW::attackUnit(BWAPI::Unitset Attackers, BWAPI::Unit targetUnit) {
         {
             unit->attack(targetUnit);
         }
-        else if (!attackingUnit &&
-            lastCmd.getTargetPosition() != targetPosition)
+        else if (lastCmd.getTargetPosition() != targetPosition)
         {
             unit->attack(targetPosition);
         }
