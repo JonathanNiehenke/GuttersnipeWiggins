@@ -24,6 +24,11 @@ public:
 
 private:
     std::vector<std::pair<BWAPI::Position, BWAPI::Unitset>> getMapMinerals();
+    void GW::manageProduction();
+    void GW::manageBases();
+    void GW::manageAttackGroups();
+    bool GW::needToGroup(BWAPI::Unitset Attackers);
+    void GW::combatMicro();
     std::set<BWAPI::TilePosition> collectScoutingLocations();
     std::vector<BWAPI::TilePosition> getMineralClusterLocations();
     int getAvailableSupply();
@@ -34,8 +39,10 @@ private:
     void attackLocations(
         BWAPI::Unitset unitGroup,
         std::vector<std::pair<BWAPI::Position, BWAPI::Unitset>> mapMinerals);
-    void attack_from(BWAPI::Position);
-    void removeLocation(BWAPI::TilePosition Location);
+    void appendAttackers();
+    void attackEnemy(BWAPI::Unitset Attackers);
+    void attackUnit(BWAPI::Unitset Attackers, BWAPI::Unit targetUnit);
+    void GW::removeLocation(BWAPI::TilePosition Location);
     void removeLocation(BWAPI::Player Player, BWAPI::TilePosition Location);
     int getContractorTask(BWAPI::Unit contractorUnit);
     BWAPI::TilePosition getExpansionLocation(
