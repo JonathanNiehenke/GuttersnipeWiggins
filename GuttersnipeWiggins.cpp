@@ -1,3 +1,4 @@
+// Attack searching, canceled/flying buildings.
 /* Sorry, initially a python programmer and C++ lacks a standard style
 enabling my accustomed line lengths of 72 for comments and 80 for code.
 */
@@ -221,8 +222,9 @@ void GW::onStart()
 
 void GW::onFrame()
 {
+    const int actionFrames = std::max(3, BWAPI::Broodwar->getLatency());
     GW::displayState(); // For debugging.
-    switch(BWAPI::Broodwar->getFrameCount() % 3) {
+    switch(BWAPI::Broodwar->getFrameCount() % actionFrames) {
         case 0: GW::manageProduction();
             break;
         case 1: GW::manageAttackGroups();
@@ -398,6 +400,14 @@ void GW::onSendText(std::string text)
                 unit->getID(), TP.x, TP.y);
         }
     }
+    else if (text == "canAttack") {
+        for (BWAPI::Unit unit: selectedUnits) {
+            BWAPI::Position TP = unit->getTargetPosition();
+            BWAPI::Broodwar->sendTextEx(true,
+                unit->getType().groundWeapon() != BWAPI::WeaponTypes::None
+                    ? "true" : "false");
+        }
+    }
     else {
         BWAPI::Broodwar->sendTextEx(true, "'%s'", text.c_str());
     }
@@ -486,8 +496,24 @@ void GW::manageAttackGroups()
         ATTACK_GROUPS.end());
 }
 
+bool GW::needToGroup(BWAPI::Unitset Attackers)
+{
+    bool notGrouped = false;
+    int groupSize = 23 * std::sqrt(Attackers.size() * 5);
+    BWAPI::Position attackersPos = Attackers.getPosition();
+    for (BWAPI::Unit Attacker: Attackers) {
+        BWAPI::Unit currentTarget = Attacker->getTarget();
+        if (currentTarget && Attacker->isInWeaponRange(currentTarget))
+            return false;
+        notGrouped = notGrouped ? true :
+            attackersPos.getApproxDistance(Attacker->getPosition()) > groupSize;
+    }
+    return notGrouped;
+}
+
 void GW::combatMicro()
 {
+    const auto noWeapon = BWAPI::WeaponTypes::None;
     for (BWAPI::Unitset Attackers: ATTACK_GROUPS) {
         BWAPI::Position attackerPos = Attackers.getPosition();
         BWAPI::Unit targetUnit = BWAPI::Broodwar->getBestUnit(
@@ -506,17 +532,24 @@ void GW::combatMicro()
             nullptr,
             1
             );
-        if (targetUnit) {
-            GW::attackUnit(Attackers, targetUnit);
-            // Red circle for targetUnit.
-            BWAPI::Broodwar->registerEvent(
-                [targetUnit](BWAPI::Game*)
-                    {
-                        BWAPI::Broodwar->drawCircleMap(
-                            targetUnit->getPosition(), 3,
-                            BWAPI::Color(255, 0, 0), true);
-                    },
-                nullptr, 1);
+        if (targetUnit){ 
+            bool canAttack = targetUnit->getType().groundWeapon() != noWeapon;
+            if (canAttack && GW::needToGroup(Attackers)) {
+                Attackers.move(attackerPos);  // Move away
+                Attackers.attack(targetUnit->getPosition(), true);
+            }
+            else {
+                GW::attackUnit(Attackers, targetUnit);
+                // Red circle for targetUnit.
+                BWAPI::Broodwar->registerEvent(
+                    [targetUnit](BWAPI::Game*)
+                        {
+                            BWAPI::Broodwar->drawCircleMap(
+                                targetUnit->getPosition(), 3,
+                                BWAPI::Color(255, 0, 0), true);
+                        },
+                    nullptr, 1);
+            }
         }
         else if (std::any_of(Attackers.begin(), Attackers.end(),
             [](BWAPI::Unit unit)
@@ -675,8 +708,10 @@ void GW::attackLocations(
 {
     std::sort(mineralLocations.begin(), mineralLocations.end(),
         compareDistanceFrom(unitGroup.getPosition()));
-    for (auto mineralLocation: mineralLocations)
-        unitGroup.attack(BWAPI::Position(mineralLocation), true);
+    for (auto mineralLocation: mineralLocations) {
+        if (!BWAPI::Broodwar->isVisible(mineralLocation))
+            unitGroup.attack(BWAPI::Position(mineralLocation), true);
+    }
 }
 
 void GW::attackEnemy(BWAPI::Unitset Attackers)
@@ -693,6 +728,7 @@ void GW::attackEnemy(BWAPI::Unitset Attackers)
             return;  // The job is done.
         }
     }
+    // No enemy locations so attack every mineral location.
     attackLocations(Attackers, CLUSTER_LOCATIONS);
 }
 
@@ -702,18 +738,18 @@ void GW::attackUnit(BWAPI::Unitset Attackers, BWAPI::Unit targetUnit) {
         int sinceCommandFrame = (BWAPI::Broodwar->getFrameCount() -
             unit->getLastCommandFrame());
         if (sinceCommandFrame <= latency || unit->isAttackFrame())
-        {
             return;  // Prevent attack interruption.
-        }
         BWAPI::UnitCommand lastCmd = unit->getLastCommand();
-        BWAPI::Unit attackingUnit = lastCmd.getTarget();
+        BWAPI::Unit attackedUnit = lastCmd.getTarget();
         BWAPI::Position targetPosition = targetUnit->getPosition();
-        if (unit->isInWeaponRange(targetUnit) && 
-            attackingUnit != targetUnit)
+        if (unit->isInWeaponRange(targetUnit) && attackedUnit != targetUnit)
         {
             unit->attack(targetUnit);
         }
-        else if (lastCmd.getTargetPosition() != targetPosition)
+        // If no target or its dead/cloaked/burrowed or its geyser.
+        else if ((!attackedUnit || !attackedUnit->exists() ||
+                  attackedUnit->getPlayer()->isNeutral()) &&
+            lastCmd.getTargetPosition() != targetPosition)
         {
             unit->attack(targetPosition);
         }
@@ -771,16 +807,31 @@ void GW::displayState()
         screenPosition += 15;
     }
     screenPosition = 15;
-    BWAPI::Unitset selectedUnits = BWAPI::Broodwar->getSelectedUnits();
-    for (BWAPI::Unit unit: selectedUnits) {
+    for (BWAPI::Unit unit: BWAPI::Broodwar->getSelectedUnits()) {
         int sinceCommandFrame = (BWAPI::Broodwar->getFrameCount() -
             unit->getLastCommandFrame());
+        BWAPI::UnitCommand lastCmd = unit->getLastCommand();
         BWAPI::Broodwar->drawTextScreen(440, screenPosition,
             "%s: %d - %s", unit->getType().c_str(), unit->getID(),
             unit->getOrder().c_str());
         BWAPI::Broodwar->drawTextScreen(440, screenPosition + 10,
             "    %d - %s", sinceCommandFrame,
-            unit->getLastCommand().getType().c_str());
+            lastCmd.getType().c_str());
+        BWAPI::Unit targetedUnit = unit->getTarget();
+        if (targetedUnit) {
+            BWAPI::Broodwar->drawLineMap(unit->getPosition(),
+                targetedUnit->getPosition(), BWAPI::Color(0, 255, 0));
+        }
+        if (lastCmd.getType() == BWAPI::UnitCommandTypes::Attack_Unit) {
+            BWAPI::Broodwar->registerEvent(
+                [unit, lastCmd](BWAPI::Game*)
+                    {
+                        BWAPI::Broodwar->drawLineMap(unit->getPosition(),
+                            lastCmd.getTarget()->getPosition(),
+                            BWAPI::Color(255, 0, 0));
+                    },
+                nullptr, 1);
+        }
         screenPosition += 23;
     }
 }

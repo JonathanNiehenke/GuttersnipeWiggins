@@ -25,6 +25,7 @@ public:
 private:
     void GW::manageProduction();
     void GW::manageAttackGroups();
+    bool GW::needToGroup(BWAPI::Unitset Attackers);
     void GW::combatMicro();
     std::set<BWAPI::TilePosition> collectScoutingLocations();
     std::vector<BWAPI::TilePosition> getMineralClusterLocations();
