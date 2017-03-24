@@ -91,9 +91,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Dll.cpp" />
+    <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="EcoBaseManager.cpp" />
     <ClCompile Include="GuttersnipeWiggins.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Utils.h" />
+    <ClInclude Include="EcoBaseManager.h" />
     <ClInclude Include="GuttersnipeWiggins.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

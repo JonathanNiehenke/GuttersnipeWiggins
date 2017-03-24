@@ -1,5 +1,10 @@
-#pragma once
+#ifndef GUTTERSNIPEWIGGINS_H
+#define GUTTERSNIPEWIGGINS_H
+#include <vector>
+#include <set>
 #include <BWAPI.h>
+#include "Utils.h"
+#include "EcoBaseManager.h"
 
 class GW : public BWAPI::AIModule
 {
@@ -24,6 +29,7 @@ public:
 
 private:
     std::vector<std::pair<BWAPI::Position, BWAPI::Unitset>> getMapMinerals();
+    EcoBaseManager ecoBaseManager;
     void GW::manageProduction();
     void GW::manageBases();
     void GW::manageAttackGroups();
@@ -55,3 +61,5 @@ private:
     void constructExpansion();
     void displayState();
 };
+
+#endif

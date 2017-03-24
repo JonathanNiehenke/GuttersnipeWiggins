@@ -1,57 +1,11 @@
-/* Sorry, initially a python programmer and C++ lacks a standard style
-enabling my accustomed line lengths of 72 for comments and 80 for code.
-*/
+#ifndef GUTTERSNIPEWIGGINS_CPP
+#define GUTTERSNIPEWIGGINS_CPP
 #include "GuttersnipeWiggins.h"
 
 using namespace BWAPI::Filter;
 
 typedef std::pair<BWAPI::Position, BWAPI::Unitset> PositionedUnits;
 typedef std::set<BWAPI::TilePosition> locationSet;
-
-
-class compareDistanceFrom
-{
-    private:
-        BWAPI::Position sourcePosition = BWAPI::Positions::None;
-    public:
-        compareDistanceFrom(BWAPI::Position position)
-            { sourcePosition = position; }
-        compareDistanceFrom(BWAPI::TilePosition location)
-            { sourcePosition = BWAPI::Position(location); }
-        compareDistanceFrom(BWAPI::Unit unit)
-            { sourcePosition = unit->getPosition(); }
-        compareDistanceFrom(BWAPI::Unitset units)
-            { sourcePosition = units.getPosition(); }
-        bool operator()(BWAPI::Position Pos1, BWAPI::Position Pos2);
-        bool operator()(BWAPI::TilePosition tPos1, BWAPI::TilePosition tPos2);
-        bool operator()(BWAPI::Unit u1, BWAPI::Unit u2);
-        bool operator()(BWAPI::Unitset u1, BWAPI::Unitset u2);
-};
-
-bool compareDistanceFrom::operator()(BWAPI::Position Pos1, BWAPI::Position Pos2)
-{
-    return (sourcePosition.getApproxDistance(Pos1) <
-            sourcePosition.getApproxDistance(Pos2));
-}
-
-bool compareDistanceFrom::operator()(
-        BWAPI::TilePosition tPos1, BWAPI::TilePosition tPos2)
-{
-    return (sourcePosition.getApproxDistance(BWAPI::Position(tPos1)) <
-            sourcePosition.getApproxDistance(BWAPI::Position(tPos2)));
-}
-
-bool compareDistanceFrom::operator()(BWAPI::Unit u1, BWAPI::Unit u2)
-{
-    return (sourcePosition.getApproxDistance(u1->getPosition()) <
-            sourcePosition.getApproxDistance(u2->getPosition()));
-}
-
-bool compareDistanceFrom::operator()(BWAPI::Unitset u1, BWAPI::Unitset u2)
-{
-    return (sourcePosition.getApproxDistance(u1.getPosition()) <
-            sourcePosition.getApproxDistance(u2.getPosition()));
-}
 
 
 class compareEnemyTargets
@@ -110,82 +64,6 @@ BWAPI::Unit compareEnemyTargets::operator()(BWAPI::Unit u1, BWAPI::Unit u2)
         return u2;
 }
 
-
-class EcoBase
-{
-    typedef std::vector<BWAPI::Unit> UnitVector;
-    private:
-        BWAPI::Unit Center = nullptr;
-        UnitVector Minerals, Miners;
-        int mineralIndex = 0;
-        void removeUnit(BWAPI::Unit unit, UnitVector &unitGroup);
-        int EcoBase::countAbandonedMinerals();
-        int EcoBase::countPatientMiners();
-    public:
-        EcoBase(BWAPI::Unit center, BWAPI::Unitset mineralCluster);
-        BWAPI::Unit getCenter()
-            { return Center; }
-        int getMineralCount()
-            { return Minerals.size(); }
-        int getMinerCount()
-            { return Miners.size(); }
-        void assignMiner(BWAPI::Unit minerUnit);
-        void releaseMiner(BWAPI::Unit minerUnit);
-        void removeMineral(BWAPI::Unit Mineral);
-        bool EcoBase::isLackingMiners();
-};
-
-EcoBase::EcoBase(BWAPI::Unit center, BWAPI::Unitset mineralCluster)
-{
-    Center = center;
-    Minerals.assign(mineralCluster.begin(), mineralCluster.end());
-    std::sort(Minerals.begin(), Minerals.end(), compareDistanceFrom(center));
-}
-
-void EcoBase::removeUnit(BWAPI::Unit unit, UnitVector &unitGroup)
-{
-    auto itEnd = unitGroup.end(),
-         itFound = find(unitGroup.begin(), itEnd, unit);
-    if (itFound != itEnd)
-        unitGroup.erase(itFound);
-}
-
-int EcoBase::countAbandonedMinerals()
-{
-    return std::count_if(Minerals.begin(), Minerals.end(),
-        [](BWAPI::Unit Mineral){ return !Mineral->isBeingGathered(); });
-}
-
-int EcoBase::countPatientMiners()
-{
-    const auto patience = BWAPI::Orders::WaitForMinerals;
-    return std::count_if(Miners.begin(), Miners.end(),
-        [patience](BWAPI::Unit Miner){ return Miner->getOrder() == patience; });
-}
-
-void EcoBase::assignMiner(BWAPI::Unit minerUnit)
-{
-    Miners.push_back(minerUnit);
-    minerUnit->gather(Minerals[mineralIndex++ % Minerals.size()]);
-}
-
-void EcoBase::releaseMiner(BWAPI::Unit minerUnit)
-{
-    removeUnit(minerUnit, Miners);
-    minerUnit->stop();
-}
-
-void EcoBase::removeMineral(BWAPI::Unit mineralUnit)
-{
-    removeUnit(mineralUnit, Minerals);
-}
-
-bool EcoBase::isLackingMiners()
-{
-    int abandonedMinerals = countAbandonedMinerals();
-    // Cause the recently completed worker is not counted.
-    return abandonedMinerals && abandonedMinerals > countPatientMiners() + 1;
-}
 
 class UnitTraining
 {
@@ -258,16 +136,6 @@ namespace Production
                 Facility->getLarva().empty()));
     }
 
-    bool canProduce(std::vector<EcoBase*> EcoBases)
-    {
-        for (EcoBase *Base: EcoBases) {
-            if (Base->isLackingMiners() && isIdle(Base->getCenter()))
-                return true;
-        }
-        return false;
-    }
-
-    // For overlords.
     void produceSingleUnit(std::vector<EcoBase*> EcoBases,
         BWAPI::UnitType unitType)
     {
@@ -302,7 +170,6 @@ std::vector<PositionedUnits> MAP_MINERALS;
 // Indicates number already in construction/training for UnitType.
 std::map<BWAPI::UnitType, short> PENDING_UNIT_TYPE_COUNT;
 std::unordered_map<BWAPI::Unit, BWAPI::Unit> UNIT_CREATOR;
-std::vector<EcoBase*> MY_BASES;
 locationSet SCOUT_LOCATIONS;
 std::map<BWAPI::Player, locationSet> ENEMY_LOCATIONS;
 std::map<BWAPI::UnitType, UnitTraining> TRAINING;
@@ -354,7 +221,7 @@ void GW::onStart()
         });
     SCOUT_LOCATIONS = GW::collectScoutingLocations();
     // Workaround cause initial workers may complete before the BASE_CENTER.
-    MY_BASES.push_back(new EcoBase(BASE_CENTER, MAP_MINERALS.front().second));
+    ecoBaseManager.addBase(BASE_CENTER, MAP_MINERALS.front().second);
     WORKER_BUFFER = GW::getUnitBuffer(WORKER_TYPE);
 }
 
@@ -443,13 +310,12 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
         return;  // Ignoring non-owned units.
     BWAPI::UnitType unitType = Unit->getType();
     if (unitType == WORKER_TYPE) {
-        BWAPI::Unit cUnit = UNIT_CREATOR[Unit];
-        auto foundIt = std::find_if(MY_BASES.begin(), MY_BASES.end(),
-            [cUnit](EcoBase *Base){ return Base->getCenter() == cUnit; });
-        if (foundIt != MY_BASES.end())
-            (*foundIt)->assignMiner(Unit);
-        else // Should only be initial units.
-            MY_BASES.front()->assignMiner(Unit);
+        try {
+            ecoBaseManager.addWorker(Unit);
+        }
+        catch (char* err) {
+            BWAPI::Broodwar->sendText(err);
+        }
     }
     else if (unitType == SUPPLY_TYPE) {
         SUPPLY_UNIT = Unit;
@@ -459,12 +325,12 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
     else if (unitType == CENTER_TYPE &&
         !Unit->getClosestUnit(IsResourceDepot, 300) && Unit != BASE_CENTER)
     {
-        // Append to MY_BASES after finding nearest mineralCluster.
+        // Add to ecoBaseManager after finding nearest mineralCluster.
         for (PositionedUnits mineralCluster: MAP_MINERALS) {
-            BWAPI::Unit center = BWAPI::Broodwar->getClosestUnit(
+            BWAPI::Unit baseCenter = BWAPI::Broodwar->getClosestUnit(
                 mineralCluster.first, IsResourceDepot, 300);
-            if (center == Unit) {
-                MY_BASES.push_back(new EcoBase(Unit, mineralCluster.second));
+            if (baseCenter == Unit) {
+                ecoBaseManager.addBase(baseCenter, mineralCluster.second);
                 break;
             }
         }
@@ -487,6 +353,14 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
             for_each(ATTACK_GROUPS.begin(), ATTACK_GROUPS.end(),
                 [Unit](BWAPI::Unitset &Attackers){ Attackers.erase(Unit); });
         }
+        else if (unitType == WORKER_TYPE) {
+            try {
+                ecoBaseManager.removeWorker(Unit);
+            }
+            catch (char* err) {
+                BWAPI::Broodwar->sendText(err);
+            }
+        }
         else if (unitType == BWAPI::UnitTypes::Zerg_Spawning_Pool ||
                 Unit == BASE_CENTER) {
             BWAPI::Broodwar->sendText("gg, you've proven more superior.");
@@ -497,18 +371,17 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
         }
         else if (unitType.isResourceDepot()) {
             // Includes potential Lair or Hive with isResourceDepot.
-            auto foundIt = std::find_if(MY_BASES.begin(), MY_BASES.end(),
-                [Unit](EcoBase *Base){ return Base->getCenter() == Unit; });
-            if (foundIt != MY_BASES.end()) {
-                delete *foundIt;
-                MY_BASES.erase(foundIt);
-            }
+            ecoBaseManager.removeBase(Unit);
         }
     }
     else if (unitType.isMineralField()) {
         BWAPI::Broodwar->sendText("Mineral field was destroyed.");
-        for (EcoBase *Base: MY_BASES)
-            Base->removeMineral(Unit);
+            try {
+                ecoBaseManager.removeMineral(Unit);
+            }
+            catch (char* err) {
+                BWAPI::Broodwar->sendText(err);
+            }
     }
     else if (unitType.isBuilding()) {
         GW::removeLocation(owningPlayer, Unit->getTilePosition());
@@ -607,10 +480,6 @@ void GW::onSaveGame(std::string gameName)
 
 void GW::onEnd(bool IsWinner)
 {
-    for (EcoBase *Base: MY_BASES) {
-        delete Base;
-        Base = nullptr;
-    }
 }
 
 void GW::manageProduction()
@@ -623,10 +492,13 @@ void GW::manageProduction()
             // Trains a overloard.
             TRAINING[SUPPLY_TYPE].produceSingleUnit(SUPPLY_TYPE);
     }
-    else if (Production::canProduce(MY_BASES)) {
-        Production::produceUnits(MY_BASES, WORKER_TYPE);
-    }
-    else if (TRAINING[ARMY_UNIT_TYPE].canProduce()) {
+    else {
+        try {
+            ecoBaseManager.produceUnits(WORKER_TYPE);
+        }
+        catch (char* err) {
+            BWAPI::Broodwar->sendText(err);
+        }
         TRAINING[ARMY_UNIT_TYPE].produceUnits(ARMY_UNIT_TYPE);
     }
 }
@@ -636,13 +508,14 @@ void GW::manageBases()
     const int centerPrice = CENTER_TYPE.mineralPrice(),
               armyFacilityPrice = ARMY_ENABLING_TECH_TYPE.mineralPrice();
     if (!PENDING_UNIT_TYPE_COUNT[CENTER_TYPE] &&
-        std::all_of(MY_BASES.begin(), MY_BASES.end(),
-            [](EcoBase *Base) { return !Base->isLackingMiners(); }))
+        TRAINING[ARMY_UNIT_TYPE].facilityCount() >= 2 &&
+        ecoBaseManager.isAtCapacity())
     {
         GW::constructExpansion();
     }
     else if (SUPPLY_UNIT && (SELF->minerals() > armyFacilityPrice * 1.5 ||
-            !TRAINING[ARMY_UNIT_TYPE].isAvailable())) {
+            !TRAINING[ARMY_UNIT_TYPE].isAvailable()))
+    {
         // Construct multiple Gateways and Barracks.
         if (ARMY_ENABLING_TECH_TYPE.canProduce())
         {
@@ -719,7 +592,7 @@ void GW::combatMicro()
         BWAPI::Broodwar->registerEvent(
             [attackerPos](BWAPI::Game*){
                 // Green circle for average attacker position.
-                BWAPI::Broodwar->drawCircleMap(attackerPos, 5,
+                BWAPI::Broodwar->drawCircleMap(attackerPos, 8,
                     BWAPI::Color(0, 255, 0), true);
                 // Blue circle for targetUnit range.
                 BWAPI::Broodwar->drawCircleMap(attackerPos, 600,
@@ -729,22 +602,26 @@ void GW::combatMicro()
             1
             );
         if (targetUnit){ 
+            // Red circle for targetUnit.
+            BWAPI::Broodwar->registerEvent(
+                [targetUnit](BWAPI::Game*) {
+                    BWAPI::Broodwar->drawCircleMap(
+                        targetUnit->getPosition(), 6,
+                        BWAPI::Color(255, 0, 0), true);
+                    BWAPI::Broodwar->drawCircleMap(
+                        targetUnit->getPosition(), 3,
+                        BWAPI::Color(255, 255, 0), true);
+                }, nullptr, 1);
             bool canAttack = targetUnit->getType().groundWeapon() != noWeapon;
-            if (canAttack && GW::needToGroup(Attackers)) {
+            BWAPI::Unit beatUnit = targetUnit->getTarget();
+            beatUnit = beatUnit ? beatUnit : targetUnit->getOrderTarget();
+            bool isAttacking = beatUnit && beatUnit->getPlayer() == SELF;
+            if (canAttack && !isAttacking && GW::needToGroup(Attackers)) {
                 Attackers.move(attackerPos);  // Move away
                 Attackers.attack(targetUnit->getPosition(), true);
             }
             else {
                 GW::attackUnit(Attackers, targetUnit);
-                // Red circle for targetUnit.
-                BWAPI::Broodwar->registerEvent(
-                    [targetUnit](BWAPI::Game*)
-                        {
-                            BWAPI::Broodwar->drawCircleMap(
-                                targetUnit->getPosition(), 3,
-                                BWAPI::Color(255, 0, 0), true);
-                        },
-                    nullptr, 1);
             }
         }
         else if (std::any_of(Attackers.begin(), Attackers.end(),
@@ -811,7 +688,8 @@ int GW::getUnitBuffer(BWAPI::UnitType unitType)
     const float supplyBuildTime = SUPPLY_TYPE.buildTime();
     int unitSupply = unitType.supplyRequired(),
         unitBuildTime = unitType.buildTime(),
-        facilityAmount = (unitType == WORKER_TYPE ? MY_BASES.size()
+        facilityAmount = (unitType == WORKER_TYPE
+            ? ecoBaseManager.getBaseAmount()
             : TRAINING[unitType].facilityCount()),
         unitsDuringBuild = facilityAmount * std::ceil(
             supplyBuildTime / unitBuildTime);
@@ -837,8 +715,7 @@ void GW::scoutLocations(std::vector<PositionedUnits> mapMinerals)
     mineralScout->stop();  // Because the following orders are queued.
     for (auto pair: mapMinerals)
         mineralScout->move(pair.first, true);
-    BWAPI::Broodwar->sendTextEx(true, "%d SCOUTING.",
-        mineralScout->getID());
+    BWAPI::Broodwar->sendTextEx(true, "%d SCOUTING.", mineralScout->getID());
 }
 
 void GW::appendAttackers()
@@ -874,7 +751,7 @@ void GW::attackEnemy(BWAPI::Unitset Attackers)
         locationSet enemyLocations = mapPair.second;
         auto closestLocationIt = std::min_element(
             enemyLocations.begin(), enemyLocations.end(),
-            compareDistanceFrom(Attackers.getPosition()));
+            Utils::compareDistanceFrom(Attackers.getPosition()));
         if (closestLocationIt != enemyLocations.end()) {
             Attackers.attack(BWAPI::Position(*closestLocationIt));
             return;  // The job is done.
@@ -1050,7 +927,6 @@ void GW::constructExpansion()
             centerContractor = BASE_CENTER->getClosestUnit(IsWorker);
             expansionLocation = GW::getExpansionLocation(centerContractor);
             if (expansionLocation != BWAPI::TilePositions::Invalid) {
-                MY_BASES.front()->releaseMiner(centerContractor);
                 centerContractor->move(BWAPI::Position(expansionLocation));
             }
     }
@@ -1072,17 +948,9 @@ void GW::displayState()
     BWAPI::Broodwar->drawTextScreen(3, 35,
         "workerFacilities %d, BASE_CENTER Queue: %d.",
         TRAINING[WORKER_TYPE].facilityCount(), getNumQueued(BASE_CENTER));
-    BWAPI::Broodwar->drawTextScreen(3, 50, "MY_BASES: %d",
-        MY_BASES.size());
     int row = 60;
-    for (EcoBase *Base: MY_BASES) {
-        BWAPI::Broodwar->drawTextScreen(3, row,
-            "  Miners: %d, Minerals: %d, LackingMiners %s.",
-            Base->getMinerCount(), Base->getMineralCount(),
-            Base->isLackingMiners() ? "true" : "false");
-        row += 10;
-    }
-    row += 5;
+    ecoBaseManager.displayStatus(row);
+    row += 15;
     BWAPI::Broodwar->drawTextScreen(3, row, "SCOUT_LOCATIONS: %d",
         SCOUT_LOCATIONS.size());
     row += 10;
@@ -1128,3 +996,5 @@ void GW::displayState()
         row += 23;
     }
 }
+
+#endif
