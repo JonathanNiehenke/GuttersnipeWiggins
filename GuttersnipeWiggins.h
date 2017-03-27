@@ -5,6 +5,8 @@
 #include <BWAPI.h>
 #include "Utils.h"
 #include "EcoBaseManager.h"
+#include "SquadCommander.h"
+#include "Cartographer.h"
 
 class GW : public BWAPI::AIModule
 {
@@ -30,26 +32,15 @@ public:
 private:
     std::vector<std::pair<BWAPI::Position, BWAPI::Unitset>> getMapMinerals();
     EcoBaseManager ecoBaseManager;
+    SquadCommander squadCommander;
+    Cartographer cartographer;
     void GW::manageProduction();
     void GW::manageBases();
     void GW::manageAttackGroups();
-    bool GW::needToGroup(BWAPI::Unitset Attackers);
-    void GW::combatMicro();
-    std::set<BWAPI::TilePosition> collectScoutingLocations();
     std::vector<BWAPI::TilePosition> getMineralClusterLocations();
     int getAvailableSupply();
     int getUnitBuffer(BWAPI::UnitType);
-    void scout();
-    void scoutLocations(
-        std::vector<std::pair<BWAPI::Position, BWAPI::Unitset>> mapMinerals);
-    void attackLocations(
-        BWAPI::Unitset unitGroup,
-        std::vector<std::pair<BWAPI::Position, BWAPI::Unitset>> mapMinerals);
-    void appendAttackers();
-    void attackEnemy(BWAPI::Unitset Attackers);
-    void attackUnit(BWAPI::Unitset Attackers, BWAPI::Unit targetUnit);
-    void GW::removeLocation(BWAPI::TilePosition Location);
-    void removeLocation(BWAPI::Player Player, BWAPI::TilePosition Location);
+    void scout(std::set<BWAPI::TilePosition> scoutLocations);
     int getContractorTask(BWAPI::Unit contractorUnit);
     BWAPI::TilePosition getExpansionLocation(
         BWAPI::Unit centerContractor);
@@ -59,7 +50,8 @@ private:
         int Task);
     void constructUnit(BWAPI::UnitType constructableType);
     void constructExpansion();
-    void displayState();
+    void displayUnitInfo();
+    void displayStatus();
 };
 
 #endif

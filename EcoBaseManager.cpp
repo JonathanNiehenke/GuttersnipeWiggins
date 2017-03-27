@@ -166,6 +166,7 @@ void EcoBaseManager::displayStatus(int &row)
             Base->getMinerCount(), Base->getMineralCount(),
             Base->isLackingMiners() ? "true" : "false");
     }
+    row += 5;
 }
 
 #endif

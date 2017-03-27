@@ -29,6 +29,26 @@ bool Utils::compareDistanceFrom::operator()(
             sourcePosition.getApproxDistance(u2.getPosition()));
 }
 
+int Utils::compareDistanceFrom::getDifference(BWAPI::Position Pos1)
+{
+    return sourcePosition.getApproxDistance(Pos1);
+}
+
+int Utils::compareDistanceFrom::getDifference(BWAPI::TilePosition tPos1)
+{
+    return sourcePosition.getApproxDistance(BWAPI::Position(tPos1));
+}
+
+int Utils::compareDistanceFrom::getDifference(BWAPI::Unit u1)
+{
+    return sourcePosition.getApproxDistance(u1->getPosition());
+}
+
+int Utils::compareDistanceFrom::getDifference(BWAPI::Unitset u1)
+{
+    return sourcePosition.getApproxDistance(u1.getPosition());
+}
+
 bool Utils::isIdle(BWAPI::Unit Facility)
 {
     // Zerg hatchery is always idle so determine with larva.
