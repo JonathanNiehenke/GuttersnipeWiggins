@@ -133,17 +133,14 @@ void SquadCommander::removeEmptySquads()
 
 void SquadCommander::drawSqaudTargetRange(BWAPI::Position squadPos)
 {
-    
     // Live debugging info.
     BWAPI::Broodwar->registerEvent(
         [squadPos](BWAPI::Game*){
             BWAPI::Broodwar->drawCircleMap(squadPos, 8,
                 BWAPI::Color(0, 255, 0), true);  // Green squadPos.
             BWAPI::Broodwar->drawCircleMap(squadPos, 600,
-                BWAPI::Color(0, 0, 255), false);},  // Blue range.
-        nullptr,
-        1
-        );
+                BWAPI::Color(0, 0, 255), false);  // Blue range.
+        },  nullptr, 4);
 }
 
 void SquadCommander::drawBullsEye(BWAPI::Unit targetUnit)
@@ -157,7 +154,7 @@ void SquadCommander::drawBullsEye(BWAPI::Unit targetUnit)
             BWAPI::Broodwar->drawCircleMap(
                 targetUnit->getPosition(), 3,
                 BWAPI::Color(255, 255, 0), true);
-        }, nullptr, 1);
+        }, nullptr, 4);
 }
 
 bool SquadCommander::needToGroup(BWAPI::Unitset Squad, BWAPI::Position squadPos)
@@ -237,15 +234,14 @@ void SquadCommander::combatMicro()
     BWAPI::Unit targetUnit;
     for (BWAPI::Unitset Squad: armySquads) {
         BWAPI::Position squadPos = Squad.getPosition();
-        // ToDo: register draw event here.
-        drawSqaudTargetRange(squadPos);
+        drawSqaudTargetRange(squadPos);  // Live debug info.
         targetUnit = BWAPI::Broodwar->getBestUnit(
             compareEnemyTargets(squadPos),  // Determines best after
             IsEnemy && IsDetected && !IsFlying,  // these conditions
             squadPos,  // are applied to units around this positon
             600);  // at this range.
         if (targetUnit) {
-            drawBullsEye(targetUnit);
+            drawBullsEye(targetUnit);  // Live debug info.
             bool canAttack = targetUnit->getType().groundWeapon() != noWeapon;
             BWAPI::Unit beatUnit = targetUnit->getTarget();
             beatUnit = beatUnit ? beatUnit : targetUnit->getOrderTarget();
@@ -277,4 +273,5 @@ void SquadCommander::displayStatus(int &row)
     }
     row += 5;
 }
+
 #endif

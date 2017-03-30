@@ -92,16 +92,20 @@
   <ItemGroup>
     <ClCompile Include="Dll.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="CmdRescuer.cpp" />
     <ClCompile Include="EcoBaseManager.cpp" />
-    <ClCompile Include="SquadCommander.cpp" />
     <ClCompile Include="Cartographer.cpp" />
+    <ClCompile Include="SquadCommander.cpp" />
+    <ClCompile Include="BuildingConstructer.cpp" />
     <ClCompile Include="GuttersnipeWiggins.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="CmdRescuer.h" />
     <ClInclude Include="EcoBaseManager.h" />
-    <ClInclude Include="SquadCommander.h" />
     <ClInclude Include="Cartographer.h" />
+    <ClInclude Include="SquadCommander.h" />
+    <ClInclude Include="BuildingConstructer.h" />
     <ClInclude Include="GuttersnipeWiggins.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

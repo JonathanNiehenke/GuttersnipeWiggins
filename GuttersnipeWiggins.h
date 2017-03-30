@@ -4,9 +4,11 @@
 #include <set>
 #include <BWAPI.h>
 #include "Utils.h"
+#include "CmdRescuer.h"
 #include "EcoBaseManager.h"
 #include "SquadCommander.h"
 #include "Cartographer.h"
+#include "BuildingConstructer.h"
 
 class GW : public BWAPI::AIModule
 {
@@ -31,9 +33,11 @@ public:
 
 private:
     std::vector<std::pair<BWAPI::Position, BWAPI::Unitset>> getMapMinerals();
+    CmdRescuer::Rescuer cmdRescuer;
     EcoBaseManager ecoBaseManager;
-    SquadCommander squadCommander;
     Cartographer cartographer;
+    SquadCommander squadCommander;
+    BuildingConstructer buildingConstructer;
     void GW::manageProduction();
     void GW::manageBases();
     void GW::manageAttackGroups();
@@ -41,15 +45,7 @@ private:
     int getAvailableSupply();
     int getUnitBuffer(BWAPI::UnitType);
     void scout(std::set<BWAPI::TilePosition> scoutLocations);
-    int getContractorTask(BWAPI::Unit contractorUnit);
-    BWAPI::TilePosition getExpansionLocation(
-        BWAPI::Unit centerContractor);
-    void constructUnit(BWAPI::UnitType,
-        BWAPI::TilePosition constructionLocation,
-        BWAPI::Unit contractorUnit,
-        int Task);
-    void constructUnit(BWAPI::UnitType constructableType);
-    void constructExpansion();
+    // void constructExpansion();
     void displayUnitInfo();
     void displayStatus();
 };
