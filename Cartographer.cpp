@@ -2,6 +2,8 @@
 #define CARTOGRAPHER_CPP
 #include "Cartographer.h"
 
+using namespace BWAPI::Filter;
+
 void Cartographer::discoverResources(BWAPI::Position startPosition)
 {
     // Group minerals into "Starcraft" defined groups.
@@ -27,8 +29,15 @@ void Cartographer::discoverResources(BWAPI::Position startPosition)
                     startPosition.getApproxDistance(pu2.first));
         });
     for (PositionedUnits pair: temp) {
-            resourcePositons.push_back(pair.first);
-            Minerals.push_back(pair.second);
+            BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
+                BWAPI::UnitTypes::Protoss_Nexus, BWAPI::TilePosition(pair.first), 12);
+            if (Location == BWAPI::TilePositions::Invalid) {
+                BWAPI::Broodwar << "Lacking expansion location" << std::endl;
+            }
+            else {
+                resourcePositons.push_back(BWAPI::Position(Location));
+                Minerals.push_back(pair.second);
+            }
     }
     resourceCount = Minerals.size();
 }
@@ -86,6 +95,24 @@ Cartographer::locationSet Cartographer::getStartingLocations()
             startingLocations.insert(Start);
     }
     return startingLocations;
+}
+
+void Cartographer::cleanEnemyLocations()
+{
+    for (auto &playerLocations: enemyLocations) {
+        locationSet &Locations = playerLocations.second;
+        for (auto It = Locations.begin(); It != Locations.end();) {
+            // Remove buildings that have canceled morphing or lifted.
+            if (BWAPI::Broodwar->isVisible(*It) &&
+                BWAPI::Broodwar->getUnitsOnTile(
+                    *It, IsEnemy && IsBuilding && !IsFlying).empty())
+            {
+                Locations.erase(It++);
+            }
+            else
+                It++;
+        }
+    }
 }
 
 void Cartographer::displayStatus(int &row)

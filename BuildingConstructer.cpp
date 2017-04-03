@@ -19,11 +19,14 @@ ConstructionPO::ConstructionPO(
 void ConstructionPO::updateStatus()
 {
     // What if: product dies?
-    if (product && product->isConstructing()) {
+    if (product && product->isBeingConstructed()) {
         status = Constructing;
     }
     else {
         switch (contractor->getOrder()) {
+            case BWAPI::Orders::Enum::Unknown:
+                status = Dead;
+                break;
             case BWAPI::Orders::Enum::MoveToMinerals:
                 status = Mining;
                 break;
@@ -37,9 +40,11 @@ void ConstructionPO::updateStatus()
             case BWAPI::Orders::Enum::PlaceBuilding:
                 status = Constructing;
                 break;
+            case BWAPI::Orders::Enum::ConstructingBuilding:
+                product = contractor->getBuildUnit();
+                break;
             case BWAPI::Orders::Enum::IncompleteBuilding:
                 product = contractor;
-                status = Constructing;
                 break;
             default:
                 BWAPI::Broodwar << "Other order: " << contractor->getOrder()
@@ -60,7 +65,6 @@ ConstructionPO& BuildingConstructer::findJob(BWAPI::UnitType Constructable)
     throw NoJob();
 }
 
-// Auto for iterators. :)
 std::vector<ConstructionPO>::iterator BuildingConstructer::findJob(
     BWAPI::Unit Product)
 {
@@ -74,50 +78,85 @@ std::vector<ConstructionPO>::iterator BuildingConstructer::findJob(
     throw NoJob();
 }
 
-void BuildingConstructer::beginConstruction(BWAPI::UnitType Constructable)
+void BuildingConstructer::beginConstruction(
+    BWAPI::Unit Contractor,
+    BWAPI::UnitType Constructable,
+    BWAPI::TilePosition Location)
 {
-    // ToDo: Optimally choose contractor.
-    BWAPI::Unit contractorUnit = baseCenter->getClosestUnit(IsWorker);
-    if (!contractorUnit) return;
-    // ToDo: Choose better construction locations.
-    BWAPI::TilePosition constructionLocation = BWAPI::Broodwar->getBuildLocation(
-        Constructable, contractorUnit->getTilePosition());
-    if (constructionLocation != BWAPI::TilePositions::Invalid)
-        if (!contractorUnit->move(BWAPI::Position(constructionLocation))) {
+    if (Location != BWAPI::TilePositions::Invalid)
+        if (!Contractor->move(BWAPI::Position(Location))) {
             cmdRescuer->append(CmdRescuer::MoveCommand(
-                contractorUnit, BWAPI::Position(constructionLocation)));
+                Contractor, BWAPI::Position(Location)));
         }
         constructionJobs.push_back(ConstructionPO(
-            contractorUnit, Constructable, constructionLocation));
+            Contractor, Constructable, Location));
 }
 
-void BuildingConstructer::drawMarker(BWAPI::Unit targetUnit)
+void BuildingConstructer::drawMarker(ConstructionPO Job)
 {
+    BWAPI::Position upperLeft = BWAPI::Position(Job.location),
+                    size = BWAPI::Position(Job.constructable.tileSize()),
+                    bottomRight = upperLeft + size;
     BWAPI::Broodwar->registerEvent(
-        [targetUnit](BWAPI::Game*) {
-            // Blue dot
+        [Job, upperLeft, bottomRight](BWAPI::Game*) {
             BWAPI::Broodwar->drawCircleMap(
-                targetUnit->getPosition(), 8,
+                Job.contractor->getPosition(), 8,
                 BWAPI::Color(0, 0, 255), true);
-        }, nullptr, 4);
+            BWAPI::Broodwar->drawBoxMap(
+                upperLeft, bottomRight, BWAPI::Color(255, 0, 255));
+            BWAPI::Broodwar->drawBoxMap(
+                upperLeft + BWAPI::Point<int, 1>(-16, -16),
+                bottomRight + BWAPI::Point<int, 1>(16, 16),
+                BWAPI::Color(255, 127, 0));
+        }, nullptr, 5);
 }
 
+void BuildingConstructer::build(ConstructionPO Job)
+{
+    // Queue the worker's return back to mining, because SCV's
+    // don't take orders during construction.
+    BWAPI::Unit closestMineral = BWAPI::Broodwar->getClosestUnit(
+        BWAPI::Position(Job.location), IsMineralField);
+    if (Job.contractor->build(Job.constructable, Job.location)) {
+        Job.contractor->gather(closestMineral, true);
+    }
+    else {
+        cmdRescuer->append(CmdRescuer::BuildCommand(
+            Job.contractor, Job.constructable, Job.location));
+        cmdRescuer->append(CmdRescuer::GatherCommand(
+            Job.contractor, closestMineral, true));
+    }
+}
+
+bool BuildingConstructer::isObstructed(ConstructionPO Job)
+{
+    BWAPI::Position upperLeft = BWAPI::Position(Job.location),
+                    size = BWAPI::Position(Job.constructable.tileSize()),
+                    bottomRight = upperLeft + size;
+    return BWAPI::Broodwar->getUnitsInRectangle(
+            upperLeft + BWAPI::Point<int, 1>(-16, -16),
+            bottomRight + BWAPI::Point<int, 1>(16, 16),
+            IsBuilding || IsEnemy || !IsMoving).empty();
+}
 
 void BuildingConstructer::continueConstruction(ConstructionPO &Job)
 {
     Job.updateStatus();
-    drawMarker(Job.contractor);
+    drawMarker(Job);
     switch (Job.status) {
     case Dead:
-        BWAPI::Unit contractorUnit; // Prevents error C2360.
-        contractorUnit = baseCenter->getClosestUnit(IsWorker);
-        if (contractorUnit) {
-            Job.contractor = contractorUnit;
+        if (Job.product && Job.product->canCancelConstruction()) {
+            Job.product->cancelConstruction();
         }
+        // It is easier to start over than to modify the current Job.
+        constructionJobs.erase(find_if(
+            constructionJobs.begin(), constructionJobs.end(),
+            [Job](ConstructionPO oJob)
+                { return Job.contractor == oJob.contractor; }));
         break;
     case Mining:
-        // Queued gathering just activated without placing the
-        // building, because the required minerals were just spent.
+        // The queued gathering just activated without placing the
+        // building. Usually the required minerals were spent.
         if (!Job.contractor->move(BWAPI::Position(Job.location))) {
             cmdRescuer->append(CmdRescuer::MoveCommand(
                 Job.contractor, BWAPI::Position(Job.location)));
@@ -125,20 +164,20 @@ void BuildingConstructer::continueConstruction(ConstructionPO &Job)
         break;
     case Positioning:
         if (Job.contractor->canBuild(Job.constructable, Job.location)) {
-            if (!Job.contractor->build(Job.constructable, Job.location)) {
-                cmdRescuer->append(CmdRescuer::BuildCommand(
-                    Job.contractor, Job.constructable, Job.location));
-            }
-            else {
-                // Because SCV's don't take orders during construction,
-                // queue the worker's return back to mining.
-                BWAPI::Unit closestMineral = BWAPI::Broodwar->getClosestUnit(
-                    BWAPI::Position(Job.location), IsMineralField);
-                Job.contractor->gather(closestMineral, true);
+            build(Job);
+        }
+        else if (Self->minerals() >= Job.constructable.mineralPrice() &&
+                 BWAPI::Broodwar->isVisible(Job.location) &&
+                 isObstructed(Job))
+        {
+            BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
+                Job.constructable, Job.contractor->getTilePosition());
+            if (Location != BWAPI::TilePositions::Invalid) {
+                Job.location =  Location;
             }
         }
     case Constructing:
-        break;  // Prevent reissuing commands and the increasing APM.
+        break;  // Prevent reissuing commands and increasing the APM.
     default:
         break;
     }
@@ -147,11 +186,14 @@ void BuildingConstructer::continueConstruction(ConstructionPO &Job)
 void BuildingConstructer::onStart(
     BWAPI::Player Self,
     BWAPI::Unit baseCenter,
-    CmdRescuer::Rescuer *cmdRescuer)
+    CmdRescuer::Rescuer *cmdRescuer,
+    Cartographer *cartographer)
 {
     this->Self = Self;
     this->baseCenter = baseCenter;
     this->cmdRescuer = cmdRescuer;
+    this->cartographer = cartographer;
+    maxExpandSearch = cartographer->getResourceCount();
 }
 
 void BuildingConstructer::constructUnit(BWAPI::UnitType Constructable)
@@ -162,7 +204,56 @@ void BuildingConstructer::constructUnit(BWAPI::UnitType Constructable)
     }
     catch (NoJob) {
         if (Self->minerals() >= Constructable.mineralPrice() - 24) {
-            beginConstruction(Constructable);
+        // ToDo: Optimally choose contractor.
+        BWAPI::Unit Contractor = baseCenter->getClosestUnit(IsWorker);
+        if (!Contractor) return;
+        // ToDo: Choose better construction locations.
+        BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
+                Constructable, Contractor->getTilePosition(), 40);
+        beginConstruction(Contractor, Constructable, Location);
+        }
+    }
+}
+
+bool BuildingConstructer::isInferiorLocation(
+    BWAPI::TilePosition expandLocation)
+{
+    return BWAPI::Broodwar->isVisible(expandLocation) ||
+           !baseCenter->hasPath(BWAPI::Position(expandLocation));
+}
+
+BWAPI::TilePosition BuildingConstructer::getExpansionLocation(
+    BWAPI::UnitType Constructable)
+{
+    BWAPI::Unit contractorUnit = baseCenter->getClosestUnit(IsWorker);
+    // Can't build without the contractor.
+    if (!contractorUnit) return BWAPI::TilePositions::Invalid;
+    BWAPI::TilePosition expandLocation = BWAPI::TilePositions::Invalid;
+    int i = 0;
+    for (; isInferiorLocation(expandLocation) &&
+           i < maxExpandSearch; ++i)
+    {
+        expandLocation = BWAPI::TilePosition(
+            cartographer->operator[](expandIndex++));
+    }
+    if (i == maxExpandSearch) {
+        expandLocation = BWAPI::TilePositions::Invalid;
+    }
+    return expandLocation;
+}
+
+void BuildingConstructer::constructExpansion(BWAPI::UnitType Constructable)
+{
+    try {
+        continueConstruction(findJob(Constructable));
+    }
+    catch (NoJob) {
+        if (Self->minerals() >= Constructable.mineralPrice() - 100) {
+            BWAPI::Unit Contractor = baseCenter->getClosestUnit(IsWorker);
+            if (!Contractor) return;
+            BWAPI::TilePosition expansionLocation = getExpansionLocation(
+                    Constructable);
+            beginConstruction(Contractor, Constructable, expansionLocation);
         }
     }
 }
@@ -200,7 +291,7 @@ void BuildingConstructer::displayStatus(int &row)
     for (ConstructionPO Job: constructionJobs) {
         row += 10;
         BWAPI::Broodwar->drawTextScreen(3, row,
-            "Constructable: %s, Contractor ID: %d, Product %d, Status: %d.",
+            "%s, Contractor: %d, PID: %d, Status: %d.",
             Job.constructable.c_str(), Job.contractor->getID(),
             (Job.product ? Job.product->getID() : 0), 
             Job.status);

@@ -3,8 +3,10 @@
 #include <vector>
 #include <BWAPI.h>
 #include "CmdRescuer.h"
+#include "Cartographer.h"
 
 class NoJob {};  // Custom exception.
+
 
 class ConstructionPO
 {
@@ -27,16 +29,25 @@ class BuildingConstructer
         BWAPI::Player Self;
         BWAPI::Unit baseCenter = nullptr;
         CmdRescuer::Rescuer *cmdRescuer;
+        Cartographer *cartographer;
+        int expandIndex = 0, maxExpandSearch;
         std::vector<ConstructionPO> constructionJobs;
         int getContractorStatus(BWAPI::Unit contractor);
         ConstructionPO& findJob(BWAPI::UnitType Constructable);
         std::vector<ConstructionPO>::iterator findJob(BWAPI::Unit Product);
-        void beginConstruction(BWAPI::UnitType Constructable);
-        void drawMarker(BWAPI::Unit targetUnit);
+        void beginConstruction(
+            BWAPI::Unit, BWAPI::UnitType, BWAPI::TilePosition);
+        void drawMarker(ConstructionPO Job);
+        void build(ConstructionPO Job);
+        bool isObstructed(ConstructionPO Job);
         void continueConstruction(ConstructionPO &Job);
+        bool isInferiorLocation(BWAPI::TilePosition expandPosition);
+        BWAPI::TilePosition getExpansionLocation(BWAPI::UnitType);
     public:
-        void onStart(BWAPI::Player, BWAPI::Unit, CmdRescuer::Rescuer*);
+        void onStart(
+            BWAPI::Player, BWAPI::Unit, CmdRescuer::Rescuer*, Cartographer*);
         void constructUnit(BWAPI::UnitType Constructable);
+        void constructExpansion(BWAPI::UnitType Constructable);
         void addProduct(BWAPI::Unit Product);
         void removeConstruction(BWAPI::Unit Product);
         void displayStatus(int &row);

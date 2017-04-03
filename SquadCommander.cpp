@@ -140,7 +140,7 @@ void SquadCommander::drawSqaudTargetRange(BWAPI::Position squadPos)
                 BWAPI::Color(0, 255, 0), true);  // Green squadPos.
             BWAPI::Broodwar->drawCircleMap(squadPos, 600,
                 BWAPI::Color(0, 0, 255), false);  // Blue range.
-        },  nullptr, 4);
+        },  nullptr, 5);
 }
 
 void SquadCommander::drawBullsEye(BWAPI::Unit targetUnit)
@@ -154,7 +154,7 @@ void SquadCommander::drawBullsEye(BWAPI::Unit targetUnit)
             BWAPI::Broodwar->drawCircleMap(
                 targetUnit->getPosition(), 3,
                 BWAPI::Color(255, 255, 0), true);
-        }, nullptr, 4);
+        }, nullptr, 5);
 }
 
 bool SquadCommander::needToGroup(BWAPI::Unitset Squad, BWAPI::Position squadPos)

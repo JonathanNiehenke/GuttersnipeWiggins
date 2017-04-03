@@ -2,7 +2,7 @@
 #define GUTTERSNIPEWIGGINS_CPP
 #include "GuttersnipeWiggins.h"
 
-// ToDo: BuildingConstructer, UnitTrainer.
+// ToDo: UnitTrainer.
 
 using namespace BWAPI::Filter;
 
@@ -128,12 +128,12 @@ void GW::onStart()
     }
     WORKER_BUFFER = GW::getUnitBuffer(WORKER_TYPE);
     squadCommander.onStart(BASE_CENTER, ARMY_UNIT_TYPE, SELF, &cartographer);
-    buildingConstructer.onStart(SELF, BASE_CENTER, &cmdRescuer);
+    buildingConstructer.onStart(SELF, BASE_CENTER, &cmdRescuer, &cartographer);
 }
 
 void GW::onFrame()
 {
-    const int actionFrames = std::max(4, BWAPI::Broodwar->getLatency());
+    const int actionFrames = std::max(5, BWAPI::Broodwar->getLatency());
     GW::displayStatus(); // For debugging.
     switch(BWAPI::Broodwar->getFrameCount() % actionFrames) {
         case 0: GW::manageProduction();
@@ -144,7 +144,12 @@ void GW::onFrame()
             break;
         case 3: squadCommander.combatMicro();
             break;
-        case 4: cmdRescuer.rescue();
+        case 4:
+            cmdRescuer.rescue();
+            cartographer.cleanEnemyLocations();
+            if (SELF->supplyUsed() == 400) {
+                squadCommander.assembleSquad();
+            }
             break;
         default: break;
     }
@@ -154,7 +159,7 @@ void GW::onUnitCreate(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() != SELF) return;  // Ignoring non-owned units
     BWAPI::UnitType unitType = Unit->getType();
-    if (Unit->getType() == WORKER_TYPE) {
+    if (unitType == WORKER_TYPE) {
         UNIT_CREATOR[Unit] = Unit->getClosestUnit(IsResourceDepot, 0);
     }
     else if (unitType.isBuilding()) {
@@ -182,7 +187,7 @@ void GW::onUnitMorph(BWAPI::Unit Unit)
         if (unitType == BWAPI::UnitTypes::Resource_Vespene_Geyser) {
             cartographer.removeBuildingLocation(Unit->getTilePosition());
         }
-        return;  // Ignoring non-owned units.
+        return;  // Ignoring the other non-owned units.
     }
     if (unitType == BWAPI::UnitTypes::Zerg_Egg) {
         BWAPI::UnitType insideEggType = Unit->getBuildType();
@@ -197,6 +202,7 @@ void GW::onUnitMorph(BWAPI::Unit Unit)
         AVAILABLE_SUPPLY = GW::getAvailableSupply();
     }
     else if (unitType.isBuilding()) {
+        buildingConstructer.addProduct(Unit);
         PENDING_UNIT_TYPE_COUNT[unitType]++;
         // Zerg workers become buildings, so recalculate.
         AVAILABLE_SUPPLY = GW::getAvailableSupply();
@@ -228,19 +234,28 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
             BWAPI::Broodwar->sendText(err);
         }
     }
-    // Prevent Hatcheries not meant to be a Base;
-    // Don't duplicated BASE_CENTER EcoBase, done at onStart.
     else if (unitType == SUPPLY_TYPE) {
         ++SUPPLY_COUNT;
     }
+    // Prevent Hatcheries not meant to be a Base;
+    // Don't duplicated BASE_CENTER EcoBase, done at onStart.
     else if (unitType == CENTER_TYPE &&
-        !Unit->getClosestUnit(IsResourceDepot, 300) && Unit != BASE_CENTER)
+        !Unit->getClosestUnit(IsResourceDepot, 350) && Unit != BASE_CENTER)
     {
+        BWAPI::Broodwar->registerEvent(
+            [Unit](BWAPI::Game*)
+                {
+                    BWAPI::Broodwar->drawCircleMap(Unit->getPosition(),
+                        350, BWAPI::Color(255, 127, 0), false);
+                },
+            nullptr, 72);
+        BWAPI::Broodwar << "Searching for minerals" << std::endl;
         // Add to ecoBaseManager after finding nearest mineralCluster.
         for (BWAPI::Unitset mineralCluster: cartographer.getMinerals()) {
             BWAPI::Unit baseCenter = BWAPI::Broodwar->getClosestUnit(
                 mineralCluster.getPosition(), IsResourceDepot, 300);
             if (baseCenter == Unit) {
+                BWAPI::Broodwar << "Creating EcoBase" << std::endl;
                 ecoBaseManager.addBase(baseCenter, mineralCluster);
                 break;
             }
@@ -258,6 +273,10 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
     BWAPI::Player owningPlayer = Unit->getPlayer();
     BWAPI::UnitType unitType = Unit->getType();
     if (owningPlayer == SELF) {
+        UNIT_CREATOR.erase(Unit);
+        if (unitType.isBuilding()) {
+            buildingConstructer.removeConstruction(Unit);
+        }
         if (!Unit->isCompleted())
             PENDING_UNIT_TYPE_COUNT[Unit->getType()]--;
         if (unitType == ARMY_UNIT_TYPE) {
@@ -305,7 +324,8 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
 void GW::onUnitDiscover(BWAPI::Unit Unit)
 {
     BWAPI::Player owningPlayer = Unit->getPlayer();
-    if (SELF->isEnemy(owningPlayer) && Unit->getType().isBuilding())
+    if (SELF->isEnemy(owningPlayer) && Unit->getType().isBuilding() &&
+        !Unit->isFlying())
     {
         cartographer.addBuildingLocation(
             owningPlayer, Unit->getTilePosition());
@@ -341,6 +361,15 @@ void GW::onNukeDetect(BWAPI::Position target)
 
 void GW::onSendText(std::string text)
 {
+    if (text.substr(0, 7) == "getUnit") {
+        int unitId = atoi(text.substr(8, 4).c_str());
+        BWAPI::Unit unit = BWAPI::Broodwar->getUnit(unitId);
+        if (unit) {
+            BWAPI::Broodwar << "Found Unit: %d " << unitId << std::endl;
+            BWAPI::Broodwar->setScreenPosition(unit->getPosition());
+        }
+        return;
+    }
     BWAPI::Unitset selectedUnits = BWAPI::Broodwar->getSelectedUnits();
     if (text == "isStuck") {
         for (BWAPI::Unit unit: selectedUnits) {
@@ -351,6 +380,13 @@ void GW::onSendText(std::string text)
     else if (text == "getPosition") {
         for (BWAPI::Unit unit: selectedUnits) {
             BWAPI::Position Pos = unit->getPosition();
+            BWAPI::Broodwar->sendTextEx(true, "%d: (%d, %d)",
+                unit->getID(), Pos.x, Pos.y);
+        }
+    }
+    else if (text == "getLocation") {
+        for (BWAPI::Unit unit: selectedUnits) {
+            BWAPI::TilePosition Pos = unit->getTilePosition();
             BWAPI::Broodwar->sendTextEx(true, "%d: (%d, %d)",
                 unit->getID(), Pos.x, Pos.y);
         }
@@ -379,13 +415,13 @@ void GW::onReceiveText(BWAPI::Player player, std::string text)
 {
 }
 
+void GW::onSaveGame(std::string gameName)
+{
+}
+
 void GW::onPlayerLeft(BWAPI::Player Player)
 {
     cartographer.removePlayerLocations(Player);
-}
-
-void GW::onSaveGame(std::string gameName)
-{
 }
 
 void GW::onEnd(bool IsWinner)
@@ -394,7 +430,9 @@ void GW::onEnd(bool IsWinner)
 
 void GW::manageProduction()
 {
-    if (AVAILABLE_SUPPLY <= WORKER_BUFFER + ARMY_BUFFER) {
+    if (AVAILABLE_SUPPLY <= WORKER_BUFFER + ARMY_BUFFER &&
+        SELF->supplyTotal() != 400)
+    {
         if (SUPPLY_TYPE.isBuilding()) {
             // Constructs a pylon or supply depot.
             buildingConstructer.constructUnit(SUPPLY_TYPE);
@@ -419,14 +457,13 @@ void GW::manageBases()
 {
     const int centerPrice = CENTER_TYPE.mineralPrice(),
               armyFacilityPrice = ARMY_ENABLING_TECH_TYPE.mineralPrice();
-    // if (!PENDING_UNIT_TYPE_COUNT[CENTER_TYPE] &&
-        // TRAINING[ARMY_UNIT_TYPE].facilityCount() >= 2 &&
-        // ecoBaseManager.isAtCapacity())
-    // {
-        // GW::constructExpansion();
-    // }
-    // else
-    if (SUPPLY_COUNT && (SELF->minerals() > armyFacilityPrice * 1.5 ||
+    if (!PENDING_UNIT_TYPE_COUNT[CENTER_TYPE] &&
+        TRAINING[ARMY_UNIT_TYPE].facilityCount() >= 2 &&
+        ecoBaseManager.isAtCapacity())
+    {
+        buildingConstructer.constructExpansion(CENTER_TYPE);
+    }
+    else if (SUPPLY_COUNT && (SELF->minerals() > armyFacilityPrice * 1.5 ||
             !TRAINING[ARMY_UNIT_TYPE].isAvailable()))
     {
         // Construct multiple Gateways and Barracks.
@@ -499,6 +536,8 @@ int GW::getUnitBuffer(BWAPI::UnitType unitType)
 
 void GW::scout(std::set<BWAPI::TilePosition> scoutLocations)
 {
+    // ToDo: Scout with fewer workers.
+    // Bug: Won't scout usually Protoss.
     BWAPI::Unitset workerUnits = BASE_CENTER->getUnitsInRadius(
         900, IsWorker && IsOwned && !IsConstructing);
     auto workerIt = workerUnits.begin();
@@ -516,70 +555,6 @@ void GW::scout(std::set<BWAPI::TilePosition> scoutLocations)
         }
     }
 }
-
-// BWAPI::TilePosition GW::getExpansionLocation(BWAPI::Unit centerContractor)
-// {
-    // //! Function may cause performance lag.
-    // const int indexMax = cartographer.getResourceCount();
-    // static int expandIndex = 0;
-    // auto expansionLocation = BWAPI::TilePositions::Invalid;
-    // if (!centerContractor)
-        // return expansionLocation;
-    // // Wrap around iteration of MAP_MINERALS positons.
-    // int indexCycle = expandIndex + indexMax;
-    // BWAPI::Position avgMineralPosition;
-    // BWAPI::TilePosition avgMineralLocation;
-    // do {
-        // avgMineralPosition = cartographer[expandIndex];
-        // avgMineralLocation = BWAPI::TilePosition(avgMineralPosition);
-        // ++expandIndex;
-    // }
-    // while (expandIndex < indexCycle && (
-           // BWAPI::Broodwar->isVisible(avgMineralLocation) ||
-           // !centerContractor->hasPath(avgMineralPosition)));
-    // // If all avgMineralPositions are unacceptable.
-    // if (expandIndex != indexCycle) {
-        // expansionLocation = BWAPI::Broodwar->getBuildLocation(
-            // CENTER_TYPE, avgMineralLocation, 24);
-    // }
-    // ++expandIndex;  // Prevent immediate duplication of return.
-    // return expansionLocation;
-// }
-
-// void GW::constructExpansion()
-// {
-    // enum {Position = 1, Build};
-    // static BWAPI::Unit centerContractor = nullptr;
-    // static BWAPI::TilePosition expansionLocation = (
-        // BWAPI::TilePositions::Invalid);
-    // int Task = GW::getContractorTask(centerContractor);
-    // switch (Task) {
-        // case Position:
-            // bool isVisible;  // Prevents error C2360 by not initalizing.
-            // isVisible = BWAPI::Broodwar->isVisible(expansionLocation);
-            // if (isVisible && BWAPI::Broodwar->getClosestUnit(
-                    // BWAPI::Position(expansionLocation), IsResourceDepot, 300))
-            // {
-                // expansionLocation = GW::getExpansionLocation(centerContractor);
-                // if (expansionLocation != BWAPI::TilePositions::Invalid)
-                    // centerContractor->move(BWAPI::Position(expansionLocation));
-            // }
-            // else if (isVisible) {
-                // GW::constructUnit(
-                    // CENTER_TYPE, expansionLocation, centerContractor, Task);
-            // }
-        // case Build:
-            // break;  // Do not reissue command;
-        // default:
-            // if (SELF->minerals() <= CENTER_TYPE.mineralPrice() - 80)
-                // break;
-            // centerContractor = BASE_CENTER->getClosestUnit(IsWorker);
-            // expansionLocation = GW::getExpansionLocation(centerContractor);
-            // if (expansionLocation != BWAPI::TilePositions::Invalid) {
-                // centerContractor->move(BWAPI::Position(expansionLocation));
-            // }
-    // }
-// }
 
 void GW::displayUnitInfo()
 {

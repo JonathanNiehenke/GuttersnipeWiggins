@@ -162,9 +162,9 @@ void EcoBaseManager::displayStatus(int &row)
         if (!Base) throw "Bad to base.";
         row += 10;
         BWAPI::Broodwar->drawTextScreen(3, row,
-            "Miners: %d, Minerals: %d, LackingMiners %s.",
-            Base->getMinerCount(), Base->getMineralCount(),
-            Base->isLackingMiners() ? "true" : "false");
+            "ID: %d, Minerals: %d, Miners: %d, LackingMiners %s.",
+            Base->getCenter()->getID(), Base->getMineralCount(),
+            Base->getMinerCount(), Base->isLackingMiners() ? "true" : "false");
     }
     row += 5;
 }

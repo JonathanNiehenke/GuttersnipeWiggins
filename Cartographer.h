@@ -24,6 +24,7 @@ class Cartographer
         void removePlayerLocations(BWAPI::Player deadPlayer);
         BWAPI::TilePosition getClosestEnemyLocation(BWAPI::Position);
         locationSet getStartingLocations();
+        void cleanEnemyLocations();
         void displayStatus(int &row);
         BWAPI::Position operator[](int i);
 };
