@@ -28,6 +28,9 @@ void ConstructionPO::updateStatus()
                 status = Dead;
                 break;
             case BWAPI::Orders::Enum::MoveToMinerals:
+            case BWAPI::Orders::Enum::WaitForMinerals:
+            case BWAPI::Orders::Enum::MiningMinerals:
+            case BWAPI::Orders::Enum::ReturnMinerals:
                 status = Mining;
                 break;
             case BWAPI::Orders::Enum::Move:
@@ -146,13 +149,11 @@ void BuildingConstructer::continueConstruction(ConstructionPO &Job)
     switch (Job.status) {
     case Dead:
         if (Job.product && Job.product->canCancelConstruction()) {
+            BWAPI::Broodwar << "Canceling Construction" << std::endl;
             Job.product->cancelConstruction();
         }
         // It is easier to start over than to modify the current Job.
-        constructionJobs.erase(find_if(
-            constructionJobs.begin(), constructionJobs.end(),
-            [Job](ConstructionPO oJob)
-                { return Job.contractor == oJob.contractor; }));
+        removeConstruction(Job.product);
         break;
     case Mining:
         // The queued gathering just activated without placing the

@@ -97,6 +97,7 @@
     <ClCompile Include="Cartographer.cpp" />
     <ClCompile Include="SquadCommander.cpp" />
     <ClCompile Include="BuildingConstructer.cpp" />
+    <ClCompile Include="UnitTrainer.cpp" />
     <ClCompile Include="GuttersnipeWiggins.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -106,6 +107,7 @@
     <ClInclude Include="Cartographer.h" />
     <ClInclude Include="SquadCommander.h" />
     <ClInclude Include="BuildingConstructer.h" />
+    <ClInclude Include="UnitTrainer.h" />
     <ClInclude Include="GuttersnipeWiggins.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

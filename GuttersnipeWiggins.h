@@ -9,6 +9,7 @@
 #include "SquadCommander.h"
 #include "Cartographer.h"
 #include "BuildingConstructer.h"
+#include "UnitTrainer.h"
 
 class GW : public BWAPI::AIModule
 {
@@ -32,12 +33,14 @@ public:
     virtual void onEnd(bool isWinner);
 
 private:
+    int availableSupply = 0, workerBuffer = 0, armyBuffer = 0, supplyCount = 0;
     std::vector<std::pair<BWAPI::Position, BWAPI::Unitset>> getMapMinerals();
     CmdRescuer::Rescuer cmdRescuer;
     EcoBaseManager ecoBaseManager;
     Cartographer cartographer;
     SquadCommander squadCommander;
     BuildingConstructer buildingConstructer;
+    UnitTrainer warriorTrainer;
     void GW::manageProduction();
     void GW::manageBases();
     void GW::manageAttackGroups();

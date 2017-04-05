@@ -12,6 +12,7 @@ namespace CmdRescuer
     struct Command
     {
         virtual bool execute() { return true; }
+        virtual void displayMsg() {}
     };
 
     // To store and recall the occasional failed Broodwar command.
@@ -30,6 +31,7 @@ namespace CmdRescuer
         BWAPI::TilePosition location;
         public:
             BuildCommand(BWAPI::Unit, BWAPI::UnitType, BWAPI::TilePosition);
+            void displayMsg();
             bool execute()
                 { return contractor->build(constructable, location); }
     };
@@ -40,6 +42,7 @@ namespace CmdRescuer
         BWAPI::UnitType trainee;
         public:
             TrainCommand(BWAPI::Unit trainer, BWAPI::UnitType trainee);
+            void displayMsg();
             bool execute() { return trainer->train(trainee); }
     };
 
@@ -50,6 +53,7 @@ namespace CmdRescuer
         bool queue;
         public:
             MoveCommand(BWAPI::Unit, BWAPI::Position, bool queue=false);
+            void displayMsg();
             bool execute() { return runner->move(toThere, queue); }
     };
 
@@ -60,6 +64,7 @@ namespace CmdRescuer
         bool queue;
         public:
             GatherCommand(BWAPI::Unit, BWAPI::Unit, bool queue=false);
+            void displayMsg();
             bool execute() { return miner->gather(mineral, queue); }
     };
 

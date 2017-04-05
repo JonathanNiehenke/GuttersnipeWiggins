@@ -32,7 +32,7 @@ void Cartographer::discoverResources(BWAPI::Position startPosition)
             BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
                 BWAPI::UnitTypes::Protoss_Nexus, BWAPI::TilePosition(pair.first), 12);
             if (Location == BWAPI::TilePositions::Invalid) {
-                BWAPI::Broodwar << "Lacking expansion location" << std::endl;
+                BWAPI::Broodwar->sendText("Lacking expansion location");
             }
             else {
                 resourcePositons.push_back(BWAPI::Position(Location));
