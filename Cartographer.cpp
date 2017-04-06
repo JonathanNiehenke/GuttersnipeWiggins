@@ -30,7 +30,7 @@ void Cartographer::discoverResources(BWAPI::Position startPosition)
         });
     for (PositionedUnits pair: temp) {
             BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
-                BWAPI::UnitTypes::Protoss_Nexus, BWAPI::TilePosition(pair.first), 12);
+                BWAPI::UnitTypes::Protoss_Nexus, BWAPI::TilePosition(pair.first), 20);
             if (Location == BWAPI::TilePositions::Invalid) {
                 BWAPI::Broodwar->sendText("Lacking expansion location");
             }

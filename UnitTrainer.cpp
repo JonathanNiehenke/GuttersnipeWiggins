@@ -66,11 +66,10 @@ void UnitTrainer::displayStatus(int &row)
     row += 10;
     BWAPI::Broodwar->drawTextScreen(3, row,
         "%d Army Facilities", productionFacilities.size());
-    for (BWAPI::Unit Facility: productionFacilities) {
-        row += 10;
-        BWAPI::Broodwar->drawTextScreen(3, row, "ID: %d, Idle: %s.",
-            Facility->getID(), (isIdle(Facility) ? "true" : "false"));
-    }
+    // row += 10;
+    // BWAPI::Broodwar->drawTextScreen(3, row, "%d Facilities Producing",
+        // std::count_if(productionFacilities.begin(), productionFacilities.end(),
+            // &UnitTrainer::isIdle));
     row += 5;
 }
 

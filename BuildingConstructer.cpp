@@ -44,9 +44,11 @@ void ConstructionPO::updateStatus()
                 status = Constructing;
                 break;
             case BWAPI::Orders::Enum::ConstructingBuilding:
+                BWAPI::Broodwar << "Missed onUnitCreate" << std::endl;
                 product = contractor->getBuildUnit();
                 break;
             case BWAPI::Orders::Enum::IncompleteBuilding:
+                BWAPI::Broodwar << "Missed onUnitMorph" << std::endl;
                 product = contractor;
                 break;
             default:
@@ -136,7 +138,7 @@ bool BuildingConstructer::isObstructed(ConstructionPO Job)
     BWAPI::Position upperLeft = BWAPI::Position(Job.location),
                     size = BWAPI::Position(Job.constructable.tileSize()),
                     bottomRight = upperLeft + size;
-    return BWAPI::Broodwar->getUnitsInRectangle(
+    return !BWAPI::Broodwar->getUnitsInRectangle(
             upperLeft + BWAPI::Point<int, 1>(-16, -16),
             bottomRight + BWAPI::Point<int, 1>(16, 16),
             IsBuilding || IsEnemy || !IsMoving).empty();
@@ -172,7 +174,7 @@ void BuildingConstructer::continueConstruction(ConstructionPO &Job)
                  isObstructed(Job))
         {
             BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
-                Job.constructable, Job.contractor->getTilePosition());
+                Job.constructable, Job.contractor->getTilePosition(), 10);
             if (Location != BWAPI::TilePositions::Invalid) {
                 Job.location =  Location;
             }
@@ -205,13 +207,15 @@ void BuildingConstructer::constructUnit(BWAPI::UnitType Constructable)
     }
     catch (NoJob) {
         if (Self->minerals() >= Constructable.mineralPrice() - 24) {
-        // ToDo: Optimally choose contractor.
-        BWAPI::Unit Contractor = baseCenter->getClosestUnit(IsWorker);
-        if (!Contractor) return;
-        // ToDo: Choose better construction locations.
-        BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
-                Constructable, Contractor->getTilePosition(), 40);
-        beginConstruction(Contractor, Constructable, Location);
+            // ToDo: Optimally choose contractor.
+            BWAPI::Unit Contractor = baseCenter->getClosestUnit(IsWorker);
+            if (!Contractor) return;
+            // ToDo: Choose better construction locations.
+            BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
+                    Constructable, Contractor->getTilePosition(), 40);
+            if (Location != BWAPI::TilePositions::Invalid) {
+                beginConstruction(Contractor, Constructable, Location);
+            }
         }
     }
 }

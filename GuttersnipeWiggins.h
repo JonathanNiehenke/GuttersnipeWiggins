@@ -13,6 +13,36 @@
 
 class GW : public BWAPI::AIModule
 {
+private:
+    int availableSupply = 0, workerBuffer = 0, armyBuffer = 0, supplyCount = 0;
+    BWAPI::Player Self;
+    BWAPI::Unit baseCenter = nullptr;  // The primary/initial base building.
+    BWAPI::UnitType centerType, workerType, supplyType, armyEnablingTechType,
+                    armyUnitType;
+    // Indicates number already in construction/training for UnitType.
+    std::map<BWAPI::UnitType, short> PENDING_UNIT_TYPE_COUNT;
+    CmdRescuer::Rescuer cmdRescuer;
+    EcoBaseManager ecoBaseManager;
+    Cartographer cartographer;
+    SquadCommander squadCommander;
+    BuildingConstructer buildingConstructer;
+    UnitTrainer warriorTrainer;
+    void assignFields();
+    void manageProduction();
+    void manageBases();
+    void onBuildingCreate(BWAPI::Unit Unit);
+    void handleEggType(BWAPI::Unit Unit);
+    void onBuildingMorph(BWAPI::Unit Unit);
+    void manageAttackGroups();
+    void onCenterComplete(BWAPI::Unit Unit);
+    void onUnitLoss(BWAPI::Unit Unit);
+    int getAvailableSupply();
+    int getUnitBuffer(BWAPI::UnitType);
+    void scout(std::set<BWAPI::TilePosition> scoutLocations);
+    // void constructExpansion();
+    void displayUnitInfo();
+    void displayStatus();
+
 public:
     virtual void onStart();
     virtual void onFrame();
@@ -32,25 +62,6 @@ public:
     virtual void onPlayerLeft(BWAPI::Player player);
     virtual void onEnd(bool isWinner);
 
-private:
-    int availableSupply = 0, workerBuffer = 0, armyBuffer = 0, supplyCount = 0;
-    std::vector<std::pair<BWAPI::Position, BWAPI::Unitset>> getMapMinerals();
-    CmdRescuer::Rescuer cmdRescuer;
-    EcoBaseManager ecoBaseManager;
-    Cartographer cartographer;
-    SquadCommander squadCommander;
-    BuildingConstructer buildingConstructer;
-    UnitTrainer warriorTrainer;
-    void GW::manageProduction();
-    void GW::manageBases();
-    void GW::manageAttackGroups();
-    std::vector<BWAPI::TilePosition> getMineralClusterLocations();
-    int getAvailableSupply();
-    int getUnitBuffer(BWAPI::UnitType);
-    void scout(std::set<BWAPI::TilePosition> scoutLocations);
-    // void constructExpansion();
-    void displayUnitInfo();
-    void displayStatus();
 };
 
 #endif

@@ -30,12 +30,14 @@ void EcoBase::removeMineral(BWAPI::Unit mineralUnit)
     Minerals.erase(find(Minerals.begin(), Minerals.end(), mineralUnit));
 }
 
-bool EcoBase::isForgotten(BWAPI::Unit Mineral) {
+bool EcoBase::isForgotten(BWAPI::Unit Mineral)
+{
     // Believing it's false even if miner is in motion or waiting.
     return !Mineral->isBeingGathered();  
 }
 
-bool EcoBase::isNear(BWAPI::Unit Miner) {
+bool EcoBase::isNear(BWAPI::Unit Miner)
+{
     auto minerOrder = Miner->getOrder();
     return (minerOrder == BWAPI::Orders::MoveToMinerals ||
             minerOrder == BWAPI::Orders::WaitForMinerals);

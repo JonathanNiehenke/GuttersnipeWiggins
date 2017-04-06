@@ -173,11 +173,10 @@ bool SquadCommander::needToGroup(BWAPI::Unitset Squad, BWAPI::Position squadPos)
 
 void SquadCommander::attackUnit(BWAPI::Unitset Squad, BWAPI::Unit targetUnit)
 {
-    const int latency = BWAPI::Broodwar->getLatency();
     for (BWAPI::Unit Warrior: Squad) {
         int sinceCommandFrame = (BWAPI::Broodwar->getFrameCount() -
             Warrior->getLastCommandFrame());
-        if (sinceCommandFrame <= latency || Warrior->isAttackFrame())
+        if (Warrior->isAttackFrame())
             return;  // Prevent attack interruption.
         BWAPI::UnitCommand lastCmd = Warrior->getLastCommand();
         BWAPI::Unit attackedUnit = lastCmd.getTarget();
