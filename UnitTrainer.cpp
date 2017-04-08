@@ -12,10 +12,8 @@ bool UnitTrainer::isIdle(BWAPI::Unit Facility)
             !Facility->getLarva().empty()));
 }
 
-void UnitTrainer::onStart(
-    BWAPI::UnitType unitType, CmdRescuer::Rescuer *cmdRescuer)
+void UnitTrainer::onStart(CmdRescuer::Rescuer *cmdRescuer)
 {
-    this->unitType = unitType;
     this->cmdRescuer = cmdRescuer;
 }
 

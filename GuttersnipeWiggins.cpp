@@ -53,7 +53,20 @@ void GW::onStart()
     workerBuffer = GW::getUnitBuffer(workerType);
     squadCommander.onStart(baseCenter, armyUnitType, Self, &cartographer);
     buildingConstructer.onStart(Self, baseCenter, &cmdRescuer, &cartographer);
-    warriorTrainer.onStart(armyUnitType, &cmdRescuer);
+    unitTrainer.onStart(&cmdRescuer);
+    Core core(&buildingConstructer, &cartographer, &cmdRescuer,
+              &ecoBaseManager, &squadCommander, &unitTrainer);
+    switch (Self->getRace()) {
+        case BWAPI::Races::Enum::Protoss:
+            race = new ProtossRace(core);
+            break;
+        case BWAPI::Races::Enum::Terran:
+            race = new TerranRace(core);
+            break;
+        case BWAPI::Races::Enum::Zerg:
+            race = new ZergRace(core);
+            break;
+    }
 }
 
 void GW::onFrame()
@@ -90,10 +103,10 @@ void GW::onBuildingCreate(BWAPI::Unit Unit)
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Gateway:
         case BWAPI::UnitTypes::Enum::Terran_Barracks:
-            if (!warriorTrainer.isAvailable()) {
+            if (!unitTrainer.isAvailable()) {
                 scout(cartographer.getStartingLocations());
             }
-            warriorTrainer.includeFacility(Unit);
+            unitTrainer.includeFacility(Unit);
             armyBuffer = getUnitBuffer(armyUnitType);
         // Because we expect it catch it away from default.
         case BWAPI::UnitTypes::Enum::Protoss_Nexus:
@@ -108,34 +121,18 @@ void GW::onBuildingCreate(BWAPI::Unit Unit)
 void GW::onUnitCreate(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() != Self) return;  // Ignoring non-owned units
-    BWAPI::UnitType unitType = Unit->getType();
-    if (unitType.isBuilding()) {
-        onBuildingCreate(Unit);
-    }
-    PENDING_UNIT_TYPE_COUNT[Unit->getType()]++;
-    // Always after change to pending count.
-    availableSupply = GW::getAvailableSupply();
+    race->onUnitCreate(Unit);
 }
 
-void GW::handleEggType(BWAPI::Unit Unit)
-{
-    BWAPI::UnitType insideEggType = Unit->getBuildType();
-    if (insideEggType == supplyType && warriorTrainer.isAvailable()) {
-        squadCommander.assembleSquad();
-    }
-    PENDING_UNIT_TYPE_COUNT[insideEggType]++;
-    // Always after change to pending count.
-    availableSupply = GW::getAvailableSupply();
-}
 
 void GW::onBuildingMorph(BWAPI::Unit Unit)
 {
     switch (Unit->getType()) {
         case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
-            warriorTrainer.includeFacility(Unit);
+            unitTrainer.includeFacility(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Spawning_Pool:
-            warriorTrainer.includeFacility(baseCenter);
+            unitTrainer.includeFacility(baseCenter);
             scout(cartographer.getStartingLocations());
             break;
         default: 
@@ -151,135 +148,27 @@ void GW::onBuildingMorph(BWAPI::Unit Unit)
 
 void GW::onUnitMorph(BWAPI::Unit Unit)
 {
-    BWAPI::UnitType unitType = Unit->getType();
-    if (Unit->getPlayer() != Self) {
-        // Because geyser structures are never destroyed.
-        if (unitType == BWAPI::UnitTypes::Resource_Vespene_Geyser) {
+    if (Unit->getPlayer() == Self) {
+        race->onUnitMorph(Unit);
+    }
+    // Geyser structures morph back rather than getting destroyed.
+    else if (Unit->getType() == BWAPI::UnitTypes::Resource_Vespene_Geyser) {
             cartographer.removeBuildingLocation(Unit->getTilePosition());
-        }
-        return;  // Ignoring the other non-owned units.
-    }
-    if (unitType == BWAPI::UnitTypes::Zerg_Egg) {
-        handleEggType(Unit);
-    }
-    else if (unitType.isBuilding()) {
-        onBuildingMorph(Unit);
-    }
-}
-
-void GW::onCenterComplete(BWAPI::Unit Unit)
-{
-    if (!Unit->getClosestUnit(IsResourceDepot, 350) && Unit != baseCenter) {
-        workerBuffer = GW::getUnitBuffer(workerType);
-        BWAPI::Broodwar << "Searching for minerals" << std::endl;
-        // Add to ecoBaseManager after finding nearest mineralCluster.
-        for (BWAPI::Unitset mineralCluster: cartographer.getMinerals()) {
-            BWAPI::Unit baseCenter = BWAPI::Broodwar->getClosestUnit(
-                mineralCluster.getPosition(), IsResourceDepot, 300);
-            if (baseCenter == Unit) {
-                BWAPI::Broodwar << "Creating EcoBase" << std::endl;
-                ecoBaseManager.addBase(baseCenter, mineralCluster);
-                break;
-            }
-        }
     }
 }
 
 void GW::onUnitComplete(BWAPI::Unit Unit)
 {
-    if (Unit->getPlayer() != Self) return;  // Ignoring non-owned units
-    PENDING_UNIT_TYPE_COUNT[Unit->getType()]--;
-    // Always after change to pending count.
-    availableSupply = GW::getAvailableSupply();
-    switch (Unit->getType()) {
-        // Because we expect it, catch it away from default.
-        case BWAPI::UnitTypes::Enum::Protoss_Zealot:
-        case BWAPI::UnitTypes::Enum::Terran_Marine:
-        case BWAPI::UnitTypes::Enum::Zerg_Zergling:
-            break;
-        case BWAPI::UnitTypes::Enum::Protoss_Probe:
-        case BWAPI::UnitTypes::Enum::Terran_SCV:
-        case BWAPI::UnitTypes::Enum::Zerg_Drone:
-            try {
-                ecoBaseManager.addWorker(Unit);
-            }
-            catch (char* err) {
-                BWAPI::Broodwar->sendText(err);
-            }
-            break;
-        case BWAPI::UnitTypes::Enum::Protoss_Pylon:
-        case BWAPI::UnitTypes::Enum::Terran_Supply_Depot:
-        case BWAPI::UnitTypes::Enum::Zerg_Overlord:
-            ++supplyCount;
-            buildingConstructer.removeConstruction(Unit);
-            break;
-        case BWAPI::UnitTypes::Enum::Protoss_Nexus:
-        case BWAPI::UnitTypes::Enum::Terran_Command_Center:
-        case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
-            onCenterComplete(Unit);
-            buildingConstructer.removeConstruction(Unit);
-            break;
-        case BWAPI::UnitTypes::Enum::Protoss_Gateway:
-        case BWAPI::UnitTypes::Enum::Terran_Barracks:
-            buildingConstructer.removeConstruction(Unit);
-            break;
-        default:
-            BWAPI::Broodwar << "Unexpected unit completed: "
-                            << Unit->getType().c_str() << std::endl;
+    if (Unit->getPlayer() == Self) {
+        race->onUnitComplete(Unit);
     }
-}
-
-void GW::onUnitLoss(BWAPI::Unit Unit)
-{
-    switch (Unit->getType()) {
-        case BWAPI::UnitTypes::Enum::Protoss_Zealot:
-        case BWAPI::UnitTypes::Enum::Terran_Marine:
-        case BWAPI::UnitTypes::Enum::Zerg_Zergling:
-            squadCommander.removeWarrior(Unit);
-            break;
-        case BWAPI::UnitTypes::Enum::Protoss_Probe:
-        case BWAPI::UnitTypes::Enum::Terran_SCV:
-        case BWAPI::UnitTypes::Enum::Zerg_Drone:
-            try {
-                ecoBaseManager.removeWorker(Unit);
-            }
-            catch (char* err) {
-                BWAPI::Broodwar->sendText(err);
-            }
-            break;
-        case BWAPI::UnitTypes::Enum::Protoss_Pylon:
-        case BWAPI::UnitTypes::Enum::Terran_Supply_Depot:
-        case BWAPI::UnitTypes::Enum::Zerg_Overlord:
-            if (Unit->isCompleted()) {
-                --supplyCount;
-            }
-            buildingConstructer.removeConstruction(Unit);
-            break;
-        case BWAPI::UnitTypes::Enum::Protoss_Gateway:
-        case BWAPI::UnitTypes::Enum::Terran_Barracks:
-            warriorTrainer.removeFacility(Unit);
-            buildingConstructer.removeConstruction(Unit);
-            break;
-        case BWAPI::UnitTypes::Enum::Zerg_Spawning_Pool:
-            BWAPI::Broodwar->sendText("gg, you've proven more superior.");
-            BWAPI::Broodwar->leaveGame();
-            break;
-        case BWAPI::UnitTypes::Enum::Protoss_Nexus:
-        case BWAPI::UnitTypes::Enum::Terran_Command_Center:
-        case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
-            ecoBaseManager.removeBase(Unit);
-            buildingConstructer.removeConstruction(Unit);
-            break;
-        default:
-            BWAPI::Broodwar << "Unexpected unit destroyed: "
-                            << Unit->getType().c_str() << std::endl;
-    }
+    // Previously: Incremented pending type.
 }
 
 void GW::onUnitDestroy(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self) {
-        onUnitLoss(Unit);
+        race->onUnitDestroy(Unit);
     }
     else if (Unit->getType().isMineralField()) {
         try {
@@ -303,8 +192,6 @@ void GW::onUnitDiscover(BWAPI::Unit Unit)
     {
         cartographer.addBuildingLocation(
             owningPlayer, Unit->getTilePosition());
-        // BWAPI::Broodwar->sendTextEx(true, "Enemy %s discovered.",
-            // Unit->getType().c_str());
     }
 }
 
@@ -399,6 +286,7 @@ void GW::onPlayerLeft(BWAPI::Player Player)
 
 void GW::onEnd(bool IsWinner)
 {
+    delete race;
 }
 
 void GW::manageProduction()
@@ -422,7 +310,7 @@ void GW::manageProduction()
         catch (char* err) {
             BWAPI::Broodwar->sendText(err);
         }
-        warriorTrainer.produceUnits(armyUnitType);
+        unitTrainer.produceUnits(armyUnitType);
     }
 }
 
@@ -431,13 +319,13 @@ void GW::manageBases()
     const int centerPrice = centerType.mineralPrice(),
               armyFacilityPrice = armyEnablingTechType.mineralPrice();
     if (!PENDING_UNIT_TYPE_COUNT[centerType] &&
-        warriorTrainer.facilityCount() >= 2 &&
+        unitTrainer.facilityCount() >= 2 &&
         ecoBaseManager.isAtCapacity())
     {
         buildingConstructer.constructExpansion(centerType);
     }
     else if (supplyCount && (Self->minerals() > armyFacilityPrice * 1.5 ||
-            !warriorTrainer.isAvailable()))
+            !unitTrainer.isAvailable()))
     {
         // Construct multiple Gateways and Barracks.
         if (armyEnablingTechType.canProduce())
@@ -445,7 +333,7 @@ void GW::manageBases()
             buildingConstructer.constructUnit(armyEnablingTechType);
         }
         // Instead of multiple spawning pools build hatcharies.
-        else if (warriorTrainer.isAvailable() ||
+        else if (unitTrainer.isAvailable() ||
                 PENDING_UNIT_TYPE_COUNT[armyEnablingTechType])
         {
             buildingConstructer.constructUnit(BWAPI::UnitTypes::Zerg_Hatchery);
@@ -484,7 +372,7 @@ int GW::getUnitBuffer(BWAPI::UnitType unitType)
         unitBuildTime = unitType.buildTime(),
         facilityAmount = (unitType == workerType
             ? ecoBaseManager.getBaseAmount()
-            : warriorTrainer.facilityCount()),
+            : unitTrainer.facilityCount()),
         unitsDuringBuild = facilityAmount * std::ceil(
             supplyBuildTime / unitBuildTime);
     return unitsDuringBuild * unitSupply;
@@ -555,7 +443,7 @@ void GW::displayStatus()
         workerBuffer + armyBuffer, PENDING_UNIT_TYPE_COUNT[supplyType]);
     int row = 30;
     ecoBaseManager.displayStatus(row);
-    warriorTrainer.displayStatus(row);
+    unitTrainer.displayStatus(row);
     buildingConstructer.displayStatus(row);
     squadCommander.displayStatus(row);
     cartographer.displayStatus(row);

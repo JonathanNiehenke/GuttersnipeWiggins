@@ -98,6 +98,10 @@
     <ClCompile Include="SquadCommander.cpp" />
     <ClCompile Include="BuildingConstructer.cpp" />
     <ClCompile Include="UnitTrainer.cpp" />
+    <ClCompile Include="Race.cpp" />
+    <ClCompile Include="ProtossRace.cpp" />
+    <ClCompile Include="TerranRace.cpp" />
+    <ClCompile Include="ZergRace.cpp" />
     <ClCompile Include="GuttersnipeWiggins.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -108,6 +112,10 @@
     <ClInclude Include="SquadCommander.h" />
     <ClInclude Include="BuildingConstructer.h" />
     <ClInclude Include="UnitTrainer.h" />
+    <ClInclude Include="Race.h" />
+    <ClInclude Include="ProtossRace.h" />
+    <ClInclude Include="TerranRace.h" />
+    <ClInclude Include="ZergRace.h" />
     <ClInclude Include="GuttersnipeWiggins.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

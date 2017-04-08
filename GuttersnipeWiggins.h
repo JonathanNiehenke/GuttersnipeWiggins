@@ -3,13 +3,16 @@
 #include <vector>
 #include <set>
 #include <BWAPI.h>
-#include "Utils.h"
+#include "BuildingConstructer.h"
+#include "Cartographer.h"
 #include "CmdRescuer.h"
 #include "EcoBaseManager.h"
 #include "SquadCommander.h"
-#include "Cartographer.h"
-#include "BuildingConstructer.h"
 #include "UnitTrainer.h"
+#include "Race.h"
+#include "ProtossRace.h"
+#include "TerranRace.h"
+#include "ZergRace.h"
 
 class GW : public BWAPI::AIModule
 {
@@ -21,12 +24,13 @@ private:
                     armyUnitType;
     // Indicates number already in construction/training for UnitType.
     std::map<BWAPI::UnitType, short> PENDING_UNIT_TYPE_COUNT;
+    BuildingConstructer buildingConstructer;
+    Cartographer cartographer;
     CmdRescuer::Rescuer cmdRescuer;
     EcoBaseManager ecoBaseManager;
-    Cartographer cartographer;
+    Race *race;  // onStart initialization with polymorphic intentions.
     SquadCommander squadCommander;
-    BuildingConstructer buildingConstructer;
-    UnitTrainer warriorTrainer;
+    UnitTrainer unitTrainer;
     void assignFields();
     void manageProduction();
     void manageBases();
