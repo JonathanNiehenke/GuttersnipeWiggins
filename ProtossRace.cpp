@@ -8,20 +8,24 @@ void ProtossRace::onUnitCreate(BWAPI::Unit Unit)
         // Because we expect it, catch it away from default.
         case BWAPI::UnitTypes::Enum::Protoss_Probe:
         case BWAPI::UnitTypes::Enum::Protoss_Zealot:
-        case BWAPI::UnitTypes::Enum::Protoss_Nexus:
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Pylon:
             squadCommander->assembleSquad();  // Empty squads are Ok.
             buildingConstructer->addProduct(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Gateway:
+            if (!unitTrainer->isAvailable()) {
+                scout(cartographer->getStartingLocations());
+            }
             unitTrainer->includeFacility(Unit);
-            // Buffer management must be part of a shared object.
-            // armyBuffer = getUnitBuffer(armyUnitType);
             buildingConstructer->addProduct(Unit);
+            break;
+        case BWAPI::UnitTypes::Enum::Protoss_Nexus:
+            buildingConstructer->addProduct(Unit);
+            break;
         default: 
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
-                            << "created!" << std::endl;
+                            << " created!" << std::endl;
     }
 }
 
@@ -36,11 +40,15 @@ void ProtossRace::onUnitComplete(BWAPI::Unit Unit)
                 ecoBaseManager->addWorker(Unit);
             }
             catch (char* err) {
-                BWAPI::Broodwar->sendText(err);
+                if (ecoBaseManager->getBaseAmount()) {
+                    BWAPI::Broodwar->sendText(err);
+                }
+                else {
+                    onCompleteWorkaround(Unit);
+                }
             }
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Pylon:
-            // Previously: Incremented supplyCount.
             buildingConstructer->removeConstruction(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Nexus:
@@ -49,10 +57,11 @@ void ProtossRace::onUnitComplete(BWAPI::Unit Unit)
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Gateway:
             buildingConstructer->removeConstruction(Unit);
+            cartographer->addFacilityPosition(Unit->getPosition());
             break;
         default:
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
-                            << "completed!" << std::endl;
+                            << " completed!" << std::endl;
     }
 }
 
@@ -71,14 +80,11 @@ void ProtossRace::onUnitDestroy(BWAPI::Unit Unit)
             }
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Pylon:
-            if (Unit->isCompleted()) {
-                // Previously: Decremented supplyCount.
-            }
             buildingConstructer->removeConstruction(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Gateway:
-            buildingConstructer->removeConstruction(Unit);
             unitTrainer->removeFacility(Unit);
+            buildingConstructer->removeConstruction(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Nexus:
             ecoBaseManager->removeBase(Unit);
@@ -86,8 +92,12 @@ void ProtossRace::onUnitDestroy(BWAPI::Unit Unit)
             break;
         default:
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
-                            << "destroyed!" << std::endl;
+                            << " destroyed!" << std::endl;
     }
 }
 
+bool ProtossRace::readyForArmyTech()
+{
+    return Self->completedUnitCount(supplyType) && Race::readyForArmyTech();
+}
 #endif

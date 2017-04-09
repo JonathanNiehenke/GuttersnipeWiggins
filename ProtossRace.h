@@ -5,6 +5,7 @@
 class ProtossRace : public Race
 {
     private:
+        bool readyForArmyTech();
     public:
         ProtossRace(Core &core) : Race(
             BWAPI::UnitTypes::Enum::Protoss_Nexus,
@@ -14,7 +15,6 @@ class ProtossRace : public Race
             BWAPI::UnitTypes::Enum::Protoss_Zealot,
             core) {}
         void onUnitCreate(BWAPI::Unit Unit);
-        void onUnitMorph(BWAPI::Unit Unit) {}
         void onUnitComplete(BWAPI::Unit Unit);
         void onUnitDestroy(BWAPI::Unit Unit);
 };

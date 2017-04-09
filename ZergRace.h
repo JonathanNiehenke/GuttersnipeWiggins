@@ -5,6 +5,9 @@
 class ZergRace : public Race
 {
     private:
+        // incompleteUnitCount counts Overlords when in the transition
+        // from the egg to normal form, thus making it unreliable.
+        int incompleteOverlords = 0;  // Our alternative.
         void handleEggType(BWAPI::Unit Unit);
     public:
         ZergRace(Core &core) : Race(
@@ -20,6 +23,11 @@ class ZergRace : public Race
         void onCenterComplete(BWAPI::Unit Unit);
         void onUnitComplete(BWAPI::Unit Unit);
         void onUnitDestroy(BWAPI::Unit Unit);
+        void createSupply() { unitTrainer->produceSingleUnit(supplyType); }
+        void createFacility();
+        bool needsSupply();
+        int getAvailableSupply();
+        void displayStatus();
 };
 
 #endif

@@ -41,7 +41,6 @@ class EcoBaseManager
             pendingWorkers = 0;
         // Why: unit lookup for assigned Base->
         std::unordered_map<BWAPI::Unit, EcoBase*> unitToBase;
-        std::unordered_map<EcoBase*, BWAPI::Unitset> baseToUnits;
         std::unordered_set<EcoBase*> Bases;
     public:
         ~EcoBaseManager();
@@ -55,7 +54,8 @@ class EcoBaseManager
         void removeMineral(BWAPI::Unit mineralUnit);
         void produceSingleUnit(BWAPI::UnitType unitType);
         void produceUnits(BWAPI::UnitType unitType);
-        bool EcoBaseManager::isAtCapacity();
+        bool isAtCapacity();
+        BWAPI::Unit getCenter() { return (*Bases.begin())->getCenter(); }
         void displayStatus(int &row);
 };
 

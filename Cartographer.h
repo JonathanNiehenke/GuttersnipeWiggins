@@ -5,12 +5,12 @@
 
 class Cartographer
 {
-    typedef std::pair<BWAPI::Position, BWAPI::Unitset> PositionedUnits;
     typedef std::set<BWAPI::TilePosition> locationSet;
     private:
         int resourceCount = 0;
         std::vector<BWAPI::Unitset> Minerals;
-        std::vector<BWAPI::Position> resourcePositons;
+        std::vector<BWAPI::Position> resourcePositions;
+        std::vector<BWAPI::Position> facilityPositions;
         std::map<BWAPI::Player, locationSet> enemyLocations;
         BWAPI::Position startPosition = BWAPI::Positions::Unknown;
     public:
@@ -25,6 +25,11 @@ class Cartographer
         BWAPI::TilePosition getClosestEnemyLocation(BWAPI::Position);
         locationSet getStartingLocations();
         void cleanEnemyLocations();
+        void addFacilityPosition(BWAPI::Position buildingPosition)
+            { facilityPositions.push_back(buildingPosition); }
+        void removeFacilityPosition(BWAPI::Position buildingPosition);
+        std::vector<BWAPI::Position> getFacilityPositions()
+            { return facilityPositions; }
         void displayStatus(int &row);
         BWAPI::Position operator[](int i);
 };

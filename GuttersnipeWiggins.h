@@ -23,27 +23,14 @@ private:
     BWAPI::UnitType centerType, workerType, supplyType, armyEnablingTechType,
                     armyUnitType;
     // Indicates number already in construction/training for UnitType.
-    std::map<BWAPI::UnitType, short> PENDING_UNIT_TYPE_COUNT;
     BuildingConstructer buildingConstructer;
     Cartographer cartographer;
     CmdRescuer::Rescuer cmdRescuer;
     EcoBaseManager ecoBaseManager;
-    Race *race;  // onStart initialization with polymorphic intentions.
+    Race *race;  // onStart initializes with polymorphic intentions.
     SquadCommander squadCommander;
     UnitTrainer unitTrainer;
     void assignFields();
-    void manageProduction();
-    void manageBases();
-    void onBuildingCreate(BWAPI::Unit Unit);
-    void handleEggType(BWAPI::Unit Unit);
-    void onBuildingMorph(BWAPI::Unit Unit);
-    void manageAttackGroups();
-    void onCenterComplete(BWAPI::Unit Unit);
-    void onUnitLoss(BWAPI::Unit Unit);
-    int getAvailableSupply();
-    int getUnitBuffer(BWAPI::UnitType);
-    void scout(std::set<BWAPI::TilePosition> scoutLocations);
-    // void constructExpansion();
     void displayUnitInfo();
     void displayStatus();
 

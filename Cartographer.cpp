@@ -35,7 +35,7 @@ void Cartographer::discoverResources(BWAPI::Position startPosition)
                 BWAPI::Broodwar->sendText("Lacking expansion location");
             }
             else {
-                resourcePositons.push_back(BWAPI::Position(Location));
+                resourcePositions.push_back(BWAPI::Position(Location));
                 Minerals.push_back(pair.second);
             }
     }
@@ -44,7 +44,7 @@ void Cartographer::discoverResources(BWAPI::Position startPosition)
 
 std::vector<BWAPI::Position> Cartographer::getResourcePositions()
 {
-    return resourcePositons;
+    return resourcePositions;
 }
 
 void Cartographer::addBuildingLocation(
@@ -115,6 +115,15 @@ void Cartographer::cleanEnemyLocations()
     }
 }
 
+void Cartographer::removeFacilityPosition(BWAPI::Position buildingPosition)
+{
+    auto endIt = facilityPositions.end(),
+         foundIt = find(facilityPositions.begin(), endIt, buildingPosition);
+    if (foundIt != endIt) {
+        facilityPositions.erase(foundIt);
+    }
+}
+
 void Cartographer::displayStatus(int &row)
 {
     for (auto playerLocations: enemyLocations) {
@@ -136,7 +145,7 @@ void Cartographer::displayStatus(int &row)
 BWAPI::Position Cartographer::operator[](int i)
 {
     // Wrap around resource positions.
-    return resourcePositons[i % resourcePositons.size()];
+    return resourcePositions[i % resourcePositions.size()];
 }
 
 #endif

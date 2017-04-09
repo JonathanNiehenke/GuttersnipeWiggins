@@ -14,7 +14,6 @@ class TerranRace : public Race
             BWAPI::UnitTypes::Enum::Terran_Marine,
             core) {}
         void onUnitCreate(BWAPI::Unit Unit);
-        void onUnitMorph(BWAPI::Unit Unit) {}
         void onUnitComplete(BWAPI::Unit Unit);
         void onUnitDestroy(BWAPI::Unit Unit);
 };

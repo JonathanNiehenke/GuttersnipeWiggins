@@ -2,64 +2,71 @@
 #define ZERGRACE_CPP
 #include "ZergRace.h"
 
+// Zerg has construction issues.
+
 void ZergRace::handleEggType(BWAPI::Unit Unit)
 {
     BWAPI::UnitType insideEggType = Unit->getBuildType();
     if (insideEggType == supplyType) {
-        squadCommander->assembleSquad();  // Empty squads are Ok.
+        ++incompleteOverlords;
+        squadCommander->assembleSquad(200);  // Empty squads are Ok.
     }
-    // Producting management must become an object.
-    // PENDING_UNIT_TYPE_COUNT[Unit->getType()]++;
 }
-
 
 void ZergRace::onUnitCreate(BWAPI::Unit Unit)
 {
-    buildingConstructer->addProduct(Unit);
     switch (Unit->getType()) {
         // Because we expect it, catch it away from default.
-        case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
+        case BWAPI::UnitTypes::Enum::Zerg_Larva:
+        case BWAPI::UnitTypes::Enum::Zerg_Zergling:  // Second zergling
             break;
-        case BWAPI::UnitTypes::Enum::Zerg_Egg:
-            handleEggType(Unit);
+        case BWAPI::UnitTypes::Enum::Zerg_Overlord:
+            ++incompleteOverlords;  // Only onStart.
             break;
-        case BWAPI::UnitTypes::Enum::Zerg_Spawning_Pool:
+        case BWAPI::UnitTypes::Enum::Zerg_Hatchery:  // Only onStart
+            BWAPI::Broodwar << "Hatchery created only on start" << std::endl;
             unitTrainer->includeFacility(Unit);
-            // Buffer management must be part of a shared object.
-            // armyBuffer = getUnitBuffer(armyUnitType);
             break;
-        default: 
+        default:
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
-                            << "created!" << std::endl;
+                            << " created!" << std::endl;
     }
 }
 
 void ZergRace::onUnitMorph(BWAPI::Unit Unit)
 {
     switch (Unit->getType()) {
-        case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
-            unitTrainer->includeFacility(Unit);
+        case BWAPI::UnitTypes::Enum::Zerg_Larva:
+        case BWAPI::UnitTypes::Enum::Zerg_Drone:
+        case BWAPI::UnitTypes::Enum::Zerg_Overlord:
+        case BWAPI::UnitTypes::Enum::Zerg_Zergling:
+            break;
+        case BWAPI::UnitTypes::Enum::Zerg_Egg:
+            handleEggType(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Spawning_Pool:
-            // unitTrainer->includeFacility(baseCenter);
-            // scout(cartographer->getStartingLocations());
+            if (unitTrainer->facilityCount() == 1) {
+                scout(cartographer->getStartingLocations());
+            }
+            buildingConstructer->addProduct(Unit);
+            break;
+        case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
+            unitTrainer->includeFacility(Unit);
+            buildingConstructer->addProduct(Unit);
             break;
         default: 
-                BWAPI::Broodwar << "Unexpected Building created: "
-                                << Unit->getType().c_str() << std::endl;
+            BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
+                            << " morphed!:" << std::endl;
     }
-    buildingConstructer->addProduct(Unit);
-    // Previously: Incremented pending type.
-    // Zerg workers become buildings, so recalculate supply.
 }
 
 void ZergRace::onCenterComplete(BWAPI::Unit Unit)
 {
+    
+    cartographer->addFacilityPosition(Unit->getPosition());
     // Prevent army hatcheries from becoming an EcoBases;
-    if (!Unit->getClosestUnit(BWAPI::Filter::IsResourceDepot, 350)) // &&
-        // Unit != baseCenter)
+    if (!Unit->getClosestUnit(BWAPI::Filter::IsResourceDepot, 350))
     {
-        // Previously: Update worker buffer
         Race::onCenterComplete(Unit);
     }
 }
@@ -68,6 +75,7 @@ void ZergRace::onUnitComplete(BWAPI::Unit Unit)
 {
     switch (Unit->getType()) {
         // Because we expect it, catch it away from default.
+        case BWAPI::UnitTypes::Enum::Zerg_Larva:
         case BWAPI::UnitTypes::Enum::Zerg_Zergling:
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Drone:
@@ -75,12 +83,16 @@ void ZergRace::onUnitComplete(BWAPI::Unit Unit)
                 ecoBaseManager->addWorker(Unit);
             }
             catch (char* err) {
-                BWAPI::Broodwar->sendText(err);
+                if (ecoBaseManager->getBaseAmount()) {
+                    BWAPI::Broodwar->sendText(err);
+                }
+                else {
+                    onCompleteWorkaround(Unit);
+                }
             }
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Overlord:
-            // Previously: Incremented supplyCount.
-            buildingConstructer->removeConstruction(Unit);
+            --incompleteOverlords;
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
             onCenterComplete(Unit);
@@ -91,7 +103,7 @@ void ZergRace::onUnitComplete(BWAPI::Unit Unit)
             break;
         default:
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
-                            << "completed!" << std::endl;
+                            << " completed!" << std::endl;
     }
 }
 
@@ -111,10 +123,6 @@ void ZergRace::onUnitDestroy(BWAPI::Unit Unit)
             }
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Overlord:
-            if (Unit->isCompleted()) {
-                // Previously: Decremented supplyCount.
-            }
-            buildingConstructer->removeConstruction(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Spawning_Pool:
             BWAPI::Broodwar->sendText("gg, you've proven more superior.");
@@ -126,8 +134,55 @@ void ZergRace::onUnitDestroy(BWAPI::Unit Unit)
             break;
         default:
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
-                            << "destroyed!" << std::endl;
+                            << " destroyed!" << std::endl;
     }
+}
+
+void ZergRace::createFacility()
+{
+    // Instead of multiple spawning pools build hatcharies.
+    if (Self->allUnitCount(armyTechType)) {
+        buildingConstructer->constructUnit(centerType);
+    }
+    else {
+        buildingConstructer->constructUnit(armyTechType);
+    }
+}
+
+int ZergRace::getAvailableSupply()
+{
+    const int suppProvided = supplyType.supplyProvided(),
+              centProvided = centerType.supplyProvided();
+    int constructingCenter = Self->incompleteUnitCount(centerType),
+        overlordSupply = incompleteOverlords * suppProvided,
+        supplyToBeProvided = (
+            overlordSupply + constructingCenter * centProvided);
+    return Self->supplyTotal() + supplyToBeProvided - Self->supplyUsed();
+}
+
+bool ZergRace::needsSupply()
+{
+    int workerBuffer = getUnitBuffer(workerType);
+    // Zerg facilities do not produce till completed armyTechType
+    int armyBuffer = (Self->completedUnitCount(armyTechType)
+                      ?  getUnitBuffer(armyUnitType) : 0);
+    return getAvailableSupply() <= workerBuffer + armyBuffer;
+}
+
+void ZergRace::displayStatus()
+{
+    BWAPI::Broodwar->drawTextScreen(3, 15,
+        "availableSupply: %d, Buffer: %d, pendingSupply %d ",
+        getAvailableSupply(), 
+        getUnitBuffer(workerType) + (Self->completedUnitCount(armyTechType)
+                      ?  getUnitBuffer(armyUnitType) : 0),
+        incompleteOverlords);
+    int row = 30;
+    ecoBaseManager->displayStatus(row);
+    unitTrainer->displayStatus(row);
+    buildingConstructer->displayStatus(row);
+    squadCommander->displayStatus(row);
+    cartographer->displayStatus(row);
 }
 
 

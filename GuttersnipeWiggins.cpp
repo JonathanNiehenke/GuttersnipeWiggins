@@ -41,16 +41,7 @@ void GW::onStart()
     BWAPI::Broodwar->enableFlag(1);
     assignFields();
     cartographer.discoverResources(BWAPI::Position(Self->getStartLocation()));
-    // Workaround cause initial workers may complete before the baseCenter.
-    for (BWAPI::Unitset mineralCluster: cartographer.getMinerals()) {
-        BWAPI::Unit baseCenter = BWAPI::Broodwar->getClosestUnit(
-            mineralCluster.getPosition(), IsResourceDepot, 300);
-        if (baseCenter == baseCenter) {
-            ecoBaseManager.addBase(baseCenter, mineralCluster);
-            break;
-        }
-    }
-    workerBuffer = GW::getUnitBuffer(workerType);
+    // Reposition: Uses armyUnitType.
     squadCommander.onStart(baseCenter, armyUnitType, Self, &cartographer);
     buildingConstructer.onStart(Self, baseCenter, &cmdRescuer, &cartographer);
     unitTrainer.onStart(&cmdRescuer);
@@ -74,11 +65,11 @@ void GW::onFrame()
     const int actionFrames = std::max(5, BWAPI::Broodwar->getLatency());
     GW::displayStatus(); // For debugging.
     switch(BWAPI::Broodwar->getFrameCount() % actionFrames) {
-        case 0: GW::manageProduction();
+        case 0: race->manageProduction();
             break;
-        case 1: GW::manageBases();
+        case 1: race->manageStructures();
             break;
-        case 2: GW::manageAttackGroups();
+        case 2: race->manageAttackGroups();
             break;
         case 3: squadCommander.combatMicro();
             break;
@@ -93,57 +84,11 @@ void GW::onFrame()
     }
 }
 
-void GW::onBuildingCreate(BWAPI::Unit Unit)
-{
-    buildingConstructer.addProduct(Unit);
-    switch (Unit->getType()) {
-        case BWAPI::UnitTypes::Enum::Protoss_Pylon:
-        case BWAPI::UnitTypes::Enum::Terran_Supply_Depot:
-            squadCommander.assembleSquad();
-            break;
-        case BWAPI::UnitTypes::Enum::Protoss_Gateway:
-        case BWAPI::UnitTypes::Enum::Terran_Barracks:
-            if (!unitTrainer.isAvailable()) {
-                scout(cartographer.getStartingLocations());
-            }
-            unitTrainer.includeFacility(Unit);
-            armyBuffer = getUnitBuffer(armyUnitType);
-        // Because we expect it catch it away from default.
-        case BWAPI::UnitTypes::Enum::Protoss_Nexus:
-        case BWAPI::UnitTypes::Enum::Terran_Command_Center:
-            break;
-        default: 
-            BWAPI::Broodwar << "Unexpected Building created: "
-                            << Unit->getType().c_str() << std::endl;
-    }
-}
-
 void GW::onUnitCreate(BWAPI::Unit Unit)
 {
-    if (Unit->getPlayer() != Self) return;  // Ignoring non-owned units
-    race->onUnitCreate(Unit);
-}
-
-
-void GW::onBuildingMorph(BWAPI::Unit Unit)
-{
-    switch (Unit->getType()) {
-        case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
-            unitTrainer.includeFacility(Unit);
-            break;
-        case BWAPI::UnitTypes::Enum::Zerg_Spawning_Pool:
-            unitTrainer.includeFacility(baseCenter);
-            scout(cartographer.getStartingLocations());
-            break;
-        default: 
-                BWAPI::Broodwar << "Unexpected Building created: "
-                                << Unit->getType().c_str() << std::endl;
+    if (Unit->getPlayer() == Self) {
+        race->onUnitCreate(Unit);
     }
-    buildingConstructer.addProduct(Unit);
-    PENDING_UNIT_TYPE_COUNT[Unit->getType()]++;
-    // Zerg workers become buildings, so recalculate.
-    availableSupply = GW::getAvailableSupply();
-    armyBuffer = getUnitBuffer(armyUnitType);
 }
 
 void GW::onUnitMorph(BWAPI::Unit Unit)
@@ -212,7 +157,6 @@ void GW::onUnitRenegade(BWAPI::Unit Unit)
     // Perhaps I will learn something.
     BWAPI::Broodwar->sendTextEx(true, "%s is Renegade: %s.",
         Unit->getPlayer()->getName().c_str(), Unit->getType().c_str());
-    if (Unit->getPlayer() != Self) return;  // Ignoring non-owned units
 }
 
 void GW::onNukeDetect(BWAPI::Position target)
@@ -289,117 +233,6 @@ void GW::onEnd(bool IsWinner)
     delete race;
 }
 
-void GW::manageProduction()
-{
-    if (availableSupply <= workerBuffer + armyBuffer &&
-        Self->supplyTotal() != 400)
-    {
-        if (supplyType.isBuilding()) {
-            // Constructs a pylon or supply depot.
-            buildingConstructer.constructUnit(supplyType);
-        }
-        else {
-            // Trains a overloard.
-            // TRAINING[supplyType].produceSingleUnit(supplyType);
-        }
-    }
-    else {
-        try {
-            ecoBaseManager.produceUnits(workerType);
-        }
-        catch (char* err) {
-            BWAPI::Broodwar->sendText(err);
-        }
-        unitTrainer.produceUnits(armyUnitType);
-    }
-}
-
-void GW::manageBases()
-{
-    const int centerPrice = centerType.mineralPrice(),
-              armyFacilityPrice = armyEnablingTechType.mineralPrice();
-    if (!PENDING_UNIT_TYPE_COUNT[centerType] &&
-        unitTrainer.facilityCount() >= 2 &&
-        ecoBaseManager.isAtCapacity())
-    {
-        buildingConstructer.constructExpansion(centerType);
-    }
-    else if (supplyCount && (Self->minerals() > armyFacilityPrice * 1.5 ||
-            !unitTrainer.isAvailable()))
-    {
-        // Construct multiple Gateways and Barracks.
-        if (armyEnablingTechType.canProduce())
-        {
-            buildingConstructer.constructUnit(armyEnablingTechType);
-        }
-        // Instead of multiple spawning pools build hatcharies.
-        else if (unitTrainer.isAvailable() ||
-                PENDING_UNIT_TYPE_COUNT[armyEnablingTechType])
-        {
-            buildingConstructer.constructUnit(BWAPI::UnitTypes::Zerg_Hatchery);
-        }
-        // This is where we build the spawning pool.
-        else
-        {
-            buildingConstructer.constructUnit(armyEnablingTechType);
-        }
-    }
-}
-
-void GW::manageAttackGroups()
-{
-    // ToDo: Change defense to around given positons.
-    if (baseCenter->getClosestUnit(IsEnemy, 900))
-        squadCommander.assembleSquad();  // Enemy is inside base assemble defenders.
-    squadCommander.uniteSquads();
-    squadCommander.removeEmptySquads();
-}
-
-int GW::getAvailableSupply()
-{
-    const int supply = supplyType.supplyProvided(),
-              centerSupply = centerType.supplyProvided();
-    int supplyConstructing = (PENDING_UNIT_TYPE_COUNT[supplyType] * supply +
-        PENDING_UNIT_TYPE_COUNT[centerType] * centerSupply);
-    return Self->supplyTotal() + supplyConstructing - Self->supplyUsed();
-}
-
-int GW::getUnitBuffer(BWAPI::UnitType unitType)
-{
-    // Preventing repetitive conversion into a float by using a float.
-    const float supplyBuildTime = supplyType.buildTime();
-    int unitSupply = unitType.supplyRequired(),
-        unitBuildTime = unitType.buildTime(),
-        facilityAmount = (unitType == workerType
-            ? ecoBaseManager.getBaseAmount()
-            : unitTrainer.facilityCount()),
-        unitsDuringBuild = facilityAmount * std::ceil(
-            supplyBuildTime / unitBuildTime);
-    return unitsDuringBuild * unitSupply;
-}
-
-void GW::scout(std::set<BWAPI::TilePosition> scoutLocations)
-{
-    // ToDo: Scout with fewer workers.
-    // Bug: Won't scout usually Protoss.
-    BWAPI::Unitset workerUnits = baseCenter->getUnitsInRadius(
-        900, IsWorker && IsOwned && !IsConstructing);
-    auto workerIt = workerUnits.begin();
-    for (BWAPI::TilePosition Location: scoutLocations) {
-        // ToDo: Gather the previous mineral instead.
-        BWAPI::Unit Scout = *workerIt++,
-                    closestMineral = Scout->getClosestUnit(IsMineralField);
-        if (!Scout->move(BWAPI::Position(Location))) {
-            cmdRescuer.append(CmdRescuer::MoveCommand(
-                Scout, BWAPI::Position(Location), true));
-        }
-        else if (!Scout->gather(closestMineral, true)) {
-            cmdRescuer.append(CmdRescuer::GatherCommand(
-                Scout, closestMineral, true));
-        }
-    }
-}
-
 void GW::displayUnitInfo()
 {
     int row = 15;
@@ -438,15 +271,7 @@ void GW::displayStatus()
     BWAPI::Broodwar->drawTextScreen(3, 3, "APM %d, FPS %d, avgFPS %f",
         BWAPI::Broodwar->getAPM(), BWAPI::Broodwar->getFPS(),
         BWAPI::Broodwar->getAverageFPS());
-    BWAPI::Broodwar->drawTextScreen(3, 15,
-        "availableSupply: %d, Buffer: %d, pendingSupply %d ", availableSupply,
-        workerBuffer + armyBuffer, PENDING_UNIT_TYPE_COUNT[supplyType]);
-    int row = 30;
-    ecoBaseManager.displayStatus(row);
-    unitTrainer.displayStatus(row);
-    buildingConstructer.displayStatus(row);
-    squadCommander.displayStatus(row);
-    cartographer.displayStatus(row);
+    race->displayStatus();
     displayUnitInfo();
 }
 

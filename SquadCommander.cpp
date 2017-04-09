@@ -87,13 +87,27 @@ void SquadCommander::onStart(
     this->cartographer = cartographer;
 }
 
-void SquadCommander::assembleSquad()
+void SquadCommander::drawSquadGather(BWAPI::Position Pos, int Range)
+{
+    // Live debugging info.
+    BWAPI::Broodwar->registerEvent(
+        [Pos, Range](BWAPI::Game*){
+            BWAPI::Broodwar->drawCircleMap(Pos, Range,
+                BWAPI::Color(255, 127, 0), false);  // Orange range.
+        },  nullptr, 24);
+}
+
+void SquadCommander::assembleSquad(int Range)
 {
     // ToDo: Change army collection to around given positons.
-    BWAPI::Unitset Squad = BWAPI::Broodwar->getUnitsInRadius(
-        baseCenter->getPosition(), 900, GetType == armyUnitType && IsOwned);
-    if (!Squad.empty())
-        armySquads.push_back(Squad);
+    for (BWAPI::Position Pos: cartographer->getFacilityPositions()) {
+        drawSquadGather(Pos, Range);
+        BWAPI::Unitset Squad = BWAPI::Broodwar->getUnitsInRadius(
+            Pos, Range, GetType == armyUnitType && IsOwned);
+        if (!Squad.empty()) {
+            armySquads.push_back(Squad);
+        }
+    }
 }
 
 void SquadCommander::removeWarrior(BWAPI::Unit deadWarrior)

@@ -8,19 +8,24 @@ void TerranRace::onUnitCreate(BWAPI::Unit Unit)
         // Because we expect it, catch it away from default.
         case BWAPI::UnitTypes::Enum::Terran_SCV:
         case BWAPI::UnitTypes::Enum::Terran_Marine:
-        case BWAPI::UnitTypes::Enum::Terran_Command_Center:
             break;
         case BWAPI::UnitTypes::Enum::Terran_Supply_Depot:
             squadCommander->assembleSquad();  // Empty squads are Ok.
+            buildingConstructer->addProduct(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Barracks:
             unitTrainer->includeFacility(Unit);
-            // Buffer management must be part of a shared object.
-            // armyBuffer = getUnitBuffer(armyUnitType);
+            if (unitTrainer->isAvailable()) {
+                scout(cartographer->getStartingLocations());
+            }
             buildingConstructer->addProduct(Unit);
+            break;
+        case BWAPI::UnitTypes::Enum::Terran_Command_Center:
+            buildingConstructer->addProduct(Unit);
+            break;
         default: 
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
-                            << "created!" << std::endl;
+                            << " created!" << std::endl;
     }
 }
 
@@ -35,11 +40,15 @@ void TerranRace::onUnitComplete(BWAPI::Unit Unit)
                 ecoBaseManager->addWorker(Unit);
             }
             catch (char* err) {
-                BWAPI::Broodwar->sendText(err);
+                if (ecoBaseManager->getBaseAmount()) {
+                    BWAPI::Broodwar->sendText(err);
+                }
+                else {
+                    onCompleteWorkaround(Unit);
+                }
             }
             break;
         case BWAPI::UnitTypes::Enum::Terran_Supply_Depot:
-            // Previously: Incremented supplyCount.
             buildingConstructer->removeConstruction(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Command_Center:
@@ -48,10 +57,11 @@ void TerranRace::onUnitComplete(BWAPI::Unit Unit)
             break;
         case BWAPI::UnitTypes::Enum::Terran_Barracks:
             buildingConstructer->removeConstruction(Unit);
+            cartographer->addFacilityPosition(Unit->getPosition());
             break;
         default:
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
-                            << "completed!" << std::endl;
+                            << " completed!" << std::endl;
     }
 }
 
@@ -70,9 +80,6 @@ void TerranRace::onUnitDestroy(BWAPI::Unit Unit)
             }
             break;
         case BWAPI::UnitTypes::Enum::Terran_Supply_Depot:
-            if (Unit->isCompleted()) {
-                // Previously: Decremented supplyCount.
-            }
             buildingConstructer->removeConstruction(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Barracks:
@@ -85,7 +92,7 @@ void TerranRace::onUnitDestroy(BWAPI::Unit Unit)
             break;
         default:
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
-                            << "destroyed!" << std::endl;
+                            << " destroyed!" << std::endl;
     }
 }
 

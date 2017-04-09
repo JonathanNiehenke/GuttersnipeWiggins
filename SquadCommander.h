@@ -51,7 +51,8 @@ class SquadCommander
             // Is this good practice? I would prefer using a reference.
             Cartographer *cartographer  
         );
-        void assembleSquad();
+        void drawSquadGather(BWAPI::Position Pos, int Range=70);
+        void assembleSquad(int Range=70);
         void removeWarrior(BWAPI::Unit deadWarrior);
         void uniteSquads();
         void removeEmptySquads();
