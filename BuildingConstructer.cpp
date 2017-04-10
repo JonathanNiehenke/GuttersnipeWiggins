@@ -88,13 +88,14 @@ void BuildingConstructer::beginConstruction(
     BWAPI::UnitType Constructable,
     BWAPI::TilePosition Location)
 {
-    if (Location != BWAPI::TilePositions::Invalid)
+    if (Location != BWAPI::TilePositions::Invalid) {
         if (!Contractor->move(BWAPI::Position(Location))) {
             cmdRescuer->append(CmdRescuer::MoveCommand(
                 Contractor, BWAPI::Position(Location)));
         }
         constructionJobs.push_back(ConstructionPO(
             Contractor, Constructable, Location));
+    }
 }
 
 void BuildingConstructer::drawMarker(ConstructionPO Job)
@@ -169,7 +170,7 @@ void BuildingConstructer::continueConstruction(ConstructionPO &Job)
         if (Job.contractor->canBuild(Job.constructable, Job.location)) {
             build(Job);
         }
-        else if (Self->minerals() >= Job.constructable.mineralPrice() &&
+        else if (self->minerals() >= Job.constructable.mineralPrice() &&
                  BWAPI::Broodwar->isVisible(Job.location) &&
                  isObstructed(Job))
         {
@@ -187,15 +188,14 @@ void BuildingConstructer::continueConstruction(ConstructionPO &Job)
 }
 
 void BuildingConstructer::onStart(
-    BWAPI::Player Self,
     BWAPI::Unit baseCenter,
     CmdRescuer::Rescuer *cmdRescuer,
     Cartographer *cartographer)
 {
-    this->Self = Self;
     this->baseCenter = baseCenter;
     this->cmdRescuer = cmdRescuer;
     this->cartographer = cartographer;
+    this->self = BWAPI::Broodwar->self();
     maxExpandSearch = cartographer->getResourceCount();
 }
 
@@ -206,16 +206,14 @@ void BuildingConstructer::constructUnit(BWAPI::UnitType Constructable)
         continueConstruction(findJob(Constructable));
     }
     catch (NoJob) {
-        if (Self->minerals() >= Constructable.mineralPrice() - 24) {
+        if (self->minerals() >= Constructable.mineralPrice() - 24) {
             // ToDo: Optimally choose contractor.
             BWAPI::Unit Contractor = baseCenter->getClosestUnit(IsWorker);
             if (!Contractor) return;
             // ToDo: Choose better construction locations.
             BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
                     Constructable, Contractor->getTilePosition(), 40);
-            if (Location != BWAPI::TilePositions::Invalid) {
-                beginConstruction(Contractor, Constructable, Location);
-            }
+            beginConstruction(Contractor, Constructable, Location);
         }
     }
 }
@@ -253,7 +251,7 @@ void BuildingConstructer::constructExpansion(BWAPI::UnitType Constructable)
         continueConstruction(findJob(Constructable));
     }
     catch (NoJob) {
-        if (Self->minerals() >= Constructable.mineralPrice() - 100) {
+        if (self->minerals() >= Constructable.mineralPrice() - 100) {
             BWAPI::Unit Contractor = baseCenter->getClosestUnit(IsWorker);
             if (!Contractor) return;
             BWAPI::TilePosition expansionLocation = getExpansionLocation(
@@ -265,8 +263,6 @@ void BuildingConstructer::constructExpansion(BWAPI::UnitType Constructable)
 
 void BuildingConstructer::addProduct(BWAPI::Unit Product)
 {
-    // Because initialization of the Spawning pool happens only once
-    // it is not included as a product. Fix is outside this scope.
     try {
         ConstructionPO &Job = findJob(Product->getType());
         Job.product = Product;

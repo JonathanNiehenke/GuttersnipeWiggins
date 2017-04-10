@@ -2,48 +2,17 @@
 #define GUTTERSNIPEWIGGINS_CPP
 #include "GuttersnipeWiggins.h"
 
-// ToDo: UnitTrainer.
-
 using namespace BWAPI::Filter;
-
-typedef std::pair<BWAPI::Position, BWAPI::Unitset> PositionedUnits;
-typedef std::set<BWAPI::TilePosition> locationSet;
-
-void GW::assignFields()
-{
-    Self = BWAPI::Broodwar->self();
-    BWAPI::Race myRace = Self->getRace();
-    centerType = myRace.getCenter();
-    supplyType = myRace.getSupplyProvider();
-    workerType = myRace.getWorker();
-    baseCenter = BWAPI::Broodwar->getClosestUnit(
-        BWAPI::Position(Self->getStartLocation()), IsResourceDepot);
-    // Used only by Zerg. Zerg no longer works.
-    // TRAINING[supplyType].includeFacility(baseCenter);
-    switch (myRace) {
-        case BWAPI::Races::Enum::Protoss: // Enum for constant value.
-            armyEnablingTechType = BWAPI::UnitTypes::Protoss_Gateway;
-            armyUnitType = BWAPI::UnitTypes::Protoss_Zealot;
-            break;
-        case BWAPI::Races::Enum::Terran:
-            armyEnablingTechType = BWAPI::UnitTypes::Terran_Barracks;
-            armyUnitType = BWAPI::UnitTypes::Terran_Marine;
-            break;
-        case BWAPI::Races::Enum::Zerg:
-            armyEnablingTechType = BWAPI::UnitTypes::Zerg_Spawning_Pool;
-            armyUnitType = BWAPI::UnitTypes::Zerg_Zergling;
-            break;
-    }
-}
 
 void GW::onStart()
 {
-    BWAPI::Broodwar->enableFlag(1);
-    assignFields();
+    BWAPI::Broodwar->enableFlag(1);  // Enabled for debugging.
+    Self = BWAPI::Broodwar->self();
+    baseCenter = BWAPI::Broodwar->getClosestUnit(
+        BWAPI::Position(Self->getStartLocation()), IsResourceDepot);
     cartographer.discoverResources(BWAPI::Position(Self->getStartLocation()));
-    // Reposition: Uses armyUnitType.
-    squadCommander.onStart(baseCenter, armyUnitType, Self, &cartographer);
-    buildingConstructer.onStart(Self, baseCenter, &cmdRescuer, &cartographer);
+    squadCommander.onStart(&cartographer);
+    buildingConstructer.onStart(baseCenter, &cmdRescuer, &cartographer);
     unitTrainer.onStart(&cmdRescuer);
     Core core(&buildingConstructer, &cartographer, &cmdRescuer,
               &ecoBaseManager, &squadCommander, &unitTrainer);
@@ -76,9 +45,6 @@ void GW::onFrame()
         case 4:
             cmdRescuer.rescue();
             cartographer.cleanEnemyLocations();
-            if (Self->supplyUsed() == 400) {
-                squadCommander.assembleSquad();
-            }
             break;
         default: break;
     }
@@ -96,7 +62,7 @@ void GW::onUnitMorph(BWAPI::Unit Unit)
     if (Unit->getPlayer() == Self) {
         race->onUnitMorph(Unit);
     }
-    // Geyser structures morph back rather than getting destroyed.
+    // Geyser structures morph back rather than get destroyed.
     else if (Unit->getType() == BWAPI::UnitTypes::Resource_Vespene_Geyser) {
             cartographer.removeBuildingLocation(Unit->getTilePosition());
     }
@@ -107,7 +73,6 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
     if (Unit->getPlayer() == Self) {
         race->onUnitComplete(Unit);
     }
-    // Previously: Incremented pending type.
 }
 
 void GW::onUnitDestroy(BWAPI::Unit Unit)
@@ -154,9 +119,6 @@ void GW::onUnitHide(BWAPI::Unit Unit)
 
 void GW::onUnitRenegade(BWAPI::Unit Unit)
 {
-    // Perhaps I will learn something.
-    BWAPI::Broodwar->sendTextEx(true, "%s is Renegade: %s.",
-        Unit->getPlayer()->getName().c_str(), Unit->getType().c_str());
 }
 
 void GW::onNukeDetect(BWAPI::Position target)
@@ -174,6 +136,10 @@ void GW::onSendText(std::string text)
         }
         return;
     }
+    // else if (text.substr(0, 6) == "getJob") {
+        // int unitId = atoi(text.substr(8, 4).c_str());
+        // BWAPI::Unit unit = BWAPI::Broodwar->getUnit(unitId);
+    // }
     BWAPI::Unitset selectedUnits = BWAPI::Broodwar->getSelectedUnits();
     if (text == "isStuck") {
         for (BWAPI::Unit unit: selectedUnits) {
@@ -181,21 +147,21 @@ void GW::onSendText(std::string text)
                 unit->getID(), unit->isStuck() ? "True" : "False");
             }
     }
-    else if (text == "getPosition") {
+    else if (text == "getPos") {
         for (BWAPI::Unit unit: selectedUnits) {
             BWAPI::Position Pos = unit->getPosition();
             BWAPI::Broodwar->sendTextEx(true, "%d: (%d, %d)",
                 unit->getID(), Pos.x, Pos.y);
         }
     }
-    else if (text == "getLocation") {
+    else if (text == "getLoc") {
         for (BWAPI::Unit unit: selectedUnits) {
             BWAPI::TilePosition Pos = unit->getTilePosition();
             BWAPI::Broodwar->sendTextEx(true, "%d: (%d, %d)",
                 unit->getID(), Pos.x, Pos.y);
         }
     }
-    else if (text == "getTargetPosition") {
+    else if (text == "getTargetPos") {
         for (BWAPI::Unit unit: selectedUnits) {
             BWAPI::Position TP = unit->getTargetPosition();
             BWAPI::Broodwar->sendTextEx(true, "%d: (%d, %d)",

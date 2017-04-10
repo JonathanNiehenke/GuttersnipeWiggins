@@ -26,7 +26,7 @@ class BuildingConstructer
 {
     private:
         const enum {Dead = -1, Other, Mining, Positioning, Constructing};
-        BWAPI::Player Self;
+        BWAPI::Player self;
         BWAPI::Unit baseCenter = nullptr;
         CmdRescuer::Rescuer *cmdRescuer;
         Cartographer *cartographer;
@@ -44,8 +44,7 @@ class BuildingConstructer
         bool isInferiorLocation(BWAPI::TilePosition expandPosition);
         BWAPI::TilePosition getExpansionLocation(BWAPI::UnitType);
     public:
-        void onStart(
-            BWAPI::Player, BWAPI::Unit, CmdRescuer::Rescuer*, Cartographer*);
+        void onStart(BWAPI::Unit, CmdRescuer::Rescuer*, Cartographer*);
         void constructUnit(BWAPI::UnitType Constructable);
         void constructExpansion(BWAPI::UnitType Constructable);
         void addProduct(BWAPI::Unit Product);

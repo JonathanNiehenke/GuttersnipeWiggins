@@ -76,6 +76,9 @@ void EcoBaseManager::addBase(
 void EcoBaseManager::removeBase(BWAPI::Unit baseCenter)
 {
     EcoBase *trash = unitToBase[baseCenter];
+    BWAPI::Broodwar << "unitToBase size before: " << unitToBase.size()
+                    << std::endl;
+    // Bug: Does not remove all (or any?) workers and minerals.
     for (BWAPI::Unit workerUnit: trash->getWorkers()) {
         unitToBase.erase(workerUnit);
         // ToDo: re-assign Workers.
@@ -84,6 +87,8 @@ void EcoBaseManager::removeBase(BWAPI::Unit baseCenter)
         unitToBase.erase(mineralUnit);
     }
     unitToBase.erase(baseCenter);
+    BWAPI::Broodwar << "unitToBase size after: " << unitToBase.size()
+                    << std::endl;
     Bases.erase(trash);
     delete trash;
     trash = nullptr;
@@ -118,25 +123,10 @@ void EcoBaseManager::removeMineral(BWAPI::Unit mineralUnit)
     unitToBase.erase(mineralUnit);
 }
 
-// Usually for overlords.
-void EcoBaseManager::produceSingleUnit(BWAPI::UnitType unitType)
-{
-    BWAPI::Unit centerUnit = nullptr;
-    for (EcoBase *Base: Bases) {
-        if (!Base) throw "produceS: found a missed connection to base";
-        centerUnit = Base->getCenter();
-        if (Utils::isIdle(centerUnit)) {
-            centerUnit->train(unitType);
-            break;
-        }
-    }
-}
-
 void EcoBaseManager::produceUnits(BWAPI::UnitType unitType)
 {
     BWAPI::Unit centerUnit = nullptr;
     for (EcoBase *Base: Bases) {
-        if (!Base) throw "produce: found a missed connection to base";
         centerUnit = Base->getCenter();
         if (Utils::isIdle(centerUnit) && Base->isLackingMiners()) {
             centerUnit->train(unitType);
@@ -147,7 +137,6 @@ void EcoBaseManager::produceUnits(BWAPI::UnitType unitType)
 bool EcoBaseManager::isAtCapacity()
 {
     for (EcoBase *Base: Bases) {
-        if (!Base) throw "capacity: found a missed connection to base";
         if (Base->isLackingMiners()) {
             return false;
         }
@@ -161,7 +150,6 @@ void EcoBaseManager::displayStatus(int &row)
         "Total - Bases %d, Minerals: %d, Workers: %d.",
         getBaseAmount(), getMineralAmount(), getWorkerAmount());
     for (EcoBase *Base: Bases) {
-        if (!Base) throw "Bad to base.";
         row += 10;
         BWAPI::Broodwar->drawTextScreen(3, row,
             "ID: %d, Minerals: %d, Miners: %d, LackingMiners %s.",

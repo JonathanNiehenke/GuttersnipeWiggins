@@ -9,7 +9,7 @@ void ZergRace::handleEggType(BWAPI::Unit Unit)
     BWAPI::UnitType insideEggType = Unit->getBuildType();
     if (insideEggType == supplyType) {
         ++incompleteOverlords;
-        squadCommander->assembleSquad(200);  // Empty squads are Ok.
+        assembleSquads();  // Empty squads are Ok.
     }
 }
 

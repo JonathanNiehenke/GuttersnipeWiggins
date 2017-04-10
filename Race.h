@@ -30,6 +30,7 @@ class Race
 {
     private:
         bool readyToExpand();
+        bool isUnderAttack();
     public:
         BWAPI::UnitType
             centerType, workerType, supplyType, armyTechType, armyUnitType;
@@ -66,6 +67,8 @@ class Race
         void manageAttackGroups();
         void onCompleteWorkaround(BWAPI::Unit workerUnit);
         void scout(std::set<BWAPI::TilePosition> scoutLocations);
+        virtual void assembleSquads()
+            { squadCommander->assembleSquads(armyUnitType); }
         virtual void displayStatus();  // Zerg overrides overlord count
 };
 

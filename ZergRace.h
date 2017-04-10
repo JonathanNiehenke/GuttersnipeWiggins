@@ -7,7 +7,7 @@ class ZergRace : public Race
     private:
         // incompleteUnitCount counts Overlords when in the transition
         // from the egg to normal form, thus making it unreliable.
-        int incompleteOverlords = 0;  // Our alternative.
+        int incompleteOverlords = 0;  // This is our alternative.
         void handleEggType(BWAPI::Unit Unit);
     public:
         ZergRace(Core &core) : Race(
@@ -27,6 +27,8 @@ class ZergRace : public Race
         void createFacility();
         bool needsSupply();
         int getAvailableSupply();
+        void assembleSquads()
+            { squadCommander->assembleSquads(armyUnitType, 200); }
         void displayStatus();
 };
 

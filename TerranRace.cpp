@@ -10,12 +10,12 @@ void TerranRace::onUnitCreate(BWAPI::Unit Unit)
         case BWAPI::UnitTypes::Enum::Terran_Marine:
             break;
         case BWAPI::UnitTypes::Enum::Terran_Supply_Depot:
-            squadCommander->assembleSquad();  // Empty squads are Ok.
+            assembleSquads();  // Empty squads are Ok.
             buildingConstructer->addProduct(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Barracks:
             unitTrainer->includeFacility(Unit);
-            if (unitTrainer->isAvailable()) {
+            if (!unitTrainer->isAvailable()) {
                 scout(cartographer->getStartingLocations());
             }
             buildingConstructer->addProduct(Unit);

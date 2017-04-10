@@ -20,17 +20,15 @@ private:
     int availableSupply = 0, workerBuffer = 0, armyBuffer = 0, supplyCount = 0;
     BWAPI::Player Self;
     BWAPI::Unit baseCenter = nullptr;  // The primary/initial base building.
-    BWAPI::UnitType centerType, workerType, supplyType, armyEnablingTechType,
-                    armyUnitType;
     // Indicates number already in construction/training for UnitType.
     BuildingConstructer buildingConstructer;
+    // Tracks resource, enemy and army facility locations.
     Cartographer cartographer;
     CmdRescuer::Rescuer cmdRescuer;
     EcoBaseManager ecoBaseManager;
     Race *race;  // onStart initializes with polymorphic intentions.
     SquadCommander squadCommander;
     UnitTrainer unitTrainer;
-    void assignFields();
     void displayUnitInfo();
     void displayStatus();
 

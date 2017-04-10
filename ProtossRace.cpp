@@ -10,7 +10,7 @@ void ProtossRace::onUnitCreate(BWAPI::Unit Unit)
         case BWAPI::UnitTypes::Enum::Protoss_Zealot:
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Pylon:
-            squadCommander->assembleSquad();  // Empty squads are Ok.
+            assembleSquads();  // Empty squads are Ok.
             buildingConstructer->addProduct(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Gateway:

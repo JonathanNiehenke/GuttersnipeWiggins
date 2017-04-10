@@ -128,15 +128,21 @@ void Race::manageStructures()
     }
 }
 
+bool Race::isUnderAttack()
+{
+    for (BWAPI::Position Pos: cartographer->getFacilityPositions()) {
+        if (BWAPI::Broodwar->getClosestUnit(Pos, BWAPI::Filter::IsEnemy, 250))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void Race::manageAttackGroups()
 {
-    // ToDo: Change defense to around given positions.
-    for (BWAPI::Position Pos: cartographer->getFacilityPositions()) {
-        if (BWAPI::Broodwar->getClosestUnit(Pos, BWAPI::Filter::IsEnemy, 100))
-        {
-            squadCommander->assembleSquad();  
-            break;  // Enemy is inside base assemble defenders.
-        }
+    if (Self->supplyUsed() == 400 || isUnderAttack()) {
+        assembleSquads();
     }
     squadCommander->uniteSquads();
     squadCommander->removeEmptySquads();

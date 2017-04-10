@@ -70,20 +70,13 @@ BWAPI::Unit compareEnemyTargets::operator()(BWAPI::Unit u1, BWAPI::Unit u2)
 
 SquadCommander::SquadCommander()
 {
-    this->baseCenter = nullptr;
-    this->armyUnitType = BWAPI::UnitTypes::Unknown;
-    this->myself = nullptr;
+    this->self = nullptr;
+    this->cartographer = nullptr;
 }
 
-void SquadCommander::onStart(
-    BWAPI::Unit baseCenter,
-    BWAPI::UnitType armyUnitType,
-    BWAPI::Player myself,
-    Cartographer *cartographer)
+void SquadCommander::onStart(Cartographer *cartographer)
 {
-    this->baseCenter = baseCenter;
-    this->armyUnitType = armyUnitType;
-    this->myself = myself;
+    this->self = BWAPI::Broodwar->self();
     this->cartographer = cartographer;
 }
 
@@ -97,7 +90,7 @@ void SquadCommander::drawSquadGather(BWAPI::Position Pos, int Range)
         },  nullptr, 24);
 }
 
-void SquadCommander::assembleSquad(int Range)
+void SquadCommander::assembleSquads(BWAPI::UnitType armyUnitType, int Range)
 {
     // ToDo: Change army collection to around given positons.
     for (BWAPI::Position Pos: cartographer->getFacilityPositions()) {
@@ -188,8 +181,6 @@ bool SquadCommander::needToGroup(BWAPI::Unitset Squad, BWAPI::Position squadPos)
 void SquadCommander::attackUnit(BWAPI::Unitset Squad, BWAPI::Unit targetUnit)
 {
     for (BWAPI::Unit Warrior: Squad) {
-        int sinceCommandFrame = (BWAPI::Broodwar->getFrameCount() -
-            Warrior->getLastCommandFrame());
         if (Warrior->isAttackFrame())
             return;  // Prevent attack interruption.
         BWAPI::UnitCommand lastCmd = Warrior->getLastCommand();
@@ -258,7 +249,7 @@ void SquadCommander::combatMicro()
             bool canAttack = targetUnit->getType().groundWeapon() != noWeapon;
             BWAPI::Unit beatUnit = targetUnit->getTarget();
             beatUnit = beatUnit ? beatUnit : targetUnit->getOrderTarget();
-            bool isAttacking = beatUnit && beatUnit->getPlayer() == myself;
+            bool isAttacking = beatUnit && beatUnit->getPlayer() == self;
             if (canAttack && !isAttacking && needToGroup(Squad, squadPos)) {
                 Squad.move(squadPos);  // Move away
                 Squad.attack(targetUnit->getPosition(), true);

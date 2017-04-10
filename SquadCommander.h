@@ -29,9 +29,7 @@ class SquadCommander
 {
     private:
         const BWAPI::WeaponType noWeapon = BWAPI::WeaponTypes::None;
-        BWAPI::Unit baseCenter;
-        BWAPI::UnitType armyUnitType;
-        BWAPI::Player myself;
+        BWAPI::Player self;
         Cartographer *cartographer;
         std::vector<BWAPI::Unitset> armySquads;
         //! See comment within removeEmptySquad() definition;
@@ -44,15 +42,9 @@ class SquadCommander
         void attackPositon(BWAPI::Unitset Squad);
     public:
         SquadCommander::SquadCommander();
-        void SquadCommander::onStart(
-            BWAPI::Unit baseCenter,
-            BWAPI::UnitType armyUnitType,
-            BWAPI::Player myself,
-            // Is this good practice? I would prefer using a reference.
-            Cartographer *cartographer  
-        );
+        void SquadCommander::onStart(Cartographer *cartographer );
         void drawSquadGather(BWAPI::Position Pos, int Range=70);
-        void assembleSquad(int Range=70);
+        void assembleSquads(BWAPI::UnitType armyUnitType, int Range=70);
         void removeWarrior(BWAPI::Unit deadWarrior);
         void uniteSquads();
         void removeEmptySquads();
