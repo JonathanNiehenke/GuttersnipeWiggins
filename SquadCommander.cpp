@@ -114,6 +114,7 @@ void SquadCommander::uniteSquads()
 {
     // Joining nearby squads to increase strength and coordination.
     int armySquadLength = armySquads.size();
+    if (armySquadLength < 2) return;  // Prevent out of range error.
     for (int i = 0; i < armySquadLength - 1; ++ i) {
         BWAPI::Unitset &Squad = armySquads[i];
         Utils::compareDistanceFrom squadComparePos(Squad.getPosition());

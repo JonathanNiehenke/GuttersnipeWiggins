@@ -84,11 +84,12 @@ void ProtossRace::onUnitDestroy(BWAPI::Unit Unit)
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Gateway:
             unitTrainer->removeFacility(Unit);
+            cartographer->removeFacilityPosition(Unit->getPosition());
             buildingConstructer->removeConstruction(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Nexus:
-            ecoBaseManager->removeBase(Unit);
             buildingConstructer->removeConstruction(Unit);
+            ecoBaseManager->removeBase(Unit);  // Even if constructing
             break;
         default:
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()

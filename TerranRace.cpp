@@ -14,10 +14,10 @@ void TerranRace::onUnitCreate(BWAPI::Unit Unit)
             buildingConstructer->addProduct(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Barracks:
-            unitTrainer->includeFacility(Unit);
             if (!unitTrainer->isAvailable()) {
                 scout(cartographer->getStartingLocations());
             }
+            unitTrainer->includeFacility(Unit);
             buildingConstructer->addProduct(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Command_Center:
@@ -84,10 +84,11 @@ void TerranRace::onUnitDestroy(BWAPI::Unit Unit)
             break;
         case BWAPI::UnitTypes::Enum::Terran_Barracks:
             unitTrainer->removeFacility(Unit);
+            cartographer->removeFacilityPosition(Unit->getPosition());
             buildingConstructer->removeConstruction(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Command_Center:
-            ecoBaseManager->removeBase(Unit);
+            ecoBaseManager->removeBase(Unit);  // Even if constructing
             buildingConstructer->removeConstruction(Unit);
             break;
         default:

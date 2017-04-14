@@ -44,7 +44,7 @@ class SquadCommander
         SquadCommander::SquadCommander();
         void SquadCommander::onStart(Cartographer *cartographer );
         void drawSquadGather(BWAPI::Position Pos, int Range=70);
-        void assembleSquads(BWAPI::UnitType armyUnitType, int Range=70);
+        void assembleSquads(BWAPI::UnitType armyUnitType, int Range);
         void removeWarrior(BWAPI::Unit deadWarrior);
         void uniteSquads();
         void removeEmptySquads();

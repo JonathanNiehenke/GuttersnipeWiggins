@@ -24,9 +24,10 @@ class EcoBase
         int getMineralCount() { return Minerals.size(); }
         int getMinerCount() { return Workers.size(); }
         void assignMiner(BWAPI::Unit minerUnit);
-        void releaseMiner(BWAPI::Unit minerUnit);
+        void removeMiner(BWAPI::Unit minerUnit) { Workers.erase(minerUnit); }
         void removeMineral(BWAPI::Unit Mineral);
-        static bool isForgotten(BWAPI::Unit Mineral);
+        static bool isForgotten(BWAPI::Unit Mineral)
+            { return !Mineral->isBeingGathered(); }
         static bool isNear(BWAPI::Unit Miner);
         bool isLackingMiners();
 };
@@ -39,15 +40,17 @@ class EcoBaseManager
         typedef std::unordered_set<BWAPI::Unit> UnitGroup;
         int baseAmount = 0, mineralAmount = 0, workerAmount = 0,
             pendingWorkers = 0;
-        // Why: unit lookup for assigned Base->
+        // For unit lookup of assigned Base.
         std::unordered_map<BWAPI::Unit, EcoBase*> unitToBase;
         std::unordered_set<EcoBase*> Bases;
     public:
-        ~EcoBaseManager();
+        ~EcoBaseManager() { for (EcoBase* Base: Bases) delete Base; }
         int getBaseAmount() { return baseAmount; }
         int getMineralAmount() { return mineralAmount; }
         int getWorkerAmount() { return workerAmount; }
         void addBase(BWAPI::Unit baseCenter, BWAPI::Unitset  mineralCluster);
+        void debugSize() {BWAPI::Broodwar << "unitToBase size around: "
+            << unitToBase.size() << std::endl; }
         void removeBase(BWAPI::Unit baseCenter);
         void addWorker(BWAPI::Unit workerUnit);
         void removeWorker(BWAPI::Unit workerUnit);

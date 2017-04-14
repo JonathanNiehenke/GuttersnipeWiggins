@@ -2,6 +2,12 @@
 #define BUILDINGCONSTRUCTER_CPP
 #include "BuildingConstructer.h"
 
+/* Note:
+    TilePosition::Invalid = 1000, 1000
+    TilePosition::None = 1000, 1001
+    TilePosition::Unknown = 1000, 1002
+*/
+
 using namespace BWAPI::Filter;
 
 ConstructionPO::ConstructionPO(
@@ -40,17 +46,18 @@ void ConstructionPO::updateStatus()
                 break;
             // Units are discovered occupying the same space.
             case BWAPI::Orders::Enum::ResetCollision:  
+                BWAPI::Broodwar << "ResetCollision" << std::endl;
             case BWAPI::Orders::Enum::PlaceBuilding:
-                status = Constructing;
+                // status = Constructing;
                 break;
-            case BWAPI::Orders::Enum::ConstructingBuilding:
-                BWAPI::Broodwar << "Missed onUnitCreate" << std::endl;
-                product = contractor->getBuildUnit();
-                break;
-            case BWAPI::Orders::Enum::IncompleteBuilding:
-                BWAPI::Broodwar << "Missed onUnitMorph" << std::endl;
-                product = contractor;
-                break;
+            // case BWAPI::Orders::Enum::ConstructingBuilding:
+                // BWAPI::Broodwar << "Missed onUnitCreate" << std::endl;
+                // product = contractor->getBuildUnit();
+                // break;
+            // case BWAPI::Orders::Enum::IncompleteBuilding:
+                // BWAPI::Broodwar << "Missed onUnitMorph" << std::endl;
+                // product = contractor;
+                // break;
             default:
                 BWAPI::Broodwar << "Other order: " << contractor->getOrder()
                                 << std::endl;
@@ -60,10 +67,10 @@ void ConstructionPO::updateStatus()
 }
 
 // Would prefer to use lookup keys, but UnitTypes get the C2338 error.
-ConstructionPO& BuildingConstructer::findJob(BWAPI::UnitType Constructable)
+ConstructionPO &BuildingConstructer::findJob(BWAPI::UnitType Constructable)
 {
-    for (ConstructionPO &Job: constructionJobs) {
-        if (Job.constructable == Constructable) {
+    for (ConstructionPO  &Job: constructionJobs) {
+        if (Job.constructable == Constructable && Job.status != Constructing) {
             return Job;
         }
     }
@@ -88,7 +95,9 @@ void BuildingConstructer::beginConstruction(
     BWAPI::UnitType Constructable,
     BWAPI::TilePosition Location)
 {
-    if (Location != BWAPI::TilePositions::Invalid) {
+    if (!(Location == BWAPI::TilePositions::Invalid ||
+          Location == BWAPI::TilePositions::None))
+    {
         if (!Contractor->move(BWAPI::Position(Location))) {
             cmdRescuer->append(CmdRescuer::MoveCommand(
                 Contractor, BWAPI::Position(Location)));
@@ -176,7 +185,9 @@ void BuildingConstructer::continueConstruction(ConstructionPO &Job)
         {
             BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
                 Job.constructable, Job.contractor->getTilePosition(), 10);
-            if (Location != BWAPI::TilePositions::Invalid) {
+            if (!(Location == BWAPI::TilePositions::Invalid ||
+                  Location == BWAPI::TilePositions::None))
+            {
                 Job.location =  Location;
             }
         }
@@ -266,6 +277,7 @@ void BuildingConstructer::addProduct(BWAPI::Unit Product)
     try {
         ConstructionPO &Job = findJob(Product->getType());
         Job.product = Product;
+        Job.status = Constructing;
     }
     catch (NoJob) {
         BWAPI::Broodwar->sendText(
@@ -292,8 +304,9 @@ void BuildingConstructer::displayStatus(int &row)
     for (ConstructionPO Job: constructionJobs) {
         row += 10;
         BWAPI::Broodwar->drawTextScreen(3, row,
-            "%s, Contractor: %d, PID: %d, Status: %d.",
+            "%s, Contractor: %d, Locaton (%d, %d), PID: %d, Status: %d",
             Job.constructable.c_str(), Job.contractor->getID(),
+            Job.location.x, Job.location.y,
             (Job.product ? Job.product->getID() : 0), 
             Job.status);
     }

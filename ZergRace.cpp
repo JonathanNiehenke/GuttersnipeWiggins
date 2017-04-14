@@ -15,16 +15,17 @@ void ZergRace::handleEggType(BWAPI::Unit Unit)
 
 void ZergRace::onUnitCreate(BWAPI::Unit Unit)
 {
+    // Created zerg units are larva, zergling or from the games's start
     switch (Unit->getType()) {
         // Because we expect it, catch it away from default.
         case BWAPI::UnitTypes::Enum::Zerg_Larva:
+        case BWAPI::UnitTypes::Enum::Zerg_Drone:
         case BWAPI::UnitTypes::Enum::Zerg_Zergling:  // Second zergling
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Overlord:
-            ++incompleteOverlords;  // Only onStart.
+            ++incompleteOverlords;
             break;
-        case BWAPI::UnitTypes::Enum::Zerg_Hatchery:  // Only onStart
-            BWAPI::Broodwar << "Hatchery created only on start" << std::endl;
+        case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
             unitTrainer->includeFacility(Unit);
             break;
         default:
@@ -52,6 +53,7 @@ void ZergRace::onUnitMorph(BWAPI::Unit Unit)
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
             unitTrainer->includeFacility(Unit);
+            cartographer->removeFacilityPosition(Unit->getPosition());
             buildingConstructer->addProduct(Unit);
             break;
         default: 
@@ -129,7 +131,9 @@ void ZergRace::onUnitDestroy(BWAPI::Unit Unit)
             BWAPI::Broodwar->leaveGame();
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
-            ecoBaseManager->removeBase(Unit);
+            ecoBaseManager->removeBase(Unit);  // Even if constructing
+            unitTrainer->removeFacility(Unit);
+            cartographer->removeFacilityPosition(Unit->getPosition());
             buildingConstructer->removeConstruction(Unit);
             break;
         default:
@@ -167,6 +171,14 @@ bool ZergRace::needsSupply()
     int armyBuffer = (Self->completedUnitCount(armyTechType)
                       ?  getUnitBuffer(armyUnitType) : 0);
     return getAvailableSupply() <= workerBuffer + armyBuffer;
+}
+
+bool ZergRace::readyForArmyTech()
+{
+    const int facilityPrice = armyTechType.mineralPrice();
+    int armyBuffer = 50 * Self->completedUnitCount(centerType),
+        mineralsToBuild = facilityPrice + armyBuffer;
+    return (Self->minerals() > mineralsToBuild || !unitTrainer->isAvailable());
 }
 
 void ZergRace::displayStatus()

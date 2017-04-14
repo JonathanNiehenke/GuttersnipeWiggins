@@ -29,6 +29,7 @@ class ZergRace : public Race
         int getAvailableSupply();
         void assembleSquads()
             { squadCommander->assembleSquads(armyUnitType, 200); }
+        bool readyForArmyTech();
         void displayStatus();
 };
 

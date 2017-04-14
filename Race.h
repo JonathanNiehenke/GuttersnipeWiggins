@@ -61,14 +61,14 @@ class Race
         virtual int getAvailableSupply();  // Overrides overlord count
         int getUnitBuffer(BWAPI::UnitType unitType);
         virtual bool needsSupply();  // Zerg overrides army buffer calc
-        virtual bool readyForArmyTech();  // Overrides for pylon
+        virtual bool readyForArmyTech();  // Protoss and zerg override.
         void manageProduction();
         void manageStructures();
         void manageAttackGroups();
         void onCompleteWorkaround(BWAPI::Unit workerUnit);
         void scout(std::set<BWAPI::TilePosition> scoutLocations);
         virtual void assembleSquads()
-            { squadCommander->assembleSquads(armyUnitType); }
+            { squadCommander->assembleSquads(armyUnitType, 80); }
         virtual void displayStatus();  // Zerg overrides overlord count
 };
 

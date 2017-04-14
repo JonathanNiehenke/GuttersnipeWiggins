@@ -13,9 +13,9 @@ class ConstructionPO
     private:
         const enum {Dead = -1, Other, Mining, Positioning, Constructing};
     public:
-        BWAPI::Unit contractor;
-        BWAPI::UnitType constructable;
-        BWAPI::TilePosition location;
+        BWAPI::Unit contractor = nullptr;
+        BWAPI::UnitType constructable = BWAPI::UnitTypes::Unknown;
+        BWAPI::TilePosition location = BWAPI::TilePositions::Invalid;
         int status = Other;
         BWAPI::Unit product = nullptr;
         ConstructionPO(BWAPI::Unit, BWAPI::UnitType, BWAPI::TilePosition);

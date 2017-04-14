@@ -86,19 +86,6 @@ bool Race::needsSupply()
     return getAvailableSupply() <= workerBuffer + armyBuffer;
 }
 
-bool Race::readyToExpand()
-{
-    return !Self->incompleteUnitCount(centerType) &&
-        unitTrainer->facilityCount() >= 2 && ecoBaseManager->isAtCapacity();
-}
-
-bool Race::readyForArmyTech()
-{
-    const int facilityPrice = armyTechType.mineralPrice();
-    return (Self->minerals() > facilityPrice * 1.5 ||
-            !unitTrainer->isAvailable());
-}
-
 void Race::manageProduction()
 {
     // ToDo: Max supply condition relative to game mode (Melee).
@@ -117,12 +104,27 @@ void Race::manageProduction()
     }
 }
 
+bool Race::readyToExpand()
+{
+    float Ratio = (float(unitTrainer->facilityCount() + 1) /
+        ecoBaseManager->getBaseAmount());
+    return (!Self->incompleteUnitCount(centerType) &&
+            (Ratio > 2.5 || ecoBaseManager->isAtCapacity()));
+}
+
+bool Race::readyForArmyTech()
+{
+    const int facilityPrice = armyTechType.mineralPrice();
+    int armyBuffer = 50 * Self->completedUnitCount(armyTechType),
+        mineralsToBuild = facilityPrice + armyBuffer;
+    return (Self->minerals() > mineralsToBuild || !unitTrainer->isAvailable());
+}
+
 void Race::manageStructures()
 {
     if (readyToExpand()) {
         createCenter();
     }
-    // Reposition: uses supplyType.
     else if (readyForArmyTech()) {
         createFacility();
     }

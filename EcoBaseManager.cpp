@@ -18,22 +18,14 @@ void EcoBase::assignMiner(BWAPI::Unit minerUnit)
     minerUnit->gather(Minerals[mineralIndex++ % Minerals.size()]);
 }
 
-void EcoBase::releaseMiner(BWAPI::Unit minerUnit)
-{
-    Workers.erase(minerUnit);
-    minerUnit->stop();
-}
-
 void EcoBase::removeMineral(BWAPI::Unit mineralUnit)
 {
     // Consider: Minerals as a reference benefitting map awareness.
-    Minerals.erase(find(Minerals.begin(), Minerals.end(), mineralUnit));
-}
-
-bool EcoBase::isForgotten(BWAPI::Unit Mineral)
-{
-    // Believing it's false even if miner is in motion or waiting.
-    return !Mineral->isBeingGathered();  
+    auto endIt = Minerals.end(),
+         foundIt = find(Minerals.begin(), endIt, mineralUnit);
+    if (foundIt != endIt) {
+        Minerals.erase(foundIt);
+    }
 }
 
 bool EcoBase::isNear(BWAPI::Unit Miner)
@@ -52,14 +44,6 @@ bool EcoBase::isLackingMiners()
     return forgottenMinerals - nearlyMining > 0;
 }
 
-
-EcoBaseManager::~EcoBaseManager()
-{
-    for (EcoBase* Base: Bases) {
-        delete Base;
-    }
-}
-
 void EcoBaseManager::addBase(
         BWAPI::Unit baseCenter, BWAPI::Unitset  mineralCluster)
 {
@@ -76,9 +60,15 @@ void EcoBaseManager::addBase(
 void EcoBaseManager::removeBase(BWAPI::Unit baseCenter)
 {
     EcoBase *trash = unitToBase[baseCenter];
+    if (!trash) return;  // baseCenter was constructing.
+    if (baseCenter != trash->getCenter()) {
+        BWAPI::Broodwar << "Wrong center to base" << std::endl;
+        BWAPI::Broodwar << "Wrong center to base" << std::endl;
+        BWAPI::Broodwar << "Wrong center to base" << std::endl;
+    }
     BWAPI::Broodwar << "unitToBase size before: " << unitToBase.size()
                     << std::endl;
-    // Bug: Does not remove all (or any?) workers and minerals.
+    // Bug: Does not remove all workers and minerals.
     for (BWAPI::Unit workerUnit: trash->getWorkers()) {
         unitToBase.erase(workerUnit);
         // ToDo: re-assign Workers.
@@ -110,7 +100,7 @@ void EcoBaseManager::removeWorker(BWAPI::Unit workerUnit)
     --workerAmount;
     EcoBase *Base = unitToBase[workerUnit];
     if (!Base) throw "removeWorker: found a missed connection to base";
-    Base->releaseMiner(workerUnit);
+    Base->removeMiner(workerUnit);
     unitToBase.erase(workerUnit);
 }
 

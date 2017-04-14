@@ -1,5 +1,6 @@
 #ifndef CARTOGRAPHER_H
 #define CARTOGRAPHER_H
+#include <cassert>
 #include <BWAPI.h>
 #include "Utils.h"
 

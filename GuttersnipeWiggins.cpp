@@ -127,7 +127,11 @@ void GW::onNukeDetect(BWAPI::Position target)
 
 void GW::onSendText(std::string text)
 {
-    if (text.substr(0, 7) == "getUnit") {
+    if (text == "getError") {
+        BWAPI::Broodwar << BWAPI::Broodwar->getLastError() << std::endl;
+        return;
+    }
+    else if (text.substr(0, 7) == "getUnit") {
         int unitId = atoi(text.substr(8, 4).c_str());
         BWAPI::Unit unit = BWAPI::Broodwar->getUnit(unitId);
         if (unit) {
