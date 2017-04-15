@@ -69,7 +69,8 @@ void ConstructionPO::updateStatus()
 // Would prefer to use lookup keys, but UnitTypes get the C2338 error.
 ConstructionPO &BuildingConstructer::findJob(BWAPI::UnitType Constructable)
 {
-    for (ConstructionPO  &Job: constructionJobs) {
+    for (ConstructionPO &Job: constructionJobs) {
+        // ToDo: Add condition concerning a dead contractor.
         if (Job.constructable == Constructable && Job.status != Constructing) {
             return Job;
         }
@@ -148,6 +149,7 @@ bool BuildingConstructer::isObstructed(ConstructionPO Job)
     BWAPI::Position upperLeft = BWAPI::Position(Job.location),
                     size = BWAPI::Position(Job.constructable.tileSize()),
                     bottomRight = upperLeft + size;
+    // ToDo: Prevent the constructing worker from obstructing.
     return !BWAPI::Broodwar->getUnitsInRectangle(
             upperLeft + BWAPI::Point<int, 1>(-16, -16),
             bottomRight + BWAPI::Point<int, 1>(16, 16),
@@ -201,11 +203,13 @@ void BuildingConstructer::continueConstruction(ConstructionPO &Job)
 void BuildingConstructer::onStart(
     BWAPI::Unit baseCenter,
     CmdRescuer::Rescuer *cmdRescuer,
-    Cartographer *cartographer)
+    Cartographer *cartographer,
+    EcoBaseManager *ecobaseManager)
 {
     this->baseCenter = baseCenter;
     this->cmdRescuer = cmdRescuer;
     this->cartographer = cartographer;
+    this->ecobaseManager = ecobaseManager;
     this->self = BWAPI::Broodwar->self();
     maxExpandSearch = cartographer->getResourceCount();
 }
@@ -219,11 +223,13 @@ void BuildingConstructer::constructUnit(BWAPI::UnitType Constructable)
     catch (NoJob) {
         if (self->minerals() >= Constructable.mineralPrice() - 24) {
             // ToDo: Optimally choose contractor.
-            BWAPI::Unit Contractor = baseCenter->getClosestUnit(IsWorker);
+            // Build around most recent ecobase for eventual defense.
+            BWAPI::Unit tempCenter = ecobaseManager->getLastCenter(),
+                        Contractor = tempCenter->getClosestUnit(IsWorker);
             if (!Contractor) return;
             // ToDo: Choose better construction locations.
             BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
-                    Constructable, Contractor->getTilePosition(), 40);
+                    Constructable, Contractor->getTilePosition(), 20);
             beginConstruction(Contractor, Constructable, Location);
         }
     }
@@ -263,10 +269,14 @@ void BuildingConstructer::constructExpansion(BWAPI::UnitType Constructable)
     }
     catch (NoJob) {
         if (self->minerals() >= Constructable.mineralPrice() - 100) {
-            BWAPI::Unit Contractor = baseCenter->getClosestUnit(IsWorker);
-            if (!Contractor) return;
             BWAPI::TilePosition expansionLocation = getExpansionLocation(
                     Constructable);
+            if (expansionLocation == BWAPI::TilePositions::Invalid ||
+                expansionLocation == BWAPI::TilePositions::None) {
+                return;
+            }
+            BWAPI::Unit Contractor = baseCenter->getClosestUnit(IsWorker);
+            if (!Contractor) return;
             beginConstruction(Contractor, Constructable, expansionLocation);
         }
     }

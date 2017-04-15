@@ -37,7 +37,7 @@ void ZergRace::onUnitCreate(BWAPI::Unit Unit)
 void ZergRace::onUnitMorph(BWAPI::Unit Unit)
 {
     switch (Unit->getType()) {
-        case BWAPI::UnitTypes::Enum::Zerg_Larva:
+        // case BWAPI::UnitTypes::Enum::Zerg_Larva:
         case BWAPI::UnitTypes::Enum::Zerg_Drone:
         case BWAPI::UnitTypes::Enum::Zerg_Overlord:
         case BWAPI::UnitTypes::Enum::Zerg_Zergling:
@@ -53,7 +53,7 @@ void ZergRace::onUnitMorph(BWAPI::Unit Unit)
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
             unitTrainer->includeFacility(Unit);
-            cartographer->removeFacilityPosition(Unit->getPosition());
+            cartographer->addFacilityPosition(Unit->getPosition());
             buildingConstructer->addProduct(Unit);
             break;
         default: 

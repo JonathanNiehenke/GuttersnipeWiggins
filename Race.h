@@ -29,6 +29,7 @@ struct Core
 class Race
 {
     private:
+        const float expandRatio;
         bool readyToExpand();
         bool isUnderAttack();
     public:
@@ -42,7 +43,7 @@ class Race
         UnitTrainer *unitTrainer;
         BWAPI::Player Self;
         Race(BWAPI::UnitType, BWAPI::UnitType, BWAPI::UnitType,
-             BWAPI::UnitType, BWAPI::UnitType, Core&);
+             BWAPI::UnitType, BWAPI::UnitType, Core&, float expandRatio=2.5);
         virtual void onUnitCreate(BWAPI::Unit unit) {}
         virtual void onUnitMorph(BWAPI::Unit unit) {}
         virtual void onCenterComplete(BWAPI::Unit Unit);
@@ -68,7 +69,7 @@ class Race
         void onCompleteWorkaround(BWAPI::Unit workerUnit);
         void scout(std::set<BWAPI::TilePosition> scoutLocations);
         virtual void assembleSquads()
-            { squadCommander->assembleSquads(armyUnitType, 80); }
+            { squadCommander->assembleSquads(armyUnitType, 90); }
         virtual void displayStatus();  // Zerg overrides overlord count
 };
 

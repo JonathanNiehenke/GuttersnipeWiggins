@@ -26,7 +26,8 @@ Race::Race(
     BWAPI::UnitType supplyType,
     BWAPI::UnitType armyTechType,
     BWAPI::UnitType armyUnitType,
-    Core &core)
+    Core &core,
+    float Ratio) : expandRatio(Ratio)
 {
     this->centerType = centerType;
     this->workerType = workerType;
@@ -50,9 +51,10 @@ void Race::onCenterComplete(BWAPI::Unit Unit)
             mineralCluster.getPosition(), BWAPI::Filter::IsResourceDepot, 300);
         if (baseCenter == Unit) {
             ecoBaseManager->addBase(baseCenter, mineralCluster);
-            break;
+            return;
         }
     }
+    BWAPI::Broodwar << "Could not find minerals " << Unit->getID() << std::endl;
 }
 
 int Race::getAvailableSupply()
@@ -69,7 +71,7 @@ int Race::getAvailableSupply()
 int Race::getUnitBuffer(BWAPI::UnitType unitType)
 {
     // Prevents repetitive conversion into a float.
-    const float supplyBuildTime = supplyType.buildTime();
+    const float supplyBuildTime = float(supplyType.buildTime());
     int unitsPerSupplyBuild = int(std::ceil(
             supplyBuildTime / unitType.buildTime())),
         facilityAmount = (unitType == workerType
@@ -109,7 +111,7 @@ bool Race::readyToExpand()
     float Ratio = (float(unitTrainer->facilityCount() + 1) /
         ecoBaseManager->getBaseAmount());
     return (!Self->incompleteUnitCount(centerType) &&
-            (Ratio > 2.5 || ecoBaseManager->isAtCapacity()));
+            (Ratio > expandRatio || ecoBaseManager->isAtCapacity()));
 }
 
 bool Race::readyForArmyTech()
@@ -132,8 +134,11 @@ void Race::manageStructures()
 
 bool Race::isUnderAttack()
 {
+    using namespace BWAPI::Filter;
     for (BWAPI::Position Pos: cartographer->getFacilityPositions()) {
-        if (BWAPI::Broodwar->getClosestUnit(Pos, BWAPI::Filter::IsEnemy, 250))
+        // To keep it fair trigger when undetectable unit attacks.
+        if (BWAPI::Broodwar->getClosestUnit(
+                Pos, IsEnemy && (IsDetected || IsAttacking), 250))
         {
             return true;
         }
@@ -166,17 +171,22 @@ void Race::scout(std::set<BWAPI::TilePosition> scoutLocations)
     using namespace BWAPI::Filter;
     // ToDo: Scout with fewer workers.
     // Bug: Protoss scout consistency.
-    BWAPI::Unit baseCenter = ecoBaseManager->getCenter();
+    BWAPI::Unit baseCenter = ecoBaseManager->getFirstCenter();
     BWAPI::Unitset workerUnits = baseCenter->getUnitsInRadius(
         900, IsWorker && IsOwned && !IsConstructing);
-    auto workerIt = workerUnits.begin();
-    for (BWAPI::TilePosition Location: scoutLocations) {
+    auto workerIt = workerUnits.begin(),
+         workerEndIt = workerUnits.end();
+    auto scoutIt = scoutLocations.begin(),
+         scoutEndIt = scoutLocations.end();
+    for (; workerIt != workerEndIt && scoutIt != scoutEndIt;
+           ++workerIt, ++scoutIt)
+    {
         // ToDo: Gather the previous mineral instead.
-        BWAPI::Unit Scout = *workerIt++,
+        BWAPI::Unit Scout = *workerIt,
                     closestMineral = Scout->getClosestUnit(IsMineralField);
-        if (!Scout->move(BWAPI::Position(Location))) {
-            cmdRescuer->append(CmdRescuer::MoveCommand(
-                Scout, BWAPI::Position(Location), true));
+        BWAPI::Position scoutPos = BWAPI::Position((*scoutIt));
+        if (!Scout->move(scoutPos)) {
+            cmdRescuer->append(CmdRescuer::MoveCommand(Scout, scoutPos, true));
             cmdRescuer->append(CmdRescuer::GatherCommand(
                 Scout, closestMineral, true));
         }
@@ -185,6 +195,9 @@ void Race::scout(std::set<BWAPI::TilePosition> scoutLocations)
                 Scout, closestMineral, true));
         }
     }
+    BWAPI::Broodwar->sendTextEx(true,
+        "Found %d workers for scouting", workerUnits.size());
+    BWAPI::Broodwar->sendTextEx(true, "Found %d locations", scoutLocations.size());
 }
 
 void Race::displayStatus()

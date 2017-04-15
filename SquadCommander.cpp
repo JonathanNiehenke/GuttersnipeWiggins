@@ -52,6 +52,7 @@ BWAPI::Unit compareEnemyTargets::operator()(BWAPI::Unit u1, BWAPI::Unit u2)
             return !isJunk(u1, u1Type) ? u1 : u2;
     }
     // Prioritizing zerglings over drones who have the same damage.
+    // ToDo: Change condition, isAttacking is true during annimation.
     if (u1->isAttacking() != u2->isAttacking())
         return u1->isAttacking() ? u1 : u2;
     // To reach this far I assume units are of the same unit type.
@@ -97,7 +98,7 @@ void SquadCommander::assembleSquads(BWAPI::UnitType armyUnitType, int Range)
         drawSquadGather(Pos, Range);
         BWAPI::Unitset Squad = BWAPI::Broodwar->getUnitsInRadius(
             Pos, Range, GetType == armyUnitType && IsOwned);
-        if (!Squad.empty()) {
+        if (Squad.size() > 1) {
             armySquads.push_back(Squad);
         }
     }
@@ -182,8 +183,8 @@ bool SquadCommander::needToGroup(BWAPI::Unitset Squad, BWAPI::Position squadPos)
 void SquadCommander::attackUnit(BWAPI::Unitset Squad, BWAPI::Unit targetUnit)
 {
     for (BWAPI::Unit Warrior: Squad) {
-        if (Warrior->isAttackFrame())
-            return;  // Prevent attack interruption.
+        // ?What is the difference between isAttacking and isAttackFrame.
+        if (Warrior->isAttackFrame()) return;  // Continue annimation.
         BWAPI::UnitCommand lastCmd = Warrior->getLastCommand();
         BWAPI::Unit attackedUnit = lastCmd.getTarget();
         BWAPI::Position targetPosition = targetUnit->getPosition();
@@ -191,10 +192,8 @@ void SquadCommander::attackUnit(BWAPI::Unitset Squad, BWAPI::Unit targetUnit)
         {
             Warrior->attack(targetUnit);
         }
-        // If no target or its dead/cloaked/burrowed or its geyser.
-        else if ((!attackedUnit || !attackedUnit->exists() ||
-                  attackedUnit->getPlayer()->isNeutral()) &&
-            lastCmd.getTargetPosition() != targetPosition)
+        else if (!Warrior->canAttackUnit(attackedUnit)
+                 && lastCmd.getTargetPosition() != targetPosition)
         {
             Warrior->attack(targetPosition);
         }

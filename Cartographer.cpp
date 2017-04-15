@@ -40,6 +40,7 @@ void Cartographer::discoverResources(BWAPI::Position startPosition)
             }
     }
     resourceCount = Minerals.size();
+    BWAPI::Broodwar->sendTextEx(true, "%d resource locations found", resourceCount);
 }
 
 std::vector<BWAPI::Position> Cartographer::getResourcePositions()

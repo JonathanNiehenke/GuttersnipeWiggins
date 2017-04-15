@@ -4,6 +4,7 @@
 #include <BWAPI.h>
 #include "CmdRescuer.h"
 #include "Cartographer.h"
+#include "EcoBaseManager.h"
 
 class NoJob {};  // Custom exception.
 
@@ -30,9 +31,9 @@ class BuildingConstructer
         BWAPI::Unit baseCenter = nullptr;
         CmdRescuer::Rescuer *cmdRescuer;
         Cartographer *cartographer;
+        EcoBaseManager *ecobaseManager;
         int expandIndex = 0, maxExpandSearch;
         std::vector<ConstructionPO> constructionJobs;
-        int getContractorStatus(BWAPI::Unit contractor);
         ConstructionPO& findJob(BWAPI::UnitType Constructable);
         std::vector<ConstructionPO>::iterator findJob(BWAPI::Unit Product);
         void beginConstruction(
@@ -44,7 +45,8 @@ class BuildingConstructer
         bool isInferiorLocation(BWAPI::TilePosition expandPosition);
         BWAPI::TilePosition getExpansionLocation(BWAPI::UnitType);
     public:
-        void onStart(BWAPI::Unit, CmdRescuer::Rescuer*, Cartographer*);
+        void onStart(
+            BWAPI::Unit, CmdRescuer::Rescuer*, Cartographer*, EcoBaseManager*);
         void constructUnit(BWAPI::UnitType Constructable);
         void constructExpansion(BWAPI::UnitType Constructable);
         void addProduct(BWAPI::Unit Product);

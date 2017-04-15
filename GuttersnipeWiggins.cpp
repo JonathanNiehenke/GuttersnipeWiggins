@@ -12,7 +12,8 @@ void GW::onStart()
         BWAPI::Position(Self->getStartLocation()), IsResourceDepot);
     cartographer.discoverResources(BWAPI::Position(Self->getStartLocation()));
     squadCommander.onStart(&cartographer);
-    buildingConstructer.onStart(baseCenter, &cmdRescuer, &cartographer);
+    buildingConstructer.onStart(
+        baseCenter, &cmdRescuer, &cartographer, &ecoBaseManager);
     unitTrainer.onStart(&cmdRescuer);
     Core core(&buildingConstructer, &cartographer, &cmdRescuer,
               &ecoBaseManager, &squadCommander, &unitTrainer);
@@ -32,7 +33,7 @@ void GW::onStart()
 void GW::onFrame()
 {
     const int actionFrames = std::max(5, BWAPI::Broodwar->getLatency());
-    GW::displayStatus(); // For debugging.
+    GW::displayStatus();  // For debugging.
     switch(BWAPI::Broodwar->getFrameCount() % actionFrames) {
         case 0: race->manageProduction();
             break;

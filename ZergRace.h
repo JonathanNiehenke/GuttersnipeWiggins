@@ -16,7 +16,8 @@ class ZergRace : public Race
             BWAPI::UnitTypes::Enum::Zerg_Overlord,
             BWAPI::UnitTypes::Enum::Zerg_Spawning_Pool,
             BWAPI::UnitTypes::Enum::Zerg_Zergling,
-            core) {}
+            core,
+            3.5) {}  // Zerg ecoBases are also Facilities.
 
         void onUnitCreate(BWAPI::Unit Unit);
         void onUnitMorph(BWAPI::Unit Unit);

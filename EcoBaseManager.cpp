@@ -54,7 +54,7 @@ void EcoBaseManager::addBase(
         unitToBase[Mineral] = Base;
     }
     unitToBase[baseCenter] = Base;
-    Bases.insert(Base);
+    Bases.push_back(Base);
 }
 
 void EcoBaseManager::removeBase(BWAPI::Unit baseCenter)
@@ -62,9 +62,7 @@ void EcoBaseManager::removeBase(BWAPI::Unit baseCenter)
     EcoBase *trash = unitToBase[baseCenter];
     if (!trash) return;  // baseCenter was constructing.
     if (baseCenter != trash->getCenter()) {
-        BWAPI::Broodwar << "Wrong center to base" << std::endl;
-        BWAPI::Broodwar << "Wrong center to base" << std::endl;
-        BWAPI::Broodwar << "Wrong center to base" << std::endl;
+        BWAPI::Broodwar->sendTextEx(true, "Wrong center to base");
     }
     BWAPI::Broodwar << "unitToBase size before: " << unitToBase.size()
                     << std::endl;
@@ -79,7 +77,11 @@ void EcoBaseManager::removeBase(BWAPI::Unit baseCenter)
     unitToBase.erase(baseCenter);
     BWAPI::Broodwar << "unitToBase size after: " << unitToBase.size()
                     << std::endl;
-    Bases.erase(trash);
+    auto endIt = Bases.end(),
+         foundIt = find(Bases.begin(), endIt, trash);
+    if (foundIt != endIt) {
+        Bases.erase(foundIt);
+    }
     delete trash;
     trash = nullptr;
 }

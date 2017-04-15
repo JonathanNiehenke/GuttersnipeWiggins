@@ -4,7 +4,7 @@
 
 // Wish I knew how to merge the declarations with the definitions
 // without triggering LNK2005, because separating them reduces its
-// readability. Together they are about 100 lines.
+// readability. Together they are about 125 lines.
 
 namespace CmdRescuer
 {
