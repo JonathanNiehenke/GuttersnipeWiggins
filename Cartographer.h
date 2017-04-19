@@ -4,21 +4,43 @@
 #include <BWAPI.h>
 #include "Utils.h"
 
+class ResourceLocation
+{
+    private:
+        std::vector<BWAPI::Unit> Minerals, Geysers;
+        BWAPI::TilePosition buildLocation;
+        BWAPI::Position averageResourcePosition() const;
+    public:
+        ResourceLocation(BWAPI::Unitset Resources);
+        const std::vector<BWAPI::Unit>& getMinerals() const
+            { return Minerals; }
+        const std::vector<BWAPI::Unit>& getGeysers() const
+            { return Geysers; }
+        const BWAPI::TilePosition& getLocation() const
+            { return buildLocation; }
+        const BWAPI::Position getPosition() const
+            { return BWAPI::Position(buildLocation); }
+};
+
 class Cartographer
 {
     typedef std::set<BWAPI::TilePosition> locationSet;
     private:
         int resourceCount = 0;
-        std::vector<BWAPI::Unitset> Minerals;
+        std::vector<ResourceLocation> resourceGroups;
         std::vector<BWAPI::Position> resourcePositions;
         std::vector<BWAPI::Position> facilityPositions;
         std::map<BWAPI::Player, locationSet> enemyLocations;
         BWAPI::Position startPosition = BWAPI::Positions::Unknown;
+        static void groupResources(const BWAPI::Unitset &Resources,
+            std::map<int, BWAPI::Unitset> &groupedResources);
     public:
-        void discoverResources(BWAPI::Position startPosition);
+        void discoverResources(const BWAPI::Position &startPosition);
         int getResourceCount() { return resourceCount; }
-        std::vector<BWAPI::Position> getResourcePositions();
-        std::vector<BWAPI::Unitset> getMinerals() { return Minerals; }
+        std::vector<BWAPI::Position> getResourcePositions()
+            { return resourcePositions; }
+        std::vector<ResourceLocation> getResourceGroups()
+            { return resourceGroups; }
         void addBuildingLocation(BWAPI::Player, BWAPI::TilePosition);
         void removeBuildingLocation(BWAPI::Player, BWAPI::TilePosition);
         void removeBuildingLocation(BWAPI::TilePosition buildingLocation);
@@ -32,7 +54,7 @@ class Cartographer
         std::vector<BWAPI::Position> getFacilityPositions()
             { return facilityPositions; }
         void displayStatus(int &row);
-        BWAPI::Position operator[](int i);
+        BWAPI::TilePosition operator[](int i);
 };
 
 #endif

@@ -4,23 +4,24 @@
 
 using namespace BWAPI::Filter;
 
-EcoBase::EcoBase(BWAPI::Unit center, BWAPI::Unitset mineralCluster)
+EcoBase::EcoBase(BWAPI::Unit center, UnitSeries mineralCluster)
 {
+    assert(!mineralCluster.empty());  // EcoBase constructor
     Center = center;
-    Minerals.assign(mineralCluster.begin(), mineralCluster.end());
-    std::sort(Minerals.begin(), Minerals.end(),
-              Utils::compareDistanceFrom(center));
+    Minerals = mineralCluster;
+    assert(false);  // EcoBase constructor
 }
 
 void EcoBase::assignMiner(BWAPI::Unit minerUnit)
 {
     Workers.insert(minerUnit);
+    // ToDo: Command rescuer.
     minerUnit->gather(Minerals[mineralIndex++ % Minerals.size()]);
 }
 
 void EcoBase::removeMineral(BWAPI::Unit mineralUnit)
 {
-    // Consider: Minerals as a reference benefitting map awareness.
+    // Consider: Minerals as a reference to benefit map awareness.
     auto endIt = Minerals.end(),
          foundIt = find(Minerals.begin(), endIt, mineralUnit);
     if (foundIt != endIt) {
@@ -44,9 +45,9 @@ bool EcoBase::isLackingMiners()
     return forgottenMinerals - nearlyMining > 0;
 }
 
-void EcoBaseManager::addBase(
-        BWAPI::Unit baseCenter, BWAPI::Unitset  mineralCluster)
+void EcoBaseManager::addBase(BWAPI::Unit baseCenter, UnitSeries mineralCluster)
 {
+    assert(false);  // addBase
     ++baseAmount;
     mineralAmount += mineralCluster.size();
     EcoBase *Base = new EcoBase(baseCenter, mineralCluster);
@@ -55,6 +56,7 @@ void EcoBaseManager::addBase(
     }
     unitToBase[baseCenter] = Base;
     Bases.push_back(Base);
+    assert(false);  // addBase
 }
 
 void EcoBaseManager::removeBase(BWAPI::Unit baseCenter)

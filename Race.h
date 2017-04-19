@@ -46,6 +46,7 @@ class Race
              BWAPI::UnitType, BWAPI::UnitType, Core&, float expandRatio=2.5);
         virtual void onUnitCreate(BWAPI::Unit unit) {}
         virtual void onUnitMorph(BWAPI::Unit unit) {}
+        static void drawCenterSearch(BWAPI::Position resourceLocation);
         virtual void onCenterComplete(BWAPI::Unit Unit);
         virtual void onUnitComplete(BWAPI::Unit unit) {}
         virtual void onUnitDestroy(BWAPI::Unit unit) {}
@@ -59,6 +60,7 @@ class Race
             { buildingConstructer->constructUnit(armyTechType); }
         void createCenter()
             { buildingConstructer->constructExpansion(centerType); }
+        void addWorker(BWAPI::Unit);
         virtual int getAvailableSupply();  // Overrides overlord count
         int getUnitBuffer(BWAPI::UnitType unitType);
         virtual bool needsSupply();  // Zerg overrides army buffer calc

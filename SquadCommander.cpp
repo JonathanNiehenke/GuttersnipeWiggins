@@ -98,7 +98,7 @@ void SquadCommander::assembleSquads(BWAPI::UnitType armyUnitType, int Range)
         drawSquadGather(Pos, Range);
         BWAPI::Unitset Squad = BWAPI::Broodwar->getUnitsInRadius(
             Pos, Range, GetType == armyUnitType && IsOwned);
-        if (Squad.size() > 1) {
+        if (Squad.size() > 2) {
             armySquads.push_back(Squad);
         }
     }

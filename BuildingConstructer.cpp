@@ -50,14 +50,6 @@ void ConstructionPO::updateStatus()
             case BWAPI::Orders::Enum::PlaceBuilding:
                 // status = Constructing;
                 break;
-            // case BWAPI::Orders::Enum::ConstructingBuilding:
-                // BWAPI::Broodwar << "Missed onUnitCreate" << std::endl;
-                // product = contractor->getBuildUnit();
-                // break;
-            // case BWAPI::Orders::Enum::IncompleteBuilding:
-                // BWAPI::Broodwar << "Missed onUnitMorph" << std::endl;
-                // product = contractor;
-                // break;
             default:
                 BWAPI::Broodwar << "Other order: " << contractor->getOrder()
                                 << std::endl;
@@ -183,6 +175,7 @@ void BuildingConstructer::continueConstruction(ConstructionPO &Job)
         }
         else if (self->minerals() >= Job.constructable.mineralPrice() &&
                  BWAPI::Broodwar->isVisible(Job.location) &&
+                 Job.contractor->getOrder() != BWAPI::Orders::PlaceBuilding &&
                  isObstructed(Job))
         {
             BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
@@ -253,8 +246,7 @@ BWAPI::TilePosition BuildingConstructer::getExpansionLocation(
     for (; isInferiorLocation(expandLocation) &&
            i < maxExpandSearch; ++i)
     {
-        expandLocation = BWAPI::TilePosition(
-            cartographer->operator[](expandIndex++));
+        expandLocation = (*cartographer)[expandIndex++];
     }
     if (i == maxExpandSearch) {
         expandLocation = BWAPI::TilePositions::Invalid;
@@ -314,7 +306,7 @@ void BuildingConstructer::displayStatus(int &row)
     for (ConstructionPO Job: constructionJobs) {
         row += 10;
         BWAPI::Broodwar->drawTextScreen(3, row,
-            "%s, Contractor: %d, Locaton (%d, %d), PID: %d, Status: %d",
+            "%s, MID: %d, Locaton (%d, %d), PID: %d, Status: %d",
             Job.constructable.c_str(), Job.contractor->getID(),
             Job.location.x, Job.location.y,
             (Job.product ? Job.product->getID() : 0), 

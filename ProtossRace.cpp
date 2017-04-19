@@ -36,17 +36,7 @@ void ProtossRace::onUnitComplete(BWAPI::Unit Unit)
         case BWAPI::UnitTypes::Enum::Protoss_Zealot:
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Probe:
-            try {
-                ecoBaseManager->addWorker(Unit);
-            }
-            catch (char* err) {
-                if (ecoBaseManager->getBaseAmount()) {
-                    BWAPI::Broodwar->sendText(err);
-                }
-                else {
-                    onCompleteWorkaround(Unit);
-                }
-            }
+            addWorker(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Pylon:
             buildingConstructer->removeConstruction(Unit);

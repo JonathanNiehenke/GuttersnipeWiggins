@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <cassert>
 #include <BWAPI.h>
 #include "Utils.h"
 
@@ -17,7 +18,7 @@ class EcoBase
         UnitSeries Minerals;
         int mineralIndex = 0;  // For miner to mineral assignment.
     public:
-        EcoBase(BWAPI::Unit center, BWAPI::Unitset mineralCluster);
+        EcoBase(BWAPI::Unit center, UnitSeries mineralCluster);
         BWAPI::Unit getCenter() { return Center; }
         UnitGroup getWorkers() { return Workers; }
         UnitSeries getMinerals() { return Minerals; }
@@ -36,8 +37,9 @@ class EcoBase
 // Manages all bases of workers and minerals.
 class EcoBaseManager
 {
+    typedef std::unordered_set<BWAPI::Unit> UnitGroup;
+    typedef std::vector<BWAPI::Unit> UnitSeries;
     private:
-        typedef std::unordered_set<BWAPI::Unit> UnitGroup;
         int baseAmount = 0, mineralAmount = 0, workerAmount = 0,
             pendingWorkers = 0;
         // For unit lookup of assigned Base.
@@ -48,7 +50,7 @@ class EcoBaseManager
         int getBaseAmount() { return baseAmount; }
         int getMineralAmount() { return mineralAmount; }
         int getWorkerAmount() { return workerAmount; }
-        void addBase(BWAPI::Unit baseCenter, BWAPI::Unitset  mineralCluster);
+        void addBase(BWAPI::Unit baseCenter, UnitSeries mineralCluster);
         void debugSize() {BWAPI::Broodwar << "unitToBase size around: "
             << unitToBase.size() << std::endl; }
         void removeBase(BWAPI::Unit baseCenter);

@@ -1,8 +1,7 @@
 #ifndef ZERGRACE_CPP
 #define ZERGRACE_CPP
 #include "ZergRace.h"
-
-// Zerg has construction issues.
+#include <cassert>
 
 void ZergRace::handleEggType(BWAPI::Unit Unit)
 {
@@ -81,17 +80,7 @@ void ZergRace::onUnitComplete(BWAPI::Unit Unit)
         case BWAPI::UnitTypes::Enum::Zerg_Zergling:
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Drone:
-            try {
-                ecoBaseManager->addWorker(Unit);
-            }
-            catch (char* err) {
-                if (ecoBaseManager->getBaseAmount()) {
-                    BWAPI::Broodwar->sendText(err);
-                }
-                else {
-                    onCompleteWorkaround(Unit);
-                }
-            }
+            addWorker(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Overlord:
             --incompleteOverlords;

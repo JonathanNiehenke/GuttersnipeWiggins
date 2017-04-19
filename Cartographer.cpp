@@ -4,49 +4,100 @@
 
 using namespace BWAPI::Filter;
 
-void Cartographer::discoverResources(BWAPI::Position startPosition)
+BWAPI::Position ResourceLocation::averageResourcePosition() const
+{
+    BWAPI::Position mineralSum = BWAPI::Positions::Origin,
+                    geyserSum = BWAPI::Positions::Origin;
+    for_each(Minerals.begin(), Minerals.end(),
+        [&mineralSum](BWAPI::Unit Unit){ mineralSum += Unit->getPosition(); });
+    for_each(Geysers.begin(), Geysers.end(),
+        [&geyserSum](BWAPI::Unit Unit){ geyserSum += Unit->getPosition(); });
+    BWAPI::Position mineralPos = mineralSum / Minerals.size(),
+                    geyserPos = mineralSum / Geysers.size();
+    if (mineralPos.isValid() && geyserPos.isValid()) {
+        return (mineralPos + geyserPos) / 2;
+    }
+    else if (mineralPos.isValid()) {
+        return mineralPos;
+    }
+    else {
+        return geyserPos;
+    }
+}
+
+ResourceLocation::ResourceLocation(BWAPI::Unitset Resources)
+{
+    for (BWAPI::Unit Resource: Resources) {
+        (Resource->getType().isMineralField()
+         ? Minerals : Geysers).push_back(Resource);
+    }
+
+    buildLocation = BWAPI::Broodwar->getBuildLocation(
+        BWAPI::UnitTypes::Protoss_Nexus,
+        BWAPI::TilePosition(averageResourcePosition()),
+        18);
+    Utils::compareDistanceFrom fromBuildLocation(buildLocation);
+    std::sort(Minerals.begin(), Minerals.end(), fromBuildLocation);
+    std::sort(Geysers.begin(), Geysers.end(), fromBuildLocation);
+}
+
+void Cartographer::groupResources(
+    const BWAPI::Unitset &Resources,
+    std::map<int, BWAPI::Unitset> &groupedResources)
+{
+    for (BWAPI::Unit Resource: Resources)
+        groupedResources[Resource->getResourceGroup()].insert(Resource);
+}
+
+void Cartographer::discoverResources(const BWAPI::Position &startPosition)
 {
     // Group minerals into "Starcraft" defined groups.
     typedef std::pair<BWAPI::Position, BWAPI::Unitset> PositionedUnits;
-    std::map<int, BWAPI::Unitset> groupedMinerals;
-    std::vector<PositionedUnits> temp;
-    for (BWAPI::Unit Mineral: BWAPI::Broodwar->getStaticMinerals()) {
-        groupedMinerals[Mineral->getResourceGroup()].insert(Mineral);
-    }
-    for (auto mineralGroup: groupedMinerals) {
-        BWAPI::Unitset mineralCluster = mineralGroup.second;
+    std::map<int, BWAPI::Unitset> groupsOfResources;
+    groupResources(BWAPI::Broodwar->getStaticMinerals(), groupsOfResources);
+    groupResources(BWAPI::Broodwar->getStaticGeysers(), groupsOfResources);
+    for (const auto &groupedResources: groupsOfResources) {
+        BWAPI::Unitset mineralCluster = groupedResources.second;
+        ResourceLocation resourceGroup(groupedResources.second);
         // Ignore mineral clusters possibly used as terrain.
-        if (mineralCluster.size() > 4) {
-            // ToDo: Sort according to distance from sourcePosition.
-            temp.push_back(std::make_pair(
-                mineralCluster.getPosition(), mineralCluster));
+        if (resourceGroup.getMinerals().size() > 4) {
+            resourceGroups.push_back(resourceGroup);
+            resourcePositions.push_back(resourceGroup.getPosition());
         }
     }
-    std::sort(temp.begin(), temp.end(),
-        [startPosition](PositionedUnits pu1, PositionedUnits pu2)
+    std::sort(resourceGroups.begin(), resourceGroups.end(),
+        [startPosition](const ResourceLocation &a, const ResourceLocation &b)
         {
-            return (startPosition.getApproxDistance(pu1.first) <
-                    startPosition.getApproxDistance(pu2.first));
+            return (startPosition.getApproxDistance(a.getPosition()) <
+                    startPosition.getApproxDistance(b.getPosition()));
         });
-    for (PositionedUnits pair: temp) {
-            BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
-                BWAPI::UnitTypes::Protoss_Nexus, BWAPI::TilePosition(pair.first), 20);
-            if (Location == BWAPI::TilePositions::Invalid) {
-                BWAPI::Broodwar->sendText("Lacking expansion location");
-            }
-            else {
-                resourcePositions.push_back(BWAPI::Position(Location));
-                Minerals.push_back(pair.second);
-            }
-    }
-    resourceCount = Minerals.size();
-    BWAPI::Broodwar->sendTextEx(true, "%d resource locations found", resourceCount);
+    resourceCount = resourceGroups.size();
+    assert(resourceCount);
 }
 
-std::vector<BWAPI::Position> Cartographer::getResourcePositions()
-{
-    return resourcePositions;
-}
+// void Cartographer::discoverResources(const BWAPI::Position &startPosition)
+// {
+    // // Group minerals into "Starcraft" defined groups.
+    // std::map<int, BWAPI::Unitset> groupedResources:;
+    // groupResources(BWAPI::Broodwar->getStaticMinerals(), groupedResources);
+    // groupResources(BWAPI::Broodwar->getStaticGeysers(), groupedResources);
+    // for (const auto &groupedResource: groupedResources) {
+        // ResourceLocation resourceGroup(groupedResources.second);
+        // // Ignore mineral clusters possibly used as terrain.
+        // if (resourceGroup.getMinerals().size() > 4) {
+            // resourceGroups.push_back(resourceGroup);
+            // resourcePositions.push_back(resourceGroup.getPosition());
+        // }
+    // }
+    // std::sort(resourceGroups.begin(), resourceGroups.end(),
+        // [startPosition](const ResourceLocation &a, const ResourceLocation &b)
+        // {
+            // return (startPosition.getApproxDistance(a.getPosition()) <
+                    // startPosition.getApproxDistance(b.getPosition()));
+        // });
+    // resourceCount = resourceGroups.size();
+    // assert(resourceCount);
+// }
 
 void Cartographer::addBuildingLocation(
     BWAPI::Player owningPlayer, BWAPI::TilePosition buildingLocation)
@@ -143,10 +194,10 @@ void Cartographer::displayStatus(int &row)
     }
 }
 
-BWAPI::Position Cartographer::operator[](int i)
+BWAPI::TilePosition Cartographer::operator[](int i)
 {
-    // Wrap around resource positions.
-    return resourcePositions[i % resourcePositions.size()];
+    // Wrap around resource groups.
+    return resourceGroups[i % resourceGroups.size()].getLocation();
 }
 
 #endif

@@ -41,20 +41,52 @@ Race::Race(
     this->squadCommander = core.squadCommander;
     this->unitTrainer = core.unitTrainer;
     this->Self = BWAPI::Broodwar->self();
+    for (ResourceLocation resourceGroup: cartographer->getResourceGroups()) {
+        drawCenterSearch(resourceGroup.getPosition());
+    }
+}
+
+void Race::drawCenterSearch(BWAPI::Position resourceLocation)
+{
+    // Live debugging info.
+    BWAPI::Broodwar->registerEvent(
+        [resourceLocation](BWAPI::Game*){
+            BWAPI::Broodwar->drawCircleMap(resourceLocation, 8,
+                BWAPI::Color(0, 255, 0), true);  // Green squadPos.
+            BWAPI::Broodwar->drawCircleMap(resourceLocation, 300,
+                BWAPI::Color(255, 255, 255), false);  // White range.
+        },  nullptr, -1);
 }
 
 void Race::onCenterComplete(BWAPI::Unit Unit)
 {
     // ToDo: Rewrite.
-    for (BWAPI::Unitset mineralCluster: cartographer->getMinerals()) {
+    for (ResourceLocation resourceGroup: cartographer->getResourceGroups()) {
         BWAPI::Unit baseCenter = BWAPI::Broodwar->getClosestUnit(
-            mineralCluster.getPosition(), BWAPI::Filter::IsResourceDepot, 300);
+            resourceGroup.getPosition(), BWAPI::Filter::IsResourceDepot, 300);
         if (baseCenter == Unit) {
-            ecoBaseManager->addBase(baseCenter, mineralCluster);
+            ecoBaseManager->addBase(baseCenter, resourceGroup.getMinerals());
             return;
         }
     }
+    assert(false);
     BWAPI::Broodwar << "Could not find minerals " << Unit->getID() << std::endl;
+}
+
+void Race::addWorker(BWAPI::Unit Unit)
+{
+    try {
+        ecoBaseManager->addWorker(Unit);
+    }
+    catch (char* err) {
+        if (ecoBaseManager->getBaseAmount()) {
+            BWAPI::Broodwar->sendText(err);
+        }
+        else {
+            onCompleteWorkaround(Unit);
+        }
+    }
+    
 }
 
 int Race::getAvailableSupply()
@@ -148,6 +180,7 @@ bool Race::isUnderAttack()
 
 void Race::manageAttackGroups()
 {
+    // ToDo: Reduce assembleSquads when at max. Its causing lag.
     if (Self->supplyUsed() == 400 || isUnderAttack()) {
         assembleSquads();
     }
@@ -162,7 +195,11 @@ void Race::onCompleteWorkaround(BWAPI::Unit Unit)
     // C3480 requires the capture variable to originate within scope
     EcoBaseManager *lambdaTemp = ecoBaseManager;
     BWAPI::Broodwar->registerEvent(
-        [Unit, lambdaTemp](BWAPI::Game*) { lambdaTemp->addWorker(Unit); },
+        [Unit, lambdaTemp](BWAPI::Game*) {
+            assert(lambdaTemp->getBaseAmount());
+            lambdaTemp->addWorker(Unit);
+            assert(false);
+            },
         nullptr, 1);
 }
 

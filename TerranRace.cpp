@@ -36,17 +36,7 @@ void TerranRace::onUnitComplete(BWAPI::Unit Unit)
         case BWAPI::UnitTypes::Enum::Terran_Marine:
             break;
         case BWAPI::UnitTypes::Enum::Terran_SCV:
-            try {
-                ecoBaseManager->addWorker(Unit);
-            }
-            catch (char* err) {
-                if (ecoBaseManager->getBaseAmount()) {
-                    BWAPI::Broodwar->sendText(err);
-                }
-                else {
-                    onCompleteWorkaround(Unit);
-                }
-            }
+            addWorker(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Supply_Depot:
             buildingConstructer->removeConstruction(Unit);
