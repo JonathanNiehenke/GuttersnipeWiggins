@@ -9,7 +9,8 @@ class ResourceLocation
     private:
         std::vector<BWAPI::Unit> Minerals, Geysers;
         BWAPI::TilePosition buildLocation;
-        BWAPI::Position averageResourcePosition() const;
+        BWAPI::TilePosition averageResourcePosition(BWAPI::Unitset) const;
+        static void drawCenterSearch(BWAPI::Position resourceLocation, int a);
     public:
         ResourceLocation(BWAPI::Unitset Resources);
         const std::vector<BWAPI::Unit>& getMinerals() const
@@ -34,6 +35,7 @@ class Cartographer
         BWAPI::Position startPosition = BWAPI::Positions::Unknown;
         static void groupResources(const BWAPI::Unitset &Resources,
             std::map<int, BWAPI::Unitset> &groupedResources);
+        static bool isBreakableTerrain(std::vector<BWAPI::Unit> Minerals);
     public:
         void discoverResources(const BWAPI::Position &startPosition);
         int getResourceCount() { return resourceCount; }

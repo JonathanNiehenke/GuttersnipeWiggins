@@ -4,25 +4,30 @@
 
 using namespace BWAPI::Filter;
 
-BWAPI::Position ResourceLocation::averageResourcePosition() const
+void ResourceLocation::drawCenterSearch(BWAPI::Position resourceLocation, int a)
 {
-    BWAPI::Position mineralSum = BWAPI::Positions::Origin,
-                    geyserSum = BWAPI::Positions::Origin;
-    for_each(Minerals.begin(), Minerals.end(),
-        [&mineralSum](BWAPI::Unit Unit){ mineralSum += Unit->getPosition(); });
-    for_each(Geysers.begin(), Geysers.end(),
-        [&geyserSum](BWAPI::Unit Unit){ geyserSum += Unit->getPosition(); });
-    BWAPI::Position mineralPos = mineralSum / Minerals.size(),
-                    geyserPos = mineralSum / Geysers.size();
-    if (mineralPos.isValid() && geyserPos.isValid()) {
-        return (mineralPos + geyserPos) / 2;
+    // Live debugging info.
+    BWAPI::Broodwar->registerEvent(
+        [resourceLocation, a](BWAPI::Game*){
+            BWAPI::Broodwar->drawCircleMap(resourceLocation, 8,
+                BWAPI::Color(0, a, 0), true);  // Blue squadPos.
+        },  nullptr, -1);
+}
+
+BWAPI::TilePosition ResourceLocation::averageResourcePosition(
+    BWAPI::Unitset Resources) const
+{
+    BWAPI::Position avgResourcePosition = Resources.getPosition();
+    drawCenterSearch(avgResourcePosition, 0);
+    if (!Geysers.empty()) {
+        BWAPI::Position geyserSum = BWAPI::Positions::Origin, geyserPos;
+        for_each(Geysers.begin(), Geysers.end(),
+            [&geyserSum](BWAPI::Unit Unit){ geyserSum += Unit->getPosition(); });
+        geyserPos = geyserSum / Geysers.size();
+        avgResourcePosition = (avgResourcePosition + geyserPos) / 2;
+    drawCenterSearch(avgResourcePosition, 127);
     }
-    else if (mineralPos.isValid()) {
-        return mineralPos;
-    }
-    else {
-        return geyserPos;
-    }
+    return BWAPI::TilePosition(avgResourcePosition);
 }
 
 ResourceLocation::ResourceLocation(BWAPI::Unitset Resources)
@@ -31,22 +36,27 @@ ResourceLocation::ResourceLocation(BWAPI::Unitset Resources)
         (Resource->getType().isMineralField()
          ? Minerals : Geysers).push_back(Resource);
     }
-
     buildLocation = BWAPI::Broodwar->getBuildLocation(
-        BWAPI::UnitTypes::Protoss_Nexus,
-        BWAPI::TilePosition(averageResourcePosition()),
-        18);
+        BWAPI::UnitTypes::Zerg_Hatchery,
+        averageResourcePosition(Resources),
+        12);
     Utils::compareDistanceFrom fromBuildLocation(buildLocation);
     std::sort(Minerals.begin(), Minerals.end(), fromBuildLocation);
     std::sort(Geysers.begin(), Geysers.end(), fromBuildLocation);
 }
-
+;
 void Cartographer::groupResources(
     const BWAPI::Unitset &Resources,
     std::map<int, BWAPI::Unitset> &groupedResources)
 {
     for (BWAPI::Unit Resource: Resources)
         groupedResources[Resource->getResourceGroup()].insert(Resource);
+}
+
+bool Cartographer::isBreakableTerrain(std::vector<BWAPI::Unit> Minerals)
+{
+    return std::any_of(Minerals.begin(), Minerals.end(),
+            [](BWAPI::Unit Mineral) { return !Mineral->getResources(); });
 }
 
 void Cartographer::discoverResources(const BWAPI::Position &startPosition)
@@ -60,7 +70,7 @@ void Cartographer::discoverResources(const BWAPI::Position &startPosition)
         BWAPI::Unitset mineralCluster = groupedResources.second;
         ResourceLocation resourceGroup(groupedResources.second);
         // Ignore mineral clusters possibly used as terrain.
-        if (resourceGroup.getMinerals().size() > 4) {
+        if (!isBreakableTerrain(resourceGroup.getMinerals())) {
             resourceGroups.push_back(resourceGroup);
             resourcePositions.push_back(resourceGroup.getPosition());
         }
@@ -74,30 +84,6 @@ void Cartographer::discoverResources(const BWAPI::Position &startPosition)
     resourceCount = resourceGroups.size();
     assert(resourceCount);
 }
-
-// void Cartographer::discoverResources(const BWAPI::Position &startPosition)
-// {
-    // // Group minerals into "Starcraft" defined groups.
-    // std::map<int, BWAPI::Unitset> groupedResources:;
-    // groupResources(BWAPI::Broodwar->getStaticMinerals(), groupedResources);
-    // groupResources(BWAPI::Broodwar->getStaticGeysers(), groupedResources);
-    // for (const auto &groupedResource: groupedResources) {
-        // ResourceLocation resourceGroup(groupedResources.second);
-        // // Ignore mineral clusters possibly used as terrain.
-        // if (resourceGroup.getMinerals().size() > 4) {
-            // resourceGroups.push_back(resourceGroup);
-            // resourcePositions.push_back(resourceGroup.getPosition());
-        // }
-    // }
-    // std::sort(resourceGroups.begin(), resourceGroups.end(),
-        // [startPosition](const ResourceLocation &a, const ResourceLocation &b)
-        // {
-            // return (startPosition.getApproxDistance(a.getPosition()) <
-                    // startPosition.getApproxDistance(b.getPosition()));
-        // });
-    // resourceCount = resourceGroups.size();
-    // assert(resourceCount);
-// }
 
 void Cartographer::addBuildingLocation(
     BWAPI::Player owningPlayer, BWAPI::TilePosition buildingLocation)

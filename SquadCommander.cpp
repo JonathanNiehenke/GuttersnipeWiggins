@@ -121,7 +121,7 @@ void SquadCommander::uniteSquads()
         Utils::compareDistanceFrom squadComparePos(Squad.getPosition());
         for (int j = i + 1; j < armySquadLength; ++j) {
             BWAPI::Unitset &otherSquad = armySquads[j];
-            if (squadComparePos.getDifference(otherSquad.getPosition()) < 350)
+            if (squadComparePos.getDifference(otherSquad.getPosition()) < 250)
             {
                 Squad.insert(otherSquad.begin(), otherSquad.end());
                 otherSquad.clear();

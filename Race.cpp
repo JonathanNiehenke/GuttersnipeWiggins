@@ -52,25 +52,22 @@ void Race::drawCenterSearch(BWAPI::Position resourceLocation)
     BWAPI::Broodwar->registerEvent(
         [resourceLocation](BWAPI::Game*){
             BWAPI::Broodwar->drawCircleMap(resourceLocation, 8,
-                BWAPI::Color(0, 255, 0), true);  // Green squadPos.
+                BWAPI::Color(255, 255, 255), true);  // White
             BWAPI::Broodwar->drawCircleMap(resourceLocation, 300,
-                BWAPI::Color(255, 255, 255), false);  // White range.
+                BWAPI::Color(255, 255, 255), false);  // White
         },  nullptr, -1);
 }
 
 void Race::onCenterComplete(BWAPI::Unit Unit)
 {
-    // ToDo: Rewrite.
+    Utils::compareDistanceFrom centerPos(Unit);
     for (ResourceLocation resourceGroup: cartographer->getResourceGroups()) {
-        BWAPI::Unit baseCenter = BWAPI::Broodwar->getClosestUnit(
-            resourceGroup.getPosition(), BWAPI::Filter::IsResourceDepot, 300);
-        if (baseCenter == Unit) {
-            ecoBaseManager->addBase(baseCenter, resourceGroup.getMinerals());
+        if (centerPos.getDifference(resourceGroup.getPosition()) < 300) {
+            ecoBaseManager->addBase(Unit, resourceGroup.getMinerals());
             return;
         }
     }
     assert(false);
-    BWAPI::Broodwar << "Could not find minerals " << Unit->getID() << std::endl;
 }
 
 void Race::addWorker(BWAPI::Unit Unit)
@@ -198,9 +195,8 @@ void Race::onCompleteWorkaround(BWAPI::Unit Unit)
         [Unit, lambdaTemp](BWAPI::Game*) {
             assert(lambdaTemp->getBaseAmount());
             lambdaTemp->addWorker(Unit);
-            assert(false);
             },
-        nullptr, 1);
+        nullptr, 2);
 }
 
 void Race::scout(std::set<BWAPI::TilePosition> scoutLocations)
