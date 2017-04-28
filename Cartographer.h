@@ -2,26 +2,8 @@
 #define CARTOGRAPHER_H
 #include <cassert>
 #include <BWAPI.h>
+#include "ResourceLocations.h"
 #include "Utils.h"
-
-class ResourceLocation
-{
-    private:
-        std::vector<BWAPI::Unit> Minerals, Geysers;
-        BWAPI::TilePosition buildLocation;
-        BWAPI::TilePosition averageResourcePosition(BWAPI::Unitset) const;
-        static void drawCenterSearch(BWAPI::Position resourceLocation, int a);
-    public:
-        ResourceLocation(BWAPI::Unitset Resources);
-        const std::vector<BWAPI::Unit>& getMinerals() const
-            { return Minerals; }
-        const std::vector<BWAPI::Unit>& getGeysers() const
-            { return Geysers; }
-        const BWAPI::TilePosition& getLocation() const
-            { return buildLocation; }
-        const BWAPI::Position getPosition() const
-            { return BWAPI::Position(buildLocation); }
-};
 
 class Cartographer
 {

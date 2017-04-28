@@ -4,47 +4,6 @@
 
 using namespace BWAPI::Filter;
 
-void ResourceLocation::drawCenterSearch(BWAPI::Position resourceLocation, int a)
-{
-    // Live debugging info.
-    BWAPI::Broodwar->registerEvent(
-        [resourceLocation, a](BWAPI::Game*){
-            BWAPI::Broodwar->drawCircleMap(resourceLocation, 8,
-                BWAPI::Color(0, a, 0), true);  // Blue squadPos.
-        },  nullptr, -1);
-}
-
-BWAPI::TilePosition ResourceLocation::averageResourcePosition(
-    BWAPI::Unitset Resources) const
-{
-    BWAPI::Position avgResourcePosition = Resources.getPosition();
-    drawCenterSearch(avgResourcePosition, 0);
-    if (!Geysers.empty()) {
-        BWAPI::Position geyserSum = BWAPI::Positions::Origin, geyserPos;
-        for_each(Geysers.begin(), Geysers.end(),
-            [&geyserSum](BWAPI::Unit Unit){ geyserSum += Unit->getPosition(); });
-        geyserPos = geyserSum / Geysers.size();
-        avgResourcePosition = (avgResourcePosition + geyserPos) / 2;
-    drawCenterSearch(avgResourcePosition, 127);
-    }
-    return BWAPI::TilePosition(avgResourcePosition);
-}
-
-ResourceLocation::ResourceLocation(BWAPI::Unitset Resources)
-{
-    for (BWAPI::Unit Resource: Resources) {
-        (Resource->getType().isMineralField()
-         ? Minerals : Geysers).push_back(Resource);
-    }
-    buildLocation = BWAPI::Broodwar->getBuildLocation(
-        BWAPI::UnitTypes::Zerg_Hatchery,
-        averageResourcePosition(Resources),
-        12);
-    Utils::compareDistanceFrom fromBuildLocation(buildLocation);
-    std::sort(Minerals.begin(), Minerals.end(), fromBuildLocation);
-    std::sort(Geysers.begin(), Geysers.end(), fromBuildLocation);
-}
-;
 void Cartographer::groupResources(
     const BWAPI::Unitset &Resources,
     std::map<int, BWAPI::Unitset> &groupedResources)
@@ -69,7 +28,6 @@ void Cartographer::discoverResources(const BWAPI::Position &startPosition)
     for (const auto &groupedResources: groupsOfResources) {
         BWAPI::Unitset mineralCluster = groupedResources.second;
         ResourceLocation resourceGroup(groupedResources.second);
-        // Ignore mineral clusters possibly used as terrain.
         if (!isBreakableTerrain(resourceGroup.getMinerals())) {
             resourceGroups.push_back(resourceGroup);
             resourcePositions.push_back(resourceGroup.getPosition());

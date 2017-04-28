@@ -53,7 +53,7 @@ void Race::drawCenterSearch(BWAPI::Position resourceLocation)
         [resourceLocation](BWAPI::Game*){
             BWAPI::Broodwar->drawCircleMap(resourceLocation, 8,
                 BWAPI::Color(255, 255, 255), true);  // White
-            BWAPI::Broodwar->drawCircleMap(resourceLocation, 300,
+            BWAPI::Broodwar->drawCircleMap(resourceLocation, 380,
                 BWAPI::Color(255, 255, 255), false);  // White
         },  nullptr, -1);
 }
@@ -62,12 +62,11 @@ void Race::onCenterComplete(BWAPI::Unit Unit)
 {
     Utils::compareDistanceFrom centerPos(Unit);
     for (ResourceLocation resourceGroup: cartographer->getResourceGroups()) {
-        if (centerPos.getDifference(resourceGroup.getPosition()) < 300) {
+        if (centerPos.getDifference(resourceGroup.getPosition()) < 380) {
             ecoBaseManager->addBase(Unit, resourceGroup.getMinerals());
             return;
         }
     }
-    assert(false);
 }
 
 void Race::addWorker(BWAPI::Unit Unit)
@@ -83,7 +82,6 @@ void Race::addWorker(BWAPI::Unit Unit)
             onCompleteWorkaround(Unit);
         }
     }
-    
 }
 
 int Race::getAvailableSupply()

@@ -9,7 +9,6 @@ EcoBase::EcoBase(BWAPI::Unit center, UnitSeries mineralCluster)
     assert(!mineralCluster.empty());  // EcoBase constructor
     Center = center;
     Minerals = mineralCluster;
-    assert(false);  // EcoBase constructor
 }
 
 void EcoBase::assignMiner(BWAPI::Unit minerUnit)
@@ -47,7 +46,6 @@ bool EcoBase::isLackingMiners()
 
 void EcoBaseManager::addBase(BWAPI::Unit baseCenter, UnitSeries mineralCluster)
 {
-    assert(false);  // addBase
     ++baseAmount;
     mineralAmount += mineralCluster.size();
     EcoBase *Base = new EcoBase(baseCenter, mineralCluster);
@@ -56,7 +54,6 @@ void EcoBaseManager::addBase(BWAPI::Unit baseCenter, UnitSeries mineralCluster)
     }
     unitToBase[baseCenter] = Base;
     Bases.push_back(Base);
-    assert(false);  // addBase
 }
 
 void EcoBaseManager::removeBase(BWAPI::Unit baseCenter)
