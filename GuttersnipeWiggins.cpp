@@ -8,12 +8,9 @@ void GW::onStart()
 {
     BWAPI::Broodwar->enableFlag(1);  // Enabled for debugging.
     Self = BWAPI::Broodwar->self();
-    baseCenter = BWAPI::Broodwar->getClosestUnit(
-        BWAPI::Position(Self->getStartLocation()), IsResourceDepot);
     cartographer.discoverResources(BWAPI::Position(Self->getStartLocation()));
     squadCommander.onStart(&cartographer);
-    buildingConstructer.onStart(
-        baseCenter, &cmdRescuer, &cartographer, &ecoBaseManager);
+    buildingConstructer.onStart(&cmdRescuer, &cartographer, &ecoBaseManager);
     unitTrainer.onStart(&cmdRescuer);
     Core core(&buildingConstructer, &cartographer, &cmdRescuer,
               &ecoBaseManager, &squadCommander, &unitTrainer);

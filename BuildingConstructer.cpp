@@ -83,6 +83,14 @@ std::vector<ConstructionPO>::iterator BuildingConstructer::findJob(
     throw NoJob();
 }
 
+BWAPI::Unit BuildingConstructer::getContractor(bool first) const
+{
+    BWAPI::Unit tempCenter = (first
+        ? ecobaseManager->getFirstCenter() : ecobaseManager->getLastCenter());
+    return tempCenter->getClosestUnit(IsWorker && IsOwned &&
+        BWAPI::Filter::CurrentOrder == BWAPI::Orders::MoveToMinerals, 300);
+}
+
 void BuildingConstructer::beginConstruction(
     BWAPI::Unit Contractor,
     BWAPI::UnitType Constructable,
@@ -194,12 +202,10 @@ void BuildingConstructer::continueConstruction(ConstructionPO &Job)
 }
 
 void BuildingConstructer::onStart(
-    BWAPI::Unit baseCenter,
     CmdRescuer::Rescuer *cmdRescuer,
     Cartographer *cartographer,
     EcoBaseManager *ecobaseManager)
 {
-    this->baseCenter = baseCenter;
     this->cmdRescuer = cmdRescuer;
     this->cartographer = cartographer;
     this->ecobaseManager = ecobaseManager;
@@ -217,8 +223,7 @@ void BuildingConstructer::constructUnit(BWAPI::UnitType Constructable)
         if (self->minerals() >= Constructable.mineralPrice() - 24) {
             // ToDo: Optimally choose contractor.
             // Build around most recent ecobase for eventual defense.
-            BWAPI::Unit tempCenter = ecobaseManager->getLastCenter(),
-                        Contractor = tempCenter->getClosestUnit(IsWorker);
+            BWAPI::Unit Contractor = getContractor();
             if (!Contractor) return;
             // ToDo: Choose better construction locations.
             BWAPI::TilePosition Location = BWAPI::Broodwar->getBuildLocation(
@@ -231,14 +236,16 @@ void BuildingConstructer::constructUnit(BWAPI::UnitType Constructable)
 bool BuildingConstructer::isInferiorLocation(
     BWAPI::TilePosition expandLocation)
 {
-    return BWAPI::Broodwar->isVisible(expandLocation) ||
-           !baseCenter->hasPath(BWAPI::Position(expandLocation));
+    // Assume visiable locations are our own.
+    return (BWAPI::Broodwar->isVisible(expandLocation) ||
+            !BWAPI::Broodwar->canBuildHere(
+                expandLocation, BWAPI::UnitTypes::Protoss_Nexus));
 }
 
 BWAPI::TilePosition BuildingConstructer::getExpansionLocation(
     BWAPI::UnitType Constructable)
 {
-    BWAPI::Unit contractorUnit = baseCenter->getClosestUnit(IsWorker);
+    BWAPI::Unit contractorUnit = getContractor(true);
     // Can't build without the contractor.
     if (!contractorUnit) return BWAPI::TilePositions::Invalid;
     BWAPI::TilePosition expandLocation = BWAPI::TilePositions::Invalid;
@@ -267,7 +274,7 @@ void BuildingConstructer::constructExpansion(BWAPI::UnitType Constructable)
                 expansionLocation == BWAPI::TilePositions::None) {
                 return;
             }
-            BWAPI::Unit Contractor = baseCenter->getClosestUnit(IsWorker);
+            BWAPI::Unit Contractor = getContractor(true);
             if (!Contractor) return;
             beginConstruction(Contractor, Constructable, expansionLocation);
         }

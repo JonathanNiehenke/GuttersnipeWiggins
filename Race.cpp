@@ -203,8 +203,9 @@ void Race::scout(std::set<BWAPI::TilePosition> scoutLocations)
     // ToDo: Scout with fewer workers.
     // Bug: Protoss scout consistency.
     BWAPI::Unit baseCenter = ecoBaseManager->getFirstCenter();
-    BWAPI::Unitset workerUnits = baseCenter->getUnitsInRadius(
-        900, IsWorker && IsOwned && !IsConstructing);
+    BWAPI::Unitset workerUnits = baseCenter->getUnitsInRadius(900,
+        IsWorker && IsOwned && (CurrentOrder != BWAPI::Orders::Move ||
+        CurrentOrder != BWAPI::Orders::PlaceBuilding));
     auto workerIt = workerUnits.begin(),
          workerEndIt = workerUnits.end();
     auto scoutIt = scoutLocations.begin(),

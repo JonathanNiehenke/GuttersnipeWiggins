@@ -19,7 +19,6 @@ class GW : public BWAPI::AIModule
 private:
     int availableSupply = 0, workerBuffer = 0, armyBuffer = 0, supplyCount = 0;
     BWAPI::Player Self;
-    BWAPI::Unit baseCenter = nullptr;  // The primary/initial base building.
     // Indicates number already in construction/training for UnitType.
     BuildingConstructer buildingConstructer;
     // Tracks resource, enemy and army facility locations.

@@ -28,7 +28,6 @@ class BuildingConstructer
     private:
         const enum {Dead = -1, Other, Mining, Positioning, Constructing};
         BWAPI::Player self;
-        BWAPI::Unit baseCenter = nullptr;
         CmdRescuer::Rescuer *cmdRescuer;
         Cartographer *cartographer;
         EcoBaseManager *ecobaseManager;
@@ -36,6 +35,7 @@ class BuildingConstructer
         std::vector<ConstructionPO> constructionJobs;
         ConstructionPO& findJob(BWAPI::UnitType Constructable);
         std::vector<ConstructionPO>::iterator findJob(BWAPI::Unit Product);
+        BWAPI::Unit getContractor(bool first=false) const;
         void beginConstruction(
             BWAPI::Unit, BWAPI::UnitType, BWAPI::TilePosition);
         void drawMarker(ConstructionPO Job);
@@ -45,8 +45,7 @@ class BuildingConstructer
         bool isInferiorLocation(BWAPI::TilePosition expandPosition);
         BWAPI::TilePosition getExpansionLocation(BWAPI::UnitType);
     public:
-        void onStart(
-            BWAPI::Unit, CmdRescuer::Rescuer*, Cartographer*, EcoBaseManager*);
+        void onStart(CmdRescuer::Rescuer*, Cartographer*, EcoBaseManager*);
         void constructUnit(BWAPI::UnitType Constructable);
         void constructExpansion(BWAPI::UnitType Constructable);
         void addProduct(BWAPI::Unit Product);

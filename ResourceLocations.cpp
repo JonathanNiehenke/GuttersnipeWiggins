@@ -92,14 +92,16 @@ void ResourceLocation::drawCenterSearch(BWAPI::Position resourceLocation, int a)
 int ResourceLocation::getCoordValue(
     int firmEdge1, int Edge1, int firmEdge2, int Edge2, int centerAdj)
 {
-    assert(firmEdge1 >= Edge1);
-    assert(Edge2 >= firmEdge2);
+    assert(Edge1 < Edge2);
+    assert(Edge1 <= firmEdge1);
+    assert(firmEdge2 <= Edge2);
     const int resourceOffset = 96;
-    if (firmEdge1 - Edge1 < Edge2 - firmEdge2)
-        return firmEdge2 + resourceOffset;
-    else if (firmEdge1 - Edge1 > Edge2 - firmEdge2)
+    if (firmEdge1 - Edge1 > Edge2 - firmEdge2)
         return firmEdge1 - resourceOffset - centerAdj;
-    return firmEdge1 + resourceOffset;
+    else if (Edge2 - firmEdge2 > firmEdge1 - Edge1)
+        // +1 is to get from the bottom of the tile to the next tile
+        return firmEdge2 + resourceOffset + 1;
+    return firmEdge1 + 64 + resourceOffset;
 }
 
 int ResourceLocation::getXCoord(const ResourceBounds &bounds)
@@ -117,17 +119,11 @@ int ResourceLocation::getYCoord(const ResourceBounds &bounds)
 BWAPI::TilePosition ResourceLocation::getBaseLocation(
     const BWAPI::Unitset &Resources)
 {
-    const BWAPI::UnitType defaultCenter = BWAPI::UnitTypes::Protoss_Nexus;
     ResourceBounds resourceBounds(Resources);
     resourceBounds.draw();
     BWAPI::TilePosition baseLocation = BWAPI::TilePosition(
         BWAPI::Point<int, 1>(getXCoord(resourceBounds),
                              getYCoord(resourceBounds)));
-    // Original base will cause canBuildHere to return false.
-    if (!BWAPI::Broodwar->canBuildHere(baseLocation, defaultCenter)) {
-        baseLocation = BWAPI::Broodwar->getBuildLocation(
-            defaultCenter, baseLocation , 12);
-    }
     return baseLocation;
 }
 
