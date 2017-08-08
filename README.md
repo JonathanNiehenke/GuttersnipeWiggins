@@ -16,7 +16,7 @@ Jonathan Niehenke
 - ZergRace.h|cpp: Zerg race.
 - Cartographer.h|cpp: Log resource clusters and enemy building positions.
 - ResourceLocations.h|cpp: Determine resource clusters and base locations.
-- EcoBaseManager.h|cpp: Manage gathering workders.
+- EcoBaseManager.h|cpp: Manage gathering workers.
 - BuildingConstructer.h|cpp: Manage building jobs.
 - SquadCommander.h|cpp: Manage army squads and micro.
 - UnitTrainer.h|cpp: Manages unit production.
@@ -40,7 +40,7 @@ Jonathan Niehenke
 5. Build: `MSBuild GuttersnipeWiggins.vcxproj /p:BWAPI_DIR=[pathToBWAPI]`
 6. Copy: `Debug\GuttersnipeWiggins.dll` to `Starcraft\bwapi-data\AI`
 7. Execute: `BWAPI\Chaoslauncher\Chaoslauncher.exe`
-8. Enable BWAPI injector: Check and select BWAPI injector [DEBUG]
-9. Configure injector: Press config and replace line starting with `ai_dbg =`
+8. Enable BWAPI injector: Check and select `BWAPI injector [DEBUG]`
+9. Configure injector: Press `config` and replace line starting with `ai_dbg =`
     to `ai_dbg = bwapi-data/AI/GuttersnipeWiggins.dll`
 10. Press start and begin a game.
