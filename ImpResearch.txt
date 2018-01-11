@@ -1,0 +1,104 @@
+BOTS
+
+Protoss: Auir, McRave
+Terran: BGHBot, nova
+Zerg: BlackCrow, ZZZKBot
+Random: GuttersnipeWiggins, OpprimoBot, ualbertabot
+
+
+TASKS, SUBTASKS & BWAPI DIRECT SEARCH TERMS
+
+Building:
+  Contractor: whatBuilds, IsIdle, IsGathering, IsCarrying, IsConstructing, getClosestUnit
+  Placement: canBuild, getBuildLocation, getUnitsOnTile
+  MoveTo: move, rightClick, !IsConstructing, !build, canBuild, !IsExplored
+  Death of constructor: !Exists, !IsConstructing, !IsBeingContructed, rightClick, !IsCompleted, getBuildUnit
+  Return to gathering (P/T): IsPlayerGuard, rightClick, IsIdle, gather, IsMining IsMoving, build, IsBeginConstructed
+
+STRUCTURE
+
+BotName: Common\Path
+  # Comments
+  Task: <BWAPI direct code>  // FileName[line]
+    Subtask Conditions: <code>[summery]  // FileName[line]
+
+================================================================================
+
+AIUR:
+  # Zerg logic @ ConstructionManager.cpp[314]
+  # Terran logic @ ConstructionManager.cpp[386]
+  # collection rate per worker = 8/180.0  // WorkerManager.cpp[329]
+  Building: {Contractor}->build({Placement}, b->type);  // ConstructionManager.cpp[353]
+    Contractor: b->builderUnit = [closest] b->type.whatBuilds().first  // ConstructionManager.cpp[64]
+    Placement: b->tilePosition = [spiral search w/ 1tile padding] if getUnitsOnTile isLifted  // BuildingPlacer.cpp[113]
+    MoveTo: !{Contractor}->isConstructing && ![withinDist] then {Contractor}->rightClick({Placement})  // ConstructionManager.cpp[344]
+    Death: !{Contractor}->isConstructing() || !s->isBeingConstructed() then {Contractor}->rightClick(s);  // ConstructionManager.cpp[386]
+    Return: {Contractor} IsPlayerGuard then {Contractor}->rightClick(resource)  // WorkerManager.cpp[344]
+
+McRave:
+  # Impotant parts of BWEB is missing from commit like blocks and Stations
+  # Terran logic BuildManager.cpp[21]
+  Building: {Contractor}->build(worker.getBuildingType(), {Position})  // WorkerManager.cpp[281]
+    Contractor: [Closest by ground] !scouter & !IsGathering !IsConstructing // WorkerManager.cpp[397]
+    Placement: Buildings().getBuildLocation(b.first);  // BuildingManager.cpp[45]
+    MoveTo: [withinDist] {Contractor}.unit()->move(Position({Contractor}.getBuildPosition()));
+    Death: !IsCompleted() && !getBuildUnit() [closest free worker].rightClick(building.unit())
+    Return: IsIdle() && gather [closest MineralField]  // WorkerManager.cpp[313]
+
+BGHBot:
+  Building: {Contractor}.getUnit()->build(building_type, {Placement})  // WorkerManager.cpp[623]
+    Contractor: new_build_worker = game_state.getMineralWorkers()->begin() IsComplete  // ExampleAIModule.cpp[869]
+    Placement: build_position = [from BWEM and additional checks]  // WorkerManager.cpp[818]
+    MoveTo: !{Build} then {Contractor}.getUnit->move((BWAPI::Placement){Placement});  // WorkerManager.cpp[140]
+    Death: !IsCompleted && !IsBeginConstructed then [getNewBuilderWorker]  // MacroManager.cpp[25]
+    Return: {Contractor} !IsMining && !IsMoving then
+        {Contractor}->gather([mineral in area])  // WorkerManager.cpp[254]
+
+nova:
+  Building: {Contractor}->build(workerData->buildType, {Placement});  // WorkerManager.cpp[76]
+    Contractor: workerData->worker = [closer] Scouting | !IsCarrying | IsGathering;  // WorkerManager.cpp[190]
+    Placement: workerData->build = [spiral search w/ free space check buildMap] // BuildManager.cpp[481]
+    MoveTo: ![IsEntireBuildPositionVisible] then {Contractor}->move(Placement({Placement));  // WorkerManager.cpp[75]
+    Death: !IsComplete && IsBuilding && !getBuildUnit then [create new build job] // WorkerManager.cpp[532]
+    Return:
+        1. onComplete [worker building at buildPosition] setJobAndExecute(State::Gathering_Mineral, workerData);
+        2. Order == PlayerGaurd && [buildExist] then setJobAndExecute(
+            State::Building, workerData, nullptr, {Placement}, workerData->buildType);  // WorkerManager.cpp[416]
+
+BlackCrow:
+  Building: {Contractor}->build(type, {Placement})  // Planned.cpp[136]
+    Contractor: droneOrBuilding = [worker from mineral with greatest miners]  // Planned.cpp[119]
+    Placement: buildPosition = [checks each tile with nested vector map.tiles] // Builder.cpp[110]
+    MoveTo: ![{Contractor} in vision {Placement}]
+    Death: !{Contractor}->exists() then [remove plannedBuilding]
+
+ZZZKBot:
+  Building: {Contractor}->build(buildingType, {Placement});  // ZZZKBotAIModule.cpp[2909]
+    Contractor: builder = [closest to base, IsIdle | IsGatheringMineral | !IsCarryingGas, && isAvailableToBuild)  // ZZZKBotAIModule.cpp[2841]
+    Placement: targetBuildLoc = Broodwar->getBuildLocation(buildingType, {Contractor}->getTilePosition())  // ZZZKBotAIModule.cpp[2883]
+    MoveTo: !{Contractor}->canBuild(buildingType, {Placement})
+    Death: !{Contractor}->exist() then [get new builder]
+
+GuttersnipeWiggins:
+  Building: {Contractor}->build(Job.constructable, {Placement})  // BuildingConstructer.cpp[136]
+    Contractor: Job.contractor = getClosestUnit(IsWorker && IsOwned && [moveToMinerals], 300)  // BuildingConstructer.cpp[90]
+    Placement: Job.location = BWAPI::Broodwar->getBuildLocation(Constructable, {Contractor}->getTilePosition(), 20);  // BuildingConstructer.cpp[229]
+    MoveTo: {Contractor}->move(BWAPI::Placement({Placement}))  // BuildingConstructer.cpp[102]
+    Death: {Contractor}->getOrders() == Unknown then [cancel construction and restart]
+    Return: if build then {Contractor}->gather(closestMineral, true);
+
+OpprimoBot:
+  Building: {Contractor}->build(toBuild, {Placement});  // WorkerAgent.cpp[294]
+    Contractor: unit = [closest] isGatheringMinerals & !toBuild  // WorkerAgent.cpp[180]
+    Placement: buildSpot = [square radius search !padding] canBuildAt  // BuildingPlacer.cpp[360]
+    MoveTo: {Contractor}->rightClick([center of Tile{Placement}]
+    Death: !getBuildUnit()->isConstructing() then [closest free worker].rightClick(building) // Commander.cpp[642]
+    Return: !IsBeginConstructed && {Contractor}->isIdle() then {Contractor}->rightClick([closest])  // WorkerAgent.cpp[313]
+
+ualbertabot:
+  Building: {Contractor}->build(b.type,{Position})  // BuildingManager.cpp[148]
+    Contractor: b.builderUnit = [closest] IsComplete() IsGatheringMinerals  // WorkerManager.cpp[408]
+    MoveTo: !{Contractor}->isConstructing() && ![{Placement} entirely explored] [smart move to {Placement}]
+    Placement: b.finalPosition =  [checks area size + padding for reservation]  // BuildingPlacer.cpp[122]
+    Death: // BuildingManager.cpp[224]
+    Return: {Unit}->isComplete() then [release worker]
