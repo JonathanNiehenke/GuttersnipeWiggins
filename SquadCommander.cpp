@@ -118,10 +118,10 @@ void SquadCommander::uniteSquads()
     if (armySquadLength < 2) return;  // Prevent out of range error.
     for (int i = 0; i < armySquadLength - 1; ++ i) {
         BWAPI::Unitset &Squad = armySquads[i];
-        Utils::compareDistanceFrom squadComparePos(Squad.getPosition());
+        Utils::Position fromSquadPos(Squad.getPosition());
         for (int j = i + 1; j < armySquadLength; ++j) {
             BWAPI::Unitset &otherSquad = armySquads[j];
-            if (squadComparePos.getDifference(otherSquad.getPosition()) < 250)
+            if (fromSquadPos - otherSquad.getPosition() < 250)
             {
                 Squad.insert(otherSquad.begin(), otherSquad.end());
                 otherSquad.clear();
@@ -206,7 +206,7 @@ void SquadCommander::attackLocations(
     // Target closer resource positions first.
     BWAPI::Position squadPos = Squad.getPosition();
     std::sort(resourcePositions.begin(), resourcePositions.end(),
-        Utils::compareDistanceFrom(squadPos));
+        Utils::Position(squadPos).comparePositions());
     for (BWAPI::Position targetPos: resourcePositions) {
         // The locations we see are likely ours and don't bother
         // locations we can't reach.

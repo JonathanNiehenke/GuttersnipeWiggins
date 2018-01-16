@@ -77,7 +77,7 @@ BWAPI::TilePosition Cartographer::getClosestEnemyLocation(
             return *std::min_element(
                 buildingLocations.begin(),
                 buildingLocations.end(),
-                Utils::compareDistanceFrom(sourcePosition));
+                Utils::Position(sourcePosition).compareLocations());
     }
    return BWAPI::TilePositions::Unknown;
 }

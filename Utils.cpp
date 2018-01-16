@@ -1,60 +1,77 @@
-#ifndef UTILS_CPP
-#define UTILS_CPP
+#pragma once
 #include "Utils.h"
 
-bool Utils::compareDistanceFrom::operator()(
-        BWAPI::Position Pos1, BWAPI::Position Pos2)
-{
-    return (sourcePosition.getApproxDistance(Pos1) <
-            sourcePosition.getApproxDistance(Pos2));
+const BWAPI::Position Utils::Position::toTileCenter = BWAPI::Position(16, 16);
+
+Utils::Position::Position() {
+    srcPosition = BWAPI::Positions::None;
 }
 
-bool Utils::compareDistanceFrom::operator()(
-        BWAPI::TilePosition tPos1, BWAPI::TilePosition tPos2)
-{
-    return (sourcePosition.getApproxDistance(BWAPI::Position(tPos1)) <
-            sourcePosition.getApproxDistance(BWAPI::Position(tPos2)));
+Utils::Position::Position(BWAPI::Position position) {
+    srcPosition = position;
 }
 
-bool Utils::compareDistanceFrom::operator()(BWAPI::Unit u1, BWAPI::Unit u2)
-{
-    return (sourcePosition.getApproxDistance(u1->getPosition()) <
-            sourcePosition.getApproxDistance(u2->getPosition()));
+Utils::Position Utils::Position::fromLocation(BWAPI::TilePosition location) {
+    return Utils::Position(BWAPI::Position(location) + toTileCenter);
 }
 
-bool Utils::compareDistanceFrom::operator()(
-        BWAPI::Unitset u1, BWAPI::Unitset u2)
-{
-    return (sourcePosition.getApproxDistance(u1.getPosition()) <
-            sourcePosition.getApproxDistance(u2.getPosition()));
+Utils::Position Utils::Position::fromUnit(BWAPI::Unit unit) {
+    return Utils::Position(unit->getPosition());
 }
 
-int Utils::compareDistanceFrom::getDifference(BWAPI::Position Pos1)
-{
-    return sourcePosition.getApproxDistance(Pos1);
+Utils::Position Utils::Position::fromUnitset(BWAPI::Unitset unitset) {
+    return Utils::Position(unitset.getPosition());
 }
 
-int Utils::compareDistanceFrom::getDifference(BWAPI::TilePosition tPos1)
-{
-    return sourcePosition.getApproxDistance(BWAPI::Position(tPos1));
+int Utils::Position::operator-(BWAPI::Position pos) {
+    return srcPosition.getApproxDistance(pos);
 }
 
-int Utils::compareDistanceFrom::getDifference(BWAPI::Unit u1)
-{
-    return sourcePosition.getApproxDistance(u1->getPosition());
+int Utils::Position::operator-(BWAPI::TilePosition loc) {
+    return srcPosition.getApproxDistance(BWAPI::Position(loc) + toTileCenter);
 }
 
-int Utils::compareDistanceFrom::getDifference(BWAPI::Unitset u1)
-{
-    return sourcePosition.getApproxDistance(u1.getPosition());
+int Utils::Position::operator-(BWAPI::Unit unit) {
+    return srcPosition.getApproxDistance(unit->getPosition());
 }
 
-bool Utils::isIdle(BWAPI::Unit Facility)
+int Utils::Position::operator-(BWAPI::Unitset unitset) {
+    return srcPosition.getApproxDistance(unitset.getPosition());
+}
+
+BWAPI::Position Utils::Position::get() {
+    return srcPosition;
+}
+
+std::function<bool (BWAPI::Position, BWAPI::Position)>
+    Utils::Position::comparePositions()
 {
+    return [this] (BWAPI::Position pos1, BWAPI::Position pos2)
+        { return (*this) - pos1 < (*this) - pos2; };
+}
+
+std::function<bool (BWAPI::TilePosition, BWAPI::TilePosition)>
+    Utils::Position::compareLocations()
+{
+    return [this] (BWAPI::TilePosition loc1, BWAPI::TilePosition loc2)
+        { return (*this) - loc1 < (*this) - loc2; };
+}
+
+std::function<bool (BWAPI::Unit, BWAPI::Unit)> Utils::Position::compareUnits() {
+    return [this] (BWAPI::Unit unit1, BWAPI::Unit unit2)
+        { return (*this) - unit1 < (*this) - unit2; };
+}
+
+std::function<bool (BWAPI::Unitset, BWAPI::Unitset)>
+    Utils::Position::compareUnitsets()
+{
+    return [this] (BWAPI::Unitset unitset1, BWAPI::Unitset unitset2)
+        { return (*this) - unitset1 < (*this) - unitset2; };
+}
+
+bool Utils::isIdle(BWAPI::Unit Facility) {
     // Zerg hatchery is always idle so determine with larva.
     // Negate larva for Protoss and Terran with producesLarva.
     return (Facility->isIdle() && !(Facility->getType().producesLarva() &&
             Facility->getLarva().empty()));
 }
-
-#endif

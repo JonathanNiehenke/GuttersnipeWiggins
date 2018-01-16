@@ -60,9 +60,9 @@ void Race::drawCenterSearch(BWAPI::Position resourceLocation)
 
 void Race::onCenterComplete(BWAPI::Unit Unit)
 {
-    Utils::compareDistanceFrom centerPos(Unit);
+    Utils::Position fromCenterPos(Unit->getPosition());
     for (ResourceLocation resourceGroup: cartographer->getResourceGroups()) {
-        if (centerPos.getDifference(resourceGroup.getPosition()) < 380) {
+        if (fromCenterPos - resourceGroup.getPosition() < 380) {
             ecoBaseManager->addBase(Unit, resourceGroup.getMinerals());
             return;
         }

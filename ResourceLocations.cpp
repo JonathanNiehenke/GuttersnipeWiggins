@@ -134,9 +134,9 @@ ResourceLocation::ResourceLocation(const BWAPI::Unitset &Resources)
          ? Minerals : Geysers).push_back(Resource);
     }
     buildLocation = getBaseLocation(Resources);
-    Utils::compareDistanceFrom fromBuildLocation(buildLocation);
-    std::sort(Minerals.begin(), Minerals.end(), fromBuildLocation);
-    std::sort(Geysers.begin(), Geysers.end(), fromBuildLocation);
+    Utils::Position fromBuild = Utils::Position::fromLocation(buildLocation);
+    std::sort(Minerals.begin(), Minerals.end(), fromBuild.compareUnits());
+    std::sort(Geysers.begin(), Geysers.end(), fromBuild.compareUnits());
 }
 
 #endif
