@@ -4,14 +4,14 @@
 
 // To reduce the parameters list of Race and derived constructors.
 Core::Core(
-    BuildingConstructer *buildingConstructer,
+    BuildingConstructor *buildingConstructor,
     Cartographer *cartographer,
     CmdRescuer::Rescuer *cmdRescuer,
     EcoBaseManager *ecoBaseManager,
     SquadCommander *squadCommander,
     UnitTrainer *unitTrainer)
 {
-    this->buildingConstructer = buildingConstructer;
+    this->buildingConstructor = buildingConstructor;
     this->cartographer = cartographer;
     this->cmdRescuer = cmdRescuer;
     this->ecoBaseManager = ecoBaseManager;
@@ -34,7 +34,7 @@ Race::Race(
     this->supplyType = supplyType;
     this->armyTechType = armyTechType;
     this->armyUnitType = armyUnitType;
-    this->buildingConstructer = core.buildingConstructer;
+    this->buildingConstructor = core.buildingConstructor;
     this->cartographer = core.cartographer;
     this->cmdRescuer = core.cmdRescuer;
     this->ecoBaseManager = core.ecoBaseManager;
@@ -146,17 +146,15 @@ bool Race::readyForArmyTech()
     const int facilityPrice = armyTechType.mineralPrice();
     int armyBuffer = 50 * Self->completedUnitCount(armyTechType),
         mineralsToBuild = facilityPrice + armyBuffer;
-    return (Self->minerals() > mineralsToBuild || !unitTrainer->isAvailable());
+    return (Self->minerals() > mineralsToBuild);
 }
 
 void Race::manageStructures()
 {
-    if (readyToExpand()) {
-        createCenter();
-    }
-    else if (readyForArmyTech()) {
+    if (readyForArmyTech()) {
         createFacility();
     }
+    buildingConstructor->updatePreparation();
 }
 
 bool Race::isUnderAttack()
@@ -242,7 +240,6 @@ void Race::displayStatus()
     int row = 30;
     ecoBaseManager->displayStatus(row);
     unitTrainer->displayStatus(row);
-    buildingConstructer->displayStatus(row);
     squadCommander->displayStatus(row);
     cartographer->displayStatus(row);
 }

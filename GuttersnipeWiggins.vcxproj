@@ -97,7 +97,7 @@
     <ClCompile Include="ResourceLocations.cpp" />
     <ClCompile Include="Cartographer.cpp" />
     <ClCompile Include="SquadCommander.cpp" />
-    <ClCompile Include="BuildingConstructer.cpp" />
+    <ClCompile Include="BuildingConstructor.cpp" />
     <ClCompile Include="UnitTrainer.cpp" />
     <ClCompile Include="Race.cpp" />
     <ClCompile Include="ProtossRace.cpp" />
@@ -112,7 +112,7 @@
     <ClInclude Include="ResourceLocations.h" />
     <ClInclude Include="Cartographer.h" />
     <ClInclude Include="SquadCommander.h" />
-    <ClInclude Include="BuildingConstructer.h" />
+    <ClInclude Include="BuildingConstructor.h" />
     <ClInclude Include="UnitTrainer.h" />
     <ClInclude Include="Race.h" />
     <ClInclude Include="ProtossRace.h" />

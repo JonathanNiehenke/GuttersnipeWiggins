@@ -1,7 +1,7 @@
 #ifndef RACE_H
 #define RACE_H
 #include <BWAPI.h>
-#include "BuildingConstructer.h"
+#include "BuildingConstructor.h"
 #include "Cartographer.h"
 #include "CmdRescuer.h"
 #include "EcoBaseManager.h"
@@ -15,13 +15,13 @@
 // To reduce the parameters list of Race and derived constructors.
 struct Core
 {
-    BuildingConstructer *buildingConstructer;
+    BuildingConstructor *buildingConstructor;
     Cartographer *cartographer;
     CmdRescuer::Rescuer *cmdRescuer;
     EcoBaseManager *ecoBaseManager;
     SquadCommander *squadCommander;
     UnitTrainer *unitTrainer;
-    Core(BuildingConstructer*, Cartographer*, CmdRescuer::Rescuer*,
+    Core(BuildingConstructor*, Cartographer*, CmdRescuer::Rescuer*,
          EcoBaseManager*, SquadCommander*, UnitTrainer*);
 };
 
@@ -35,7 +35,7 @@ class Race
     public:
         BWAPI::UnitType
             centerType, workerType, supplyType, armyTechType, armyUnitType;
-        BuildingConstructer *buildingConstructer;
+        BuildingConstructor *buildingConstructor;
         Cartographer *cartographer;
         CmdRescuer::Rescuer *cmdRescuer;
         EcoBaseManager *ecoBaseManager;
@@ -55,11 +55,9 @@ class Race
         void createWarriors()
             { unitTrainer->produceUnits(armyUnitType); }
         virtual void createSupply()  // Overrides to train Overlord
-            { buildingConstructer->constructUnit(supplyType); }
+            { buildingConstructor->requestPreparation(supplyType); }
         virtual void createFacility()  // Overrides to morph Hatcheries
-            { buildingConstructer->constructUnit(armyTechType); }
-        void createCenter()
-            { buildingConstructer->constructExpansion(centerType); }
+            { buildingConstructor->requestPreparation(armyTechType); }
         void addWorker(BWAPI::Unit);
         virtual int getAvailableSupply();  // Overrides overlord count
         int getUnitBuffer(BWAPI::UnitType unitType);

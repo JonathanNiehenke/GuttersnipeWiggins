@@ -48,12 +48,12 @@ void ZergRace::onUnitMorph(BWAPI::Unit Unit)
             if (unitTrainer->facilityCount() == 1) {
                 scout(cartographer->getStartingLocations());
             }
-            buildingConstructer->addProduct(Unit);
+            buildingConstructor->promoteToProduction(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
             unitTrainer->includeFacility(Unit);
             cartographer->addFacilityPosition(Unit->getPosition());
-            buildingConstructer->addProduct(Unit);
+            buildingConstructor->promoteToProduction(Unit);
             break;
         default: 
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
@@ -87,10 +87,10 @@ void ZergRace::onUnitComplete(BWAPI::Unit Unit)
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
             onCenterComplete(Unit);
-            buildingConstructer->removeConstruction(Unit);
+            buildingConstructor->setAsComplete(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Spawning_Pool:
-            buildingConstructer->removeConstruction(Unit);
+            buildingConstructor->setAsComplete(Unit);
             break;
         default:
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
@@ -123,7 +123,7 @@ void ZergRace::onUnitDestroy(BWAPI::Unit Unit)
             ecoBaseManager->removeBase(Unit);  // Even if constructing
             unitTrainer->removeFacility(Unit);
             cartographer->removeFacilityPosition(Unit->getPosition());
-            buildingConstructer->removeConstruction(Unit);
+            buildingConstructor->setAsComplete(Unit);
             break;
         default:
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
@@ -135,10 +135,10 @@ void ZergRace::createFacility()
 {
     // Instead of multiple spawning pools build hatcharies.
     if (Self->allUnitCount(armyTechType)) {
-        buildingConstructer->constructUnit(centerType);
+        buildingConstructor->requestPreparation(centerType);
     }
     else {
-        buildingConstructer->constructUnit(armyTechType);
+        buildingConstructor->requestPreparation(armyTechType);
     }
 }
 
@@ -181,7 +181,6 @@ void ZergRace::displayStatus()
     int row = 30;
     ecoBaseManager->displayStatus(row);
     unitTrainer->displayStatus(row);
-    buildingConstructer->displayStatus(row);
     squadCommander->displayStatus(row);
     cartographer->displayStatus(row);
 }

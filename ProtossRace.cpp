@@ -11,17 +11,17 @@ void ProtossRace::onUnitCreate(BWAPI::Unit Unit)
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Pylon:
             assembleSquads();  // Empty squads are Ok.
-            buildingConstructer->addProduct(Unit);
+            buildingConstructor->promoteToProduction(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Gateway:
             if (!unitTrainer->isAvailable()) {
                 scout(cartographer->getStartingLocations());
             }
             unitTrainer->includeFacility(Unit);
-            buildingConstructer->addProduct(Unit);
+            buildingConstructor->promoteToProduction(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Nexus:
-            buildingConstructer->addProduct(Unit);
+            buildingConstructor->promoteToProduction(Unit);
             break;
         default: 
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
@@ -39,14 +39,14 @@ void ProtossRace::onUnitComplete(BWAPI::Unit Unit)
             addWorker(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Pylon:
-            buildingConstructer->removeConstruction(Unit);
+            buildingConstructor->setAsComplete(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Nexus:
             onCenterComplete(Unit);
-            buildingConstructer->removeConstruction(Unit);
+            buildingConstructor->setAsComplete(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Gateway:
-            buildingConstructer->removeConstruction(Unit);
+            buildingConstructor->setAsComplete(Unit);
             cartographer->addFacilityPosition(Unit->getPosition());
             break;
         default:
@@ -70,15 +70,15 @@ void ProtossRace::onUnitDestroy(BWAPI::Unit Unit)
             }
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Pylon:
-            buildingConstructer->removeConstruction(Unit);
+            buildingConstructor->setAsComplete(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Gateway:
             unitTrainer->removeFacility(Unit);
             cartographer->removeFacilityPosition(Unit->getPosition());
-            buildingConstructer->removeConstruction(Unit);
+            buildingConstructor->setAsComplete(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Protoss_Nexus:
-            buildingConstructer->removeConstruction(Unit);
+            buildingConstructor->setAsComplete(Unit);
             ecoBaseManager->removeBase(Unit);  // Even if constructing
             break;
         default:

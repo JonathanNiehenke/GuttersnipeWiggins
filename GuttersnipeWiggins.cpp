@@ -10,9 +10,9 @@ void GW::onStart()
     Self = BWAPI::Broodwar->self();
     cartographer.discoverResources(BWAPI::Position(Self->getStartLocation()));
     squadCommander.onStart(&cartographer);
-    buildingConstructer.onStart(&cmdRescuer, &cartographer, &ecoBaseManager);
+    buildingConstructor.onStart(Self->getStartLocation());
     unitTrainer.onStart(&cmdRescuer);
-    Core core(&buildingConstructer, &cartographer, &cmdRescuer,
+    Core core(&buildingConstructor, &cartographer, &cmdRescuer,
               &ecoBaseManager, &squadCommander, &unitTrainer);
     switch (Self->getRace()) {
         case BWAPI::Races::Enum::Protoss:

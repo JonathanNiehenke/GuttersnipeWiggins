@@ -3,7 +3,7 @@
 #include <vector>
 #include <set>
 #include <BWAPI.h>
-#include "BuildingConstructer.h"
+#include "BuildingConstructor.h"
 #include "Cartographer.h"
 #include "CmdRescuer.h"
 #include "EcoBaseManager.h"
@@ -20,7 +20,7 @@ private:
     int availableSupply = 0, workerBuffer = 0, armyBuffer = 0, supplyCount = 0;
     BWAPI::Player Self;
     // Indicates number already in construction/training for UnitType.
-    BuildingConstructer buildingConstructer;
+    BuildingConstructor buildingConstructor;
     // Tracks resource, enemy and army facility locations.
     Cartographer cartographer;
     CmdRescuer::Rescuer cmdRescuer;
