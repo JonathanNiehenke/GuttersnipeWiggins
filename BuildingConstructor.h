@@ -14,9 +14,6 @@ struct ConstrunctionPO {
     ConstrunctionPO(const BWAPI::UnitType& productType);
 };
 
-class MissingPlacement {};
-class MissingContractor {};
-
 class BuildingConstructor {
     private:
         std::map<BWAPI::UnitType, ConstrunctionPO> inPreparation;

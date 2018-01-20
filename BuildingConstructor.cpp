@@ -31,10 +31,8 @@ void BuildingConstructor::assignPreparation(
 {
     try {
         inPreparation[productType] = createJob(productType); }
-    catch (MissingPlacement) {
-        BWAPI::Broodwar << "No suitable placement found"; }
-    catch (MissingContractor) {
-        BWAPI::Broodwar << "No suitable constructor found"; }
+    catch (const std::runtime_error& e) {
+        BWAPI::Broodwar << e.what(); }
 }
 
 ConstrunctionPO BuildingConstructor::createJob(
@@ -52,7 +50,7 @@ BWAPI::TilePosition BuildingConstructor::getPlacement(
     BWAPI::TilePosition placement = BWAPI::Broodwar->getBuildLocation(
         Job.productType, srcPosition, 25);
     if (placement == BWAPI::TilePositions::Invalid)
-        throw MissingPlacement();
+        throw std::runtime_error("No suitable placement found");
     return placement;
 }
 
@@ -62,7 +60,7 @@ BWAPI::Unit BuildingConstructor::getContractor(
     BWAPI::Unit contractor = BWAPI::Broodwar->getClosestUnit(toJobCenter(Job),
         IsWorker && IsOwned && !IsCarryingSomething && !IsConstructing);
     if (!contractor || isAlreadyPreparing(contractor))
-        throw MissingContractor();
+        throw std::runtime_error("No suitable contractor found");
     return contractor;
 }
 
