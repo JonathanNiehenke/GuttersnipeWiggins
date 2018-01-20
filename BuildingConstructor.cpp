@@ -1,20 +1,6 @@
 #pragma once
 #include "BuildingConstructor.h"
 
-ConstrunctionPO::ConstrunctionPO() {
-    this->productType = BWAPI::UnitTypes::None;
-    this->placement = BWAPI::TilePositions::None;
-    this->contractor = nullptr;
-    this->product = nullptr;
-};
-
-ConstrunctionPO::ConstrunctionPO(const BWAPI::UnitType& productType) {
-    this->productType = productType;
-    this->placement = BWAPI::TilePositions::None;
-    this->contractor = nullptr;
-    this->product = nullptr;
-};
-
 void BuildingConstructor::onStart(const BWAPI::TilePosition& srcPosition) {
     this->srcPosition = srcPosition;
 }
@@ -35,7 +21,7 @@ void BuildingConstructor::assignPreparation(
         BWAPI::Broodwar << e.what(); }
 }
 
-ConstrunctionPO BuildingConstructor::createJob(
+BuildingConstructor::ConstrunctionPO BuildingConstructor::createJob(
     const BWAPI::UnitType& productType)
 {
     ConstrunctionPO Job(productType);
@@ -132,3 +118,17 @@ void BuildingConstructor::setAsComplete(const BWAPI::Unit& completedBuilding) {
     }
     BWAPI::Broodwar << "No Job found associated with completed building";
 }
+
+BuildingConstructor::ConstrunctionPO::ConstrunctionPO() {
+    this->productType = BWAPI::UnitTypes::None;
+    this->placement = BWAPI::TilePositions::None;
+    this->contractor = nullptr;
+    this->product = nullptr;
+};
+
+BuildingConstructor::ConstrunctionPO::ConstrunctionPO(const BWAPI::UnitType& productType) {
+    this->productType = productType;
+    this->placement = BWAPI::TilePositions::None;
+    this->contractor = nullptr;
+    this->product = nullptr;
+};

@@ -5,17 +5,9 @@
 
 using namespace BWAPI::Filter;
 
-struct ConstrunctionPO {
-    BWAPI::UnitType productType;
-    BWAPI::TilePosition placement;
-    BWAPI::Unit contractor;
-    BWAPI::Unit product;
-    ConstrunctionPO();
-    ConstrunctionPO(const BWAPI::UnitType& productType);
-};
-
 class BuildingConstructor {
     private:
+        struct ConstrunctionPO;
         std::map<BWAPI::UnitType, ConstrunctionPO> inPreparation;
         std::vector<ConstrunctionPO> inProduction;
         BWAPI::TilePosition srcPosition;
@@ -34,4 +26,13 @@ class BuildingConstructor {
         void updatePreparation();
         void promoteToProduction(const BWAPI::Unit& createdBuilding);
         void setAsComplete(const BWAPI::Unit& completedBuilding);
+};
+
+struct BuildingConstructor::ConstrunctionPO {
+    BWAPI::UnitType productType;
+    BWAPI::TilePosition placement;
+    BWAPI::Unit contractor;
+    BWAPI::Unit product;
+    ConstrunctionPO();
+    ConstrunctionPO(const BWAPI::UnitType& productType);
 };
