@@ -16,7 +16,6 @@ class BuildingConstructor {
         BWAPI::TilePosition getPlacement(const ConstrunctionPO& Job);
         BWAPI::Unit getContractor(const ConstrunctionPO& Job);
         BWAPI::Position toJobCenter(const ConstrunctionPO& Job);
-        bool isAlreadyPreparing(const BWAPI::Unit& worker);
         bool isPrepared(const ConstrunctionPO& Job);
         void construct(const ConstrunctionPO& Job);
         void queueReturnToMining(const BWAPI::Unit& worker);

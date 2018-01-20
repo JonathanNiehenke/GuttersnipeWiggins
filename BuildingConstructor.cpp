@@ -43,9 +43,10 @@ BWAPI::TilePosition BuildingConstructor::getPlacement(
 BWAPI::Unit BuildingConstructor::getContractor(
     const ConstrunctionPO& Job)
 {
+    // IsGatheringMinerals assumes IsWorker && IsOwned
     BWAPI::Unit contractor = BWAPI::Broodwar->getClosestUnit(toJobCenter(Job),
-        IsWorker && IsOwned && !IsCarryingSomething && !IsConstructing);
-    if (!contractor || isAlreadyPreparing(contractor))
+        IsGatheringMinerals && CurrentOrder == BWAPI::Orders::MoveToMinerals);
+    if (!contractor)
         throw std::runtime_error("No suitable contractor found");
     return contractor;
 }
@@ -53,14 +54,6 @@ BWAPI::Unit BuildingConstructor::getContractor(
 BWAPI::Position BuildingConstructor::toJobCenter(const ConstrunctionPO& Job) {
     return (BWAPI::Position(Job.placement) + BWAPI::Position(
         Job.productType.tileSize()) / 2);
-}
-
-bool BuildingConstructor::isAlreadyPreparing(const BWAPI::Unit& worker) {
-    for (const auto& prepPair: inPreparation) {
-        if (prepPair.second.contractor == worker)
-            return true;
-    }
-    return false;
 }
 
 void BuildingConstructor::updatePreparation() {
