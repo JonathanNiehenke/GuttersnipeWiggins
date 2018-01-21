@@ -48,12 +48,12 @@ void ZergRace::onUnitMorph(BWAPI::Unit Unit)
             if (unitTrainer->facilityCount() == 1) {
                 scout(cartographer->getStartingLocations());
             }
-            buildingConstructor->promoteToProduction(Unit);
+            buildingConstructor->onCreate(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
             unitTrainer->includeFacility(Unit);
             cartographer->addFacilityPosition(Unit->getPosition());
-            buildingConstructor->promoteToProduction(Unit);
+            buildingConstructor->onCreate(Unit);
             break;
         default: 
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
@@ -87,10 +87,10 @@ void ZergRace::onUnitComplete(BWAPI::Unit Unit)
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Hatchery:
             onCenterComplete(Unit);
-            buildingConstructor->setAsComplete(Unit);
+            buildingConstructor->onComplete(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Zerg_Spawning_Pool:
-            buildingConstructor->setAsComplete(Unit);
+            buildingConstructor->onComplete(Unit);
             break;
         default:
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
@@ -123,7 +123,7 @@ void ZergRace::onUnitDestroy(BWAPI::Unit Unit)
             ecoBaseManager->removeBase(Unit);  // Even if constructing
             unitTrainer->removeFacility(Unit);
             cartographer->removeFacilityPosition(Unit->getPosition());
-            buildingConstructor->setAsComplete(Unit);
+            buildingConstructor->onComplete(Unit);
             break;
         default:
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
@@ -135,10 +135,10 @@ void ZergRace::createFacility()
 {
     // Instead of multiple spawning pools build hatcharies.
     if (Self->allUnitCount(armyTechType)) {
-        buildingConstructor->requestPreparation(centerType);
+        buildingConstructor->request(centerType);
     }
     else {
-        buildingConstructor->requestPreparation(armyTechType);
+        buildingConstructor->request(armyTechType);
     }
 }
 

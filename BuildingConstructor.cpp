@@ -1,22 +1,22 @@
 #pragma once
 #include "BuildingConstructor.h"
 
-void BuildingConstructor::onStart(const BWAPI::TilePosition& srcPosition) {
-    this->srcPosition = srcPosition;
+void BuildingConstructor::setSourceLocation(const BWAPI::TilePosition& srcLocation) {
+    this->srcLocation = srcLocation;
 }
 
-void BuildingConstructor::requestPreparation(
+void BuildingConstructor::request(
     const BWAPI::UnitType& productType)
 {
-    if (inPreparation.find(productType) == inPreparation.end())
-        assignPreparation(productType);
+    if (Preparing.find(productType) == Preparing.end())
+        beginPreparation(productType);
 }
 
-void BuildingConstructor::assignPreparation(
+void BuildingConstructor::beginPreparation(
     const BWAPI::UnitType& productType)
 {
     try {
-        inPreparation[productType] = createJob(productType); }
+        Preparing[productType] = createJob(productType); }
     catch (const std::runtime_error& e) {
         BWAPI::Broodwar << e.what(); }
 }
@@ -34,7 +34,7 @@ BWAPI::TilePosition BuildingConstructor::getPlacement(
     const ConstrunctionPO& Job)
 {
     BWAPI::TilePosition placement = BWAPI::Broodwar->getBuildLocation(
-        Job.productType, srcPosition, 25);
+        Job.productType, srcLocation, 25);
     if (placement == BWAPI::TilePositions::Invalid)
         throw std::runtime_error("No suitable placement found");
     return placement;
@@ -57,10 +57,8 @@ BWAPI::Position BuildingConstructor::toJobCenter(const ConstrunctionPO& Job) {
 }
 
 void BuildingConstructor::updatePreparation() {
-    
-    for (const auto& prepPair: inPreparation) {
+    for (const auto& prepPair: Preparing) {
         ConstrunctionPO Job = prepPair.second;
-        BWAPI::Broodwar->sendTextEx(true, "updating: %s", Job.productType.c_str());
         if (isPrepared(Job))
             construct(Job);
         else if (Job.contractor->isGatheringMinerals())
@@ -86,30 +84,20 @@ void BuildingConstructor::queueReturnToMining(const BWAPI::Unit& worker) {
     worker->gather(closestMineral, true);
 }
 
-void BuildingConstructor::promoteToProduction(
-        const BWAPI::Unit& createdBuilding)
-{
-    BWAPI::UnitType createdType = createdBuilding->getType();
+void BuildingConstructor::onCreate(const BWAPI::Unit& createdBuilding) {
     try {
-        ConstrunctionPO& Job = inPreparation.at(createdType);
-        inPreparation.erase(createdType);
-        Job.productType = createdType;
-        inProduction.push_back(Job);
+        ConstrunctionPO& Job = Preparing.at(createdBuilding->getType());
+        Preparing.erase(Job.productType);
+        Job.product = createdBuilding;
+        Producing[createdBuilding] = Job;
     }
     catch (std::out_of_range) {
         BWAPI::Broodwar << "No Job found associated with created building";
     }
 }
 
-void BuildingConstructor::setAsComplete(const BWAPI::Unit& completedBuilding) {
-    auto it = inProduction.begin();
-    for (; it != inProduction.end(); ++it) {
-        if (it->product == completedBuilding) {
-            inProduction.erase(it);
-            return;
-        }
-    }
-    BWAPI::Broodwar << "No Job found associated with completed building";
+void BuildingConstructor::onComplete(const BWAPI::Unit& completedBuilding) {
+    Producing.erase(completedBuilding);
 }
 
 BuildingConstructor::ConstrunctionPO::ConstrunctionPO() {

@@ -11,17 +11,17 @@ void TerranRace::onUnitCreate(BWAPI::Unit Unit)
             break;
         case BWAPI::UnitTypes::Enum::Terran_Supply_Depot:
             assembleSquads();  // Empty squads are Ok.
-            buildingConstructor->promoteToProduction(Unit);
+            buildingConstructor->onCreate(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Barracks:
             if (!unitTrainer->isAvailable()) {
                 scout(cartographer->getStartingLocations());
             }
             unitTrainer->includeFacility(Unit);
-            buildingConstructor->promoteToProduction(Unit);
+            buildingConstructor->onCreate(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Command_Center:
-            buildingConstructor->promoteToProduction(Unit);
+            buildingConstructor->onCreate(Unit);
             break;
         default: 
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()
@@ -39,14 +39,14 @@ void TerranRace::onUnitComplete(BWAPI::Unit Unit)
             addWorker(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Supply_Depot:
-            buildingConstructor->setAsComplete(Unit);
+            buildingConstructor->onComplete(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Command_Center:
             onCenterComplete(Unit);
-            buildingConstructor->setAsComplete(Unit);
+            buildingConstructor->onComplete(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Barracks:
-            buildingConstructor->setAsComplete(Unit);
+            buildingConstructor->onComplete(Unit);
             cartographer->addFacilityPosition(Unit->getPosition());
             break;
         default:
@@ -70,16 +70,16 @@ void TerranRace::onUnitDestroy(BWAPI::Unit Unit)
             }
             break;
         case BWAPI::UnitTypes::Enum::Terran_Supply_Depot:
-            buildingConstructor->setAsComplete(Unit);
+            buildingConstructor->onComplete(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Barracks:
             unitTrainer->removeFacility(Unit);
             cartographer->removeFacilityPosition(Unit->getPosition());
-            buildingConstructor->setAsComplete(Unit);
+            buildingConstructor->onComplete(Unit);
             break;
         case BWAPI::UnitTypes::Enum::Terran_Command_Center:
             ecoBaseManager->removeBase(Unit);  // Even if constructing
-            buildingConstructor->setAsComplete(Unit);
+            buildingConstructor->onComplete(Unit);
             break;
         default:
             BWAPI::Broodwar << "Unexpected " << Unit->getType().c_str()

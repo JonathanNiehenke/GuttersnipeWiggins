@@ -55,9 +55,9 @@ class Race
         void createWarriors()
             { unitTrainer->produceUnits(armyUnitType); }
         virtual void createSupply()  // Overrides to train Overlord
-            { buildingConstructor->requestPreparation(supplyType); }
+            { buildingConstructor->request(supplyType); }
         virtual void createFacility()  // Overrides to morph Hatcheries
-            { buildingConstructor->requestPreparation(armyTechType); }
+            { buildingConstructor->request(armyTechType); }
         void addWorker(BWAPI::Unit);
         virtual int getAvailableSupply();  // Overrides overlord count
         int getUnitBuffer(BWAPI::UnitType unitType);

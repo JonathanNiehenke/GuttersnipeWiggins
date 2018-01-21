@@ -1,6 +1,5 @@
 #pragma once
 #include <map>
-#include <vector>
 #include <BWAPI.h>
 
 using namespace BWAPI::Filter;
@@ -8,10 +7,10 @@ using namespace BWAPI::Filter;
 class BuildingConstructor {
     private:
         struct ConstrunctionPO;
-        std::map<BWAPI::UnitType, ConstrunctionPO> inPreparation;
-        std::vector<ConstrunctionPO> inProduction;
-        BWAPI::TilePosition srcPosition;
-        void assignPreparation(const BWAPI::UnitType& productType);
+        std::map<BWAPI::UnitType, ConstrunctionPO> Preparing;
+        std::map<BWAPI::Unit, ConstrunctionPO> Producing;
+        BWAPI::TilePosition srcLocation;
+        void beginPreparation(const BWAPI::UnitType& productType);
         ConstrunctionPO createJob(const BWAPI::UnitType& productType);
         BWAPI::TilePosition getPlacement(const ConstrunctionPO& Job);
         BWAPI::Unit getContractor(const ConstrunctionPO& Job);
@@ -20,11 +19,11 @@ class BuildingConstructor {
         void construct(const ConstrunctionPO& Job);
         void queueReturnToMining(const BWAPI::Unit& worker);
     public:
-        void onStart(const BWAPI::TilePosition& srcPosition);
-        void requestPreparation(const BWAPI::UnitType& productType);
+        void setSourceLocation(const BWAPI::TilePosition& srcLocation);
+        void request(const BWAPI::UnitType& productType);
         void updatePreparation();
-        void promoteToProduction(const BWAPI::Unit& createdBuilding);
-        void setAsComplete(const BWAPI::Unit& completedBuilding);
+        void onCreate(const BWAPI::Unit& createdBuilding);
+        void onComplete(const BWAPI::Unit& completedBuilding);
 };
 
 struct BuildingConstructor::ConstrunctionPO {

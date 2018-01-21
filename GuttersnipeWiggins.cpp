@@ -10,7 +10,7 @@ void GW::onStart()
     Self = BWAPI::Broodwar->self();
     cartographer.discoverResources(BWAPI::Position(Self->getStartLocation()));
     squadCommander.onStart(&cartographer);
-    buildingConstructor.onStart(Self->getStartLocation());
+    buildingConstructor.setSourceLocation(Self->getStartLocation());
     unitTrainer.onStart(&cmdRescuer);
     Core core(&buildingConstructor, &cartographer, &cmdRescuer,
               &ecoBaseManager, &squadCommander, &unitTrainer);
