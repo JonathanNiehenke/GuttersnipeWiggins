@@ -162,7 +162,7 @@ bool ZergRace::needsSupply()
     return getAvailableSupply() <= workerBuffer + armyBuffer;
 }
 
-bool ZergRace::readyForArmyTech()
+bool ZergRace::readyForTeir1Tech()
 {
     const int facilityPrice = armyTechType.mineralPrice();
     int armyBuffer = 50 * Self->completedUnitCount(centerType),

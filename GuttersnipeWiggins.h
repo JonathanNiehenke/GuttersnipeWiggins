@@ -7,6 +7,7 @@
 #include "Cartographer.h"
 #include "CmdRescuer.h"
 #include "EcoBaseManager.h"
+#include "BaseSupport.h"
 #include "SquadCommander.h"
 #include "UnitTrainer.h"
 #include "Race.h"
@@ -25,6 +26,7 @@ private:
     Cartographer cartographer;
     CmdRescuer::Rescuer cmdRescuer;
     EcoBaseManager ecoBaseManager;
+    BaseSupport baseSupport;
     Race *race;  // onStart initializes with polymorphic intentions.
     SquadCommander squadCommander;
     UnitTrainer unitTrainer;

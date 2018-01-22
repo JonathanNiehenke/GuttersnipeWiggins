@@ -114,6 +114,15 @@ void EcoBaseManager::removeMineral(BWAPI::Unit mineralUnit)
     unitToBase.erase(mineralUnit);
 }
 
+bool EcoBaseManager::canFillLackingMiners() {
+    BWAPI::Unit centerUnit = nullptr;
+    for (EcoBase *Base: Bases) {
+        if (Utils::isIdle(Base->getCenter()) && Base->isLackingMiners())
+            return true;
+    }
+    return false;
+}
+
 void EcoBaseManager::produceUnits(BWAPI::UnitType unitType)
 {
     BWAPI::Unit centerUnit = nullptr;

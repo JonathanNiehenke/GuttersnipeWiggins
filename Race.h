@@ -50,9 +50,13 @@ class Race
         virtual void onCenterComplete(BWAPI::Unit Unit);
         virtual void onUnitComplete(BWAPI::Unit unit) {}
         virtual void onUnitDestroy(BWAPI::Unit unit) {}
+        bool canFillLackingMiners()
+            { return ecoBaseManager->canFillLackingMiners(); }
         void createWorkers()
             { ecoBaseManager->produceUnits(workerType); }
-        void createWarriors()
+        bool canTrainWarriors()
+            { return unitTrainer->canProduce(); }
+        void trainWarriors()
             { unitTrainer->produceUnits(armyUnitType); }
         virtual void createSupply()  // Overrides to train Overlord
             { buildingConstructor->request(supplyType); }
@@ -62,7 +66,7 @@ class Race
         virtual int getAvailableSupply();  // Overrides overlord count
         int getUnitBuffer(BWAPI::UnitType unitType);
         virtual bool needsSupply();  // Zerg overrides army buffer calc
-        virtual bool readyForArmyTech();  // Protoss and zerg override.
+        virtual bool readyForTeir1Tech();  // Protoss and zerg override.
         void manageProduction();
         void manageStructures();
         void manageAttackGroups();

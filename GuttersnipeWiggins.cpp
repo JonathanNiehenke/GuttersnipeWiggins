@@ -25,6 +25,7 @@ void GW::onStart()
             race = new ZergRace(core);
             break;
     }
+    baseSupport.onStart(race);
 }
 
 void GW::onFrame()
@@ -32,9 +33,9 @@ void GW::onFrame()
     const int actionFrames = std::max(5, BWAPI::Broodwar->getLatency());
     GW::displayStatus();  // For debugging.
     switch(BWAPI::Broodwar->getFrameCount() % actionFrames) {
-        case 0: race->manageProduction();
+        case 0: baseSupport.update();
             break;
-        case 1: race->manageStructures();
+        case 1: buildingConstructor.updatePreparation();
             break;
         case 2: race->manageAttackGroups();
             break;

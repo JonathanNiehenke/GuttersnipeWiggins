@@ -103,6 +103,7 @@
     <ClCompile Include="ProtossRace.cpp" />
     <ClCompile Include="TerranRace.cpp" />
     <ClCompile Include="ZergRace.cpp" />
+    <ClCompile Include="BaseSupport.cpp" />
     <ClCompile Include="GuttersnipeWiggins.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -118,6 +119,7 @@
     <ClInclude Include="ProtossRace.h" />
     <ClInclude Include="TerranRace.h" />
     <ClInclude Include="ZergRace.h" />
+    <ClInclude Include="BaseSupport.h" />
     <ClInclude Include="GuttersnipeWiggins.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

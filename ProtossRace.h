@@ -5,7 +5,7 @@
 class ProtossRace : public Race
 {
     private:
-        bool readyForArmyTech();
+        bool readyForTeir1Tech();
     public:
         ProtossRace(Core &core) : Race(
             BWAPI::UnitTypes::Enum::Protoss_Nexus,

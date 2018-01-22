@@ -57,6 +57,7 @@ class EcoBaseManager
         void addWorker(BWAPI::Unit workerUnit);
         void removeWorker(BWAPI::Unit workerUnit);
         void removeMineral(BWAPI::Unit mineralUnit);
+        bool canFillLackingMiners();
         void produceUnits(BWAPI::UnitType unitType);
         bool isAtCapacity();
         BWAPI::Unit getFirstCenter() { return Bases.front()->getCenter(); }

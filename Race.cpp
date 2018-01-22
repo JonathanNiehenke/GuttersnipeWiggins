@@ -129,7 +129,7 @@ void Race::manageProduction()
         catch (char* err) {
             BWAPI::Broodwar->sendText(err);
         }
-        createWarriors();
+        trainWarriors();
     }
 }
 
@@ -141,7 +141,7 @@ bool Race::readyToExpand()
             (Ratio > expandRatio || ecoBaseManager->isAtCapacity()));
 }
 
-bool Race::readyForArmyTech()
+bool Race::readyForTeir1Tech()
 {
     const int facilityPrice = armyTechType.mineralPrice();
     int armyBuffer = 50 * Self->completedUnitCount(armyTechType),
@@ -151,7 +151,7 @@ bool Race::readyForArmyTech()
 
 void Race::manageStructures()
 {
-    if (readyForArmyTech()) {
+    if (readyForTeir1Tech()) {
         createFacility();
     }
     buildingConstructor->updatePreparation();

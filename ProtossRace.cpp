@@ -87,8 +87,8 @@ void ProtossRace::onUnitDestroy(BWAPI::Unit Unit)
     }
 }
 
-bool ProtossRace::readyForArmyTech()
+bool ProtossRace::readyForTeir1Tech()
 {
-    return Self->completedUnitCount(supplyType) && Race::readyForArmyTech();
+    return Self->completedUnitCount(supplyType) && Race::readyForTeir1Tech();
 }
 #endif
