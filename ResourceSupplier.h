@@ -1,10 +1,8 @@
-#ifndef ECOBASEMANAGER_H
-#define ECOBASEMANAGER_H
+#pragma once
 #include <unordered_set>
 #include <unordered_map>
 #include <string>
 #include <vector>
-#include <cassert>
 #include <BWAPI.h>
 #include "Utils.h"
 
@@ -35,30 +33,30 @@ class EcoBase
 
 
 // Manages all bases of workers and minerals.
-class EcoBaseManager
+class ResourceSupplier
 {
     typedef std::unordered_set<BWAPI::Unit> UnitGroup;
     typedef std::vector<BWAPI::Unit> UnitSeries;
     private:
         int baseAmount = 0, mineralAmount = 0, workerAmount = 0,
             pendingWorkers = 0;
+        BWAPI::UnitType workerType;
         // For unit lookup of assigned Base.
         std::unordered_map<BWAPI::Unit, EcoBase*> unitToBase;
         std::vector<EcoBase*> Bases;
     public:
-        ~EcoBaseManager() { for (EcoBase* Base: Bases) delete Base; }
+        ResourceSupplier(const BWAPI::UnitType& workerType);
+        ~ResourceSupplier();
         int getBaseAmount() { return baseAmount; }
         int getMineralAmount() { return mineralAmount; }
         int getWorkerAmount() { return workerAmount; }
         void addBase(BWAPI::Unit baseCenter, UnitSeries mineralCluster);
-        void debugSize() {BWAPI::Broodwar << "unitToBase size around: "
-            << unitToBase.size() << std::endl; }
         void removeBase(BWAPI::Unit baseCenter);
         void addWorker(BWAPI::Unit workerUnit);
         void removeWorker(BWAPI::Unit workerUnit);
         void removeMineral(BWAPI::Unit mineralUnit);
         bool canFillLackingMiners();
-        void produceUnits(BWAPI::UnitType unitType);
+        void createWorker();
         bool isAtCapacity();
         BWAPI::Unit getFirstCenter() { return Bases.front()->getCenter(); }
         BWAPI::Unit getLastCenter() { return Bases.back()->getCenter(); }

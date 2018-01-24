@@ -1,12 +1,11 @@
-#ifndef ECOBASEMANAGER_CPP
-#define ECOBASEMANAGER_CPP
-#include "EcoBaseManager.h"
+#pragma once
+#include "ResourceSupplier.h"
 
 using namespace BWAPI::Filter;
 
-EcoBase::EcoBase(BWAPI::Unit center, UnitSeries mineralCluster)
+EcoBase::EcoBase(
+    BWAPI::Unit center, UnitSeries mineralCluster)
 {
-    assert(!mineralCluster.empty());  // EcoBase constructor
     Center = center;
     Minerals = mineralCluster;
 }
@@ -44,7 +43,15 @@ bool EcoBase::isLackingMiners()
     return forgottenMinerals - nearlyMining > 0;
 }
 
-void EcoBaseManager::addBase(BWAPI::Unit baseCenter, UnitSeries mineralCluster)
+ResourceSupplier::ResourceSupplier(const BWAPI::UnitType& workerType) {
+    this->workerType = workerType;
+}
+
+ResourceSupplier::~ResourceSupplier() {
+    for (EcoBase* Base: Bases) delete Base;
+}
+
+void ResourceSupplier::addBase(BWAPI::Unit baseCenter, UnitSeries mineralCluster)
 {
     ++baseAmount;
     mineralAmount += mineralCluster.size();
@@ -56,7 +63,7 @@ void EcoBaseManager::addBase(BWAPI::Unit baseCenter, UnitSeries mineralCluster)
     Bases.push_back(Base);
 }
 
-void EcoBaseManager::removeBase(BWAPI::Unit baseCenter)
+void ResourceSupplier::removeBase(BWAPI::Unit baseCenter)
 {
     EcoBase *trash = unitToBase[baseCenter];
     if (!trash) return;  // baseCenter was constructing.
@@ -85,7 +92,7 @@ void EcoBaseManager::removeBase(BWAPI::Unit baseCenter)
     trash = nullptr;
 }
 
-void EcoBaseManager::addWorker(BWAPI::Unit workerUnit)
+void ResourceSupplier::addWorker(BWAPI::Unit workerUnit)
 {
     ++workerAmount;
     BWAPI::Unit fromCenter = workerUnit->getClosestUnit(IsResourceDepot, 64);
@@ -96,7 +103,7 @@ void EcoBaseManager::addWorker(BWAPI::Unit workerUnit)
 }
 
 // For when the unit is destroyed.
-void EcoBaseManager::removeWorker(BWAPI::Unit workerUnit)
+void ResourceSupplier::removeWorker(BWAPI::Unit workerUnit)
 {
     --workerAmount;
     EcoBase *Base = unitToBase[workerUnit];
@@ -105,7 +112,7 @@ void EcoBaseManager::removeWorker(BWAPI::Unit workerUnit)
     unitToBase.erase(workerUnit);
 }
 
-void EcoBaseManager::removeMineral(BWAPI::Unit mineralUnit)
+void ResourceSupplier::removeMineral(BWAPI::Unit mineralUnit)
 {
     --mineralAmount;
     EcoBase *Base = unitToBase[mineralUnit];
@@ -114,7 +121,7 @@ void EcoBaseManager::removeMineral(BWAPI::Unit mineralUnit)
     unitToBase.erase(mineralUnit);
 }
 
-bool EcoBaseManager::canFillLackingMiners() {
+bool ResourceSupplier::canFillLackingMiners() {
     BWAPI::Unit centerUnit = nullptr;
     for (EcoBase *Base: Bases) {
         if (Utils::isIdle(Base->getCenter()) && Base->isLackingMiners())
@@ -123,18 +130,18 @@ bool EcoBaseManager::canFillLackingMiners() {
     return false;
 }
 
-void EcoBaseManager::produceUnits(BWAPI::UnitType unitType)
+void ResourceSupplier::createWorker()
 {
     BWAPI::Unit centerUnit = nullptr;
     for (EcoBase *Base: Bases) {
         centerUnit = Base->getCenter();
         if (Utils::isIdle(centerUnit) && Base->isLackingMiners()) {
-            centerUnit->train(unitType);
+            centerUnit->train(workerType);
         }
     }
 }
 
-bool EcoBaseManager::isAtCapacity()
+bool ResourceSupplier::isAtCapacity()
 {
     for (EcoBase *Base: Bases) {
         if (Base->isLackingMiners()) {
@@ -144,7 +151,7 @@ bool EcoBaseManager::isAtCapacity()
     return true;
 }
 
-void EcoBaseManager::displayStatus(int &row)
+void ResourceSupplier::displayStatus(int &row)
 {
     BWAPI::Broodwar->drawTextScreen(3, row,
         "Total - Bases %d, Minerals: %d, Workers: %d.",
@@ -158,5 +165,3 @@ void EcoBaseManager::displayStatus(int &row)
     }
     row += 5;
 }
-
-#endif
