@@ -1,22 +1,17 @@
-#ifndef TERRANRACE_H
-#define TERRANRACE_H
+#pragma once
 #include "Race.h"
+
 
 class TerranRace : public Race
 {
     private:
+        void onDestroyedBuilding(const BWAPI::Unit& destroyedBuilding);
     public:
-        TerranRace(Core &core) : Race(
+        TerranRace() : Race(
             BWAPI::UnitTypes::Enum::Terran_Command_Center,
             BWAPI::UnitTypes::Enum::Terran_SCV,
             BWAPI::UnitTypes::Enum::Terran_Supply_Depot,
-            BWAPI::UnitTypes::Enum::Terran_Barracks,
-            BWAPI::UnitTypes::Enum::Terran_Marine,
-            core) {}
-        void onUnitCreate(BWAPI::Unit Unit);
-        void onUnitComplete(BWAPI::Unit Unit);
-        void onUnitDestroy(BWAPI::Unit Unit);
+            BWAPI::UnitTypes::Enum::Terran_Marine) {}
+        void ProtossRace::onUnitCreate(const BWAPI::Unit& createdUnit);
 };
-
-#endif
 
