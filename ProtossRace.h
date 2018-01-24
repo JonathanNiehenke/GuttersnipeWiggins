@@ -1,22 +1,18 @@
-#ifndef PROTOSSRACE_H
-#define PROTOSSRACE_H
+#pragma once
 #include "Race.h"
 
 class ProtossRace : public Race
 {
     private:
-        bool readyForTeir1Tech();
+        void onDestroyedBuilding(const BWAPI::Unit& destroyedBuilding);
     public:
-        ProtossRace(Core &core) : Race(
+        ProtossRace() : Race(
             BWAPI::UnitTypes::Enum::Protoss_Nexus,
             BWAPI::UnitTypes::Enum::Protoss_Probe,
             BWAPI::UnitTypes::Enum::Protoss_Pylon,
-            BWAPI::UnitTypes::Enum::Protoss_Gateway,
-            BWAPI::UnitTypes::Enum::Protoss_Zealot,
-            core) {}
-        void onUnitCreate(BWAPI::Unit Unit);
-        void onUnitComplete(BWAPI::Unit Unit);
-        void onUnitDestroy(BWAPI::Unit Unit);
+            BWAPI::UnitTypes::Enum::Protoss_Zealot) {}
+        void ProtossRace::onUnitCreate(const BWAPI::Unit& createdUnit)
+        void ProtossRace::onUnitDestroy(const BWAPI::Unit& destroyedUnit)
+        void ProtossRace::construct(const BWAPI::UnitType& buildingType)
 };
 
-#endif

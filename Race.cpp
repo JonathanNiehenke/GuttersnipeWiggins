@@ -11,8 +11,9 @@ void Race::onUnitMorph(const BWAPI::Unit& morphedUnit) {
 }
 
 void Race::onUnitComplete(const BWAPI::Unit& completedUnit) {
-    if (completedUnit->getType().isBuilding())
-        buildingConstructor->onComplete(createdUnit);
+    BWAPI::UnitType completedType = completedUnit->getType();
+    if (completedType.isBuilding())
+        buildingConstructor->onComplete(completedUnit);
 }
 
 int Race::expectedSupplyProvided(const BWAPI::UnitType& providerType) const {
@@ -48,11 +49,11 @@ void Race::createWorkers() {
 void Race::techTo(const BWAPI::UnitType& unitType) {
 }
 
-void trainArmyUnit(const BWAPI::UnitType& unitType) {
+void Race::trainArmyUnit(const BWAPI::UnitType& unitType) {
     armyTrainer->trainUnits(unitType);
 }
 
-void constructFacility(const BWAPI::UnitType& buildingType) {
+void Race::construct(const BWAPI::UnitType& buildingType) {
     buildingConstructor->request(buildingType);
 }
 

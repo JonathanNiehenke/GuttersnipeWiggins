@@ -23,11 +23,12 @@ class Race {
         virtual void onUnitCreate(const BWAPI::Unit& unit);
         virtual void onUnitMorph(const BWAPI::Unit& unit);
         virtual void onUnitComplete(const BWAPI::Unit& unit);
+        virtual void onUnitDestroy(const BWAPI::Unit& unit) = 0;
         int expectedSupplyProvided() const;
         int potentialSupplyUsed(const BWAPI::UnitType& unitType) const;
         virtual void createSupply();
         void createWorker();
         virtual void trainArmyUnit(const BWAPI::UnitType& unitType);
-        virtual void constructFacility(const BWAPI::UnitType& buildingType);
+        virtual void construct(const BWAPI::UnitType& buildingType);
 };
 
