@@ -12,7 +12,6 @@ class ProtossRace : public Race
             BWAPI::UnitTypes::Enum::Protoss_Pylon,
             BWAPI::UnitTypes::Enum::Protoss_Zealot) {}
         void ProtossRace::onUnitCreate(const BWAPI::Unit& createdUnit)
-        void ProtossRace::onUnitDestroy(const BWAPI::Unit& destroyedUnit)
         void ProtossRace::construct(const BWAPI::UnitType& buildingType)
 };
 

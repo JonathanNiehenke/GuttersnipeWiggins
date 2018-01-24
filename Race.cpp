@@ -16,6 +16,16 @@ void Race::onUnitComplete(const BWAPI::Unit& completedUnit) {
         buildingConstructor->onComplete(completedUnit);
 }
 
+void Race::onUnitDestroy(const BWAPI::Unit& destroyedUnit) {
+    BWAPI::UnitType destroyedType = destroyedType->getType();
+    if (destroyedType == workerType)
+        ecoBaseManager->removeWorker(destroyedUnit);
+    else if (destroyedType == centerType)
+        ecoBaseManager->removeBase(destroyedUnit);
+    else if (destroyedType.isBuilding())
+        onDestroyedBuilding(destoryedUnit);
+}
+
 int Race::expectedSupplyProvided(const BWAPI::UnitType& providerType) const {
     const static int supplyProvided = providerType.supplyProvided();
     int providerCount = BWAPI::Broodwar->self()->allUnitCount(providerType);

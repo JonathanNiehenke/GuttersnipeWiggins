@@ -7,20 +7,9 @@ void ProtossRace::onUnitCreate(const BWAPI::Unit& createdUnit) {
     Race::onCreate(createdUnit);
 }
 
-void ProtossRace::onUnitDestroy(const BWAPI::Unit& destroyedUnit) {
-    BWAPI::UnitType destroyedType = destroyedType->getType();
-    if (destroyedType == workerType)
-        ecoBaseManager->removeWorker(Unit);
-    else (destroyedType.isBuilding())
-        onDestroyedBuilding(destoryedUnit);
-}
-
 void ProtossRace::onDestroyedBuilding(const BWAPI::Unit& destroyedBuilding) {
-    BWAPI::UnitType& buildingType = destroyedBuilding->getType();
     buildingConstructor->onComplete(destroyedBuilding);
-    if (destroyedType == centerType)
-        ecoBaseManager->removeBase(Unit);
-    else if (destroyedType == BWAPI::UnitTypes::Protoss_Gateway)
+    if (destroyedBuilding->getType() == BWAPI::UnitTypes::Protoss_Gateway)
         armyTrainer->removeFacility(Unit);
 }
 

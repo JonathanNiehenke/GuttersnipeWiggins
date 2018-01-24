@@ -13,6 +13,7 @@ class Race {
         ArmyTrainer* armyTrainer;
         BWAPI::UnitType centerType, workerType, supplyType, armyUnitType;
         int expectedSupplyProvided(const BWAPI::UnitType& providerType) const;
+        virtual void onDestroyedBuilding(const BWAPI::Unit& unit) = 0;
     public:
         Race(BWAPI::UnitType, BWAPI::UnitType, BWAPI::UnitType,
              BWAPI::UnitType);
@@ -23,7 +24,7 @@ class Race {
         virtual void onUnitCreate(const BWAPI::Unit& unit);
         virtual void onUnitMorph(const BWAPI::Unit& unit);
         virtual void onUnitComplete(const BWAPI::Unit& unit);
-        virtual void onUnitDestroy(const BWAPI::Unit& unit) = 0;
+        virtual void onUnitDestroy(const BWAPI::Unit& unit);
         int expectedSupplyProvided() const;
         int potentialSupplyUsed(const BWAPI::UnitType& unitType) const;
         virtual void createSupply();
