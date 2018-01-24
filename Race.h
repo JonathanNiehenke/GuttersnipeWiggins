@@ -1,80 +1,33 @@
-#ifndef RACE_H
-#define RACE_H
+/* Interface to unify management of all three races */
+
+#pragma once
 #include <BWAPI.h>
+#include "ResourceSupplier.h"
+#include "ArmyTrainer.h"
 #include "BuildingConstructor.h"
-#include "Cartographer.h"
-#include "CmdRescuer.h"
-#include "EcoBaseManager.h"
-#include "SquadCommander.h"
-#include "UnitTrainer.h"
 
-// An idea to increase performance and readability by using
-// polymorphism. This would eliminate race checks, clearly join
-// their similarities and separate their differences. 
-
-// To reduce the parameters list of Race and derived constructors.
-struct Core
-{
-    BuildingConstructor *buildingConstructor;
-    Cartographer *cartographer;
-    CmdRescuer::Rescuer *cmdRescuer;
-    EcoBaseManager *ecoBaseManager;
-    SquadCommander *squadCommander;
-    UnitTrainer *unitTrainer;
-    Core(BuildingConstructor*, Cartographer*, CmdRescuer::Rescuer*,
-         EcoBaseManager*, SquadCommander*, UnitTrainer*);
-};
-
-
-class Race
-{
+class Race {
     private:
-        const float expandRatio;
-        bool readyToExpand();
-        bool isUnderAttack();
+        ResourceSupplier* resourceSupplier;
+        BuildingConstructor* buildingConstructor;
+        ArmyTrainer* armyTrainer;
+        BWAPI::UnitType centerType, workerType, supplyType, armyUnitType;
+        int expectedSupplyProvided(const BWAPI::UnitType& providerType) const;
     public:
-        BWAPI::UnitType
-            centerType, workerType, supplyType, armyTechType, armyUnitType;
-        BuildingConstructor *buildingConstructor;
-        Cartographer *cartographer;
-        CmdRescuer::Rescuer *cmdRescuer;
-        EcoBaseManager *ecoBaseManager;
-        SquadCommander *squadCommander;
-        UnitTrainer *unitTrainer;
-        BWAPI::Player Self;
         Race(BWAPI::UnitType, BWAPI::UnitType, BWAPI::UnitType,
-             BWAPI::UnitType, BWAPI::UnitType, Core&, float expandRatio=2.5);
-        virtual void onUnitCreate(BWAPI::Unit unit) {}
-        virtual void onUnitMorph(BWAPI::Unit unit) {}
-        static void drawCenterSearch(BWAPI::Position resourceLocation);
-        virtual void onCenterComplete(BWAPI::Unit Unit);
-        virtual void onUnitComplete(BWAPI::Unit unit) {}
-        virtual void onUnitDestroy(BWAPI::Unit unit) {}
-        bool canFillLackingMiners()
-            { return ecoBaseManager->canFillLackingMiners(); }
-        void createWorkers()
-            { ecoBaseManager->produceUnits(workerType); }
-        bool canTrainWarriors()
-            { return unitTrainer->canProduce(); }
-        void trainWarriors()
-            { unitTrainer->produceUnits(armyUnitType); }
-        virtual void createSupply()  // Overrides to train Overlord
-            { buildingConstructor->request(supplyType); }
-        virtual void createFacility()  // Overrides to morph Hatcheries
-            { buildingConstructor->request(armyTechType); }
-        void addWorker(BWAPI::Unit);
-        virtual int getAvailableSupply();  // Overrides overlord count
-        int getUnitBuffer(BWAPI::UnitType unitType);
-        virtual bool needsSupply();  // Zerg overrides army buffer calc
-        virtual bool readyForTeir1Tech();  // Protoss and zerg override.
-        void manageProduction();
-        void manageStructures();
-        void manageAttackGroups();
-        void onCompleteWorkaround(BWAPI::Unit workerUnit);
-        void scout(std::set<BWAPI::TilePosition> scoutLocations);
-        virtual void assembleSquads()
-            { squadCommander->assembleSquads(armyUnitType, 90); }
-        virtual void displayStatus();  // Zerg overrides overlord count
+             BWAPI::UnitType);
+        BWAPI::UnitType getCenterType() const { return centerType; }
+        BWAPI::UnitType getWorkerType() const { return workerType; }
+        BWAPI::UnitType getSupplyType() const { return supplyType; }
+        BWAPI::UnitType getArmyUnitType() const { return armyUnitType; }
+        virtual void onUnitCreate(const BWAPI::Unit& unit);
+        virtual void onUnitMorph(const BWAPI::Unit& unit);
+        virtual void onUnitComplete(const BWAPI::Unit& unit);
+        int expectedSupplyProvided() const;
+        int potentialSupplyUsed(const BWAPI::UnitType& unitType) const;
+        virtual void createSupply();
+        void createWorker();
+        virtual void trainArmyUnit(const BWAPI::UnitType& unitType);
+        virtual void constructFacility(const BWAPI::UnitType& buildingType);
 };
 
-#endif
