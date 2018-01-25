@@ -14,19 +14,21 @@ void ArmyTrainer::removeFacility(const BWAPI::Unit& Facility) {
         productionFacilities.erase(foundIt);
 }
 
-int ArmyTrainer::facilityCount() {
+int ArmyTrainer::facilityCount() const {
     return productionFacilities.size();
 }
 
 void ArmyTrainer::trainUnits(const BWAPI::UnitType& unitType) {
     for (BWAPI::Unit Facility: productionFacilities) {
         if (isTrainingQueueEmpty(Facility))
-            Facility->train(unitType)
+            Facility->train(unitType);
     }
 }
 
 bool ArmyTrainer::isTrainingQueueEmpty(BWAPI::Unit Facility) const {
-    const BWAPI::Unitset& queue = (Facility->getType().producesLarva()
-        ? Facility->getLarva() : Facility.getTrainingQueue());
-    return queue.empty();
+    // Because getLarva() returns Unitset and getTrainingQueue() deque
+    if (Facility->getType().producesLarva())
+        return Facility->getLarva().empty();
+    else
+        return Facility->getTrainingQueue().empty();
 }

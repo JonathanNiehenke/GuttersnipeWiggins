@@ -62,5 +62,3 @@ class ResourceSupplier
         BWAPI::Unit getLastCenter() { return Bases.back()->getCenter(); }
         void displayStatus(int &row);
 };
-
-#endif

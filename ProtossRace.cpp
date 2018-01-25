@@ -4,20 +4,23 @@
 void ProtossRace::onUnitCreate(const BWAPI::Unit& createdUnit) {
     if (createdUnit->getType() == BWAPI::UnitTypes::Protoss_Gateway)
         armyTrainer->includeFacility(createdUnit);
-    Race::onCreate(createdUnit);
+    Race::onUnitCreate(createdUnit);
 }
 
 void ProtossRace::onDestroyedBuilding(const BWAPI::Unit& destroyedBuilding) {
     buildingConstructor->onComplete(destroyedBuilding);
     if (destroyedBuilding->getType() == BWAPI::UnitTypes::Protoss_Gateway)
-        armyTrainer->removeFacility(Unit);
+        armyTrainer->removeFacility(destroyedBuilding);
 }
 
 void ProtossRace::construct(const BWAPI::UnitType& buildingType) {
     // May request second pylon during the first's production
-    if (buildingType.requiresPsi() && Self->completedUnitCount(supplyType))
+    if (buildingType.requiresPsi() && doesPylonExist())
         buildingConstructor->request(supplyType);
     else
         buildingConstructor->request(buildingType);
 }
 
+bool ProtossRace::doesPylonExist() const {
+    return BWAPI::Broodwar->self()->completedUnitCount(supplyType) > 0;
+}

@@ -3,20 +3,20 @@
 #pragma once
 #include <BWAPI.h>
 #include "ResourceSupplier.h"
-#include "ArmyTrainer.h"
 #include "BuildingConstructor.h"
+#include "ArmyTrainer.h"
 
 class Race {
-    private:
+    protected:
         ResourceSupplier* resourceSupplier;
         BuildingConstructor* buildingConstructor;
         ArmyTrainer* armyTrainer;
         BWAPI::UnitType centerType, workerType, supplyType, armyUnitType;
         int expectedSupplyProvided(const BWAPI::UnitType& providerType) const;
-        virtual void onDestroyedBuilding(const BWAPI::Unit& unit) = 0;
+        virtual void onDestroyedBuilding(const BWAPI::Unit&) {}
     public:
-        Race(BWAPI::UnitType, BWAPI::UnitType, BWAPI::UnitType,
-             BWAPI::UnitType);
+        Race(const BWAPI::UnitType& armyUnitType);
+        ~Race();
         BWAPI::UnitType getCenterType() const { return centerType; }
         BWAPI::UnitType getWorkerType() const { return workerType; }
         BWAPI::UnitType getSupplyType() const { return supplyType; }
@@ -30,6 +30,7 @@ class Race {
         virtual void createSupply();
         void createWorker();
         virtual void trainArmyUnit(const BWAPI::UnitType& unitType);
+        virtual void techTo(const BWAPI::UnitType& unitType);
         virtual void construct(const BWAPI::UnitType& buildingType);
 };
 

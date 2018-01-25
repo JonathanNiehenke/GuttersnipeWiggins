@@ -1,6 +1,23 @@
 #pragma once
 #include "Race.h"
 
+Race::Race(const BWAPI::UnitType& armyUnitType) {
+    this->resourceSupplier = new ResourceSupplier(workerType);
+    this->buildingConstructor = new BuildingConstructor();
+    this->armyTrainer = new ArmyTrainer();
+    const BWAPI::Race& r = BWAPI::Broodwar->self()->getRace();
+    this->centerType = r.getCenter();
+    this->workerType = r.getWorker();
+    this->supplyType = r.getSupplyProvider();
+    this->armyUnitType = armyUnitType;
+}
+
+Race::~Race() {
+    delete buildingConstructor;
+    delete resourceSupplier;
+    delete armyTrainer;
+}
+
 void Race::onUnitCreate(const BWAPI::Unit& createdUnit) {
     if (createdUnit->getType().isBuilding())
         buildingConstructor->onCreate(createdUnit);
@@ -17,13 +34,13 @@ void Race::onUnitComplete(const BWAPI::Unit& completedUnit) {
 }
 
 void Race::onUnitDestroy(const BWAPI::Unit& destroyedUnit) {
-    BWAPI::UnitType destroyedType = destroyedType->getType();
+    BWAPI::UnitType destroyedType = destroyedUnit->getType();
     if (destroyedType == workerType)
-        ecoBaseManager->removeWorker(destroyedUnit);
+        resourceSupplier->removeWorker(destroyedUnit);
     else if (destroyedType == centerType)
-        ecoBaseManager->removeBase(destroyedUnit);
+        resourceSupplier->removeBase(destroyedUnit);
     else if (destroyedType.isBuilding())
-        onDestroyedBuilding(destoryedUnit);
+        onDestroyedBuilding(destroyedUnit);
 }
 
 int Race::expectedSupplyProvided(const BWAPI::UnitType& providerType) const {
@@ -44,7 +61,7 @@ int Race::potentialSupplyUsed(const BWAPI::UnitType& unitType) const {
              supplyBuildTime / unitType.buildTime()));
     const int facilityAmount = (unitType == workerType
         ? resourceSupplier->getBaseAmount()
-        : armyTrainer->facilityCount(unitType));
+        : armyTrainer->facilityCount());
     return unitsPerSupplyBuild * facilityAmount * unitType.supplyRequired();
 }
 
@@ -52,15 +69,15 @@ void Race::createSupply() {
     buildingConstructor->request(supplyType);
 }
 
-void Race::createWorkers() {
+void Race::createWorker() {
     resourceSupplier->createWorker();
-}
-
-void Race::techTo(const BWAPI::UnitType& unitType) {
 }
 
 void Race::trainArmyUnit(const BWAPI::UnitType& unitType) {
     armyTrainer->trainUnits(unitType);
+}
+
+void Race::techTo(const BWAPI::UnitType& unitType) {
 }
 
 void Race::construct(const BWAPI::UnitType& buildingType) {

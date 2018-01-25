@@ -4,7 +4,7 @@
 void ZergRace::onUnitCreate(const BWAPI::Unit& createdUnit) {
     if (createdUnit->getType() == BWAPI::UnitTypes::Zerg_Spawning_Pool)
         includeLarvaProducers();
-    Race::onCreate(createdUnit);
+    Race::onUnitCreate(createdUnit);
 }
 
 void ZergRace::includeLarvaProducers() {
@@ -15,7 +15,7 @@ void ZergRace::includeLarvaProducers() {
 }
 
 void ZergRace::onMorph(const BWAPI::Unit& morphedUnit) {
-    onCreate(morphedUnit);
+    onUnitCreate(morphedUnit);
 }
 
 void ZergRace::onDestroyedBuilding(const BWAPI::Unit& destroyedBuilding) {
@@ -35,10 +35,6 @@ void ZergRace::createSupply() {
     armyTrainer->trainUnits(supplyType);
 }
 
-bool ZergRace::doesTechExist(const BWAPI::UnitType& buildingType) {
-    return BWAPI::Broodwar->self()->allUnitCount(buildingType) > 0;
-}
-
 void ZergRace::construct(const BWAPI::UnitType& buildingType)
 {
     if (buildingType == centerType || doesTechExist(buildingType))
@@ -47,3 +43,6 @@ void ZergRace::construct(const BWAPI::UnitType& buildingType)
         buildingConstructor->request(buildingType);
 }
 
+bool ZergRace::doesTechExist(const BWAPI::UnitType& buildingType) const {
+    return BWAPI::Broodwar->self()->allUnitCount(buildingType) > 0;
+}

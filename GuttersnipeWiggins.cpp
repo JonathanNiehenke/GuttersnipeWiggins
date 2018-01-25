@@ -10,22 +10,17 @@ void GW::onStart()
     Self = BWAPI::Broodwar->self();
     cartographer.discoverResources(BWAPI::Position(Self->getStartLocation()));
     squadCommander.onStart(&cartographer);
-    buildingConstructor.setSourceLocation(Self->getStartLocation());
-    unitTrainer.onStart(&cmdRescuer);
-    Core core(&buildingConstructor, &cartographer, &cmdRescuer,
-              &ecoBaseManager, &squadCommander, &unitTrainer);
     switch (Self->getRace()) {
         case BWAPI::Races::Enum::Protoss:
-            race = new ProtossRace(core);
+            race = new ProtossRace();
             break;
         case BWAPI::Races::Enum::Terran:
-            race = new TerranRace(core);
+            race = new TerranRace();
             break;
         case BWAPI::Races::Enum::Zerg:
-            race = new ZergRace(core);
+            race = new ZergRace();
             break;
     }
-    baseSupport.onStart(race);
 }
 
 void GW::onFrame()
@@ -33,11 +28,11 @@ void GW::onFrame()
     const int actionFrames = std::max(5, BWAPI::Broodwar->getLatency());
     GW::displayStatus();  // For debugging.
     switch(BWAPI::Broodwar->getFrameCount() % actionFrames) {
-        case 0: baseSupport.update();
+        case 0: // baseSupport.update();
             break;
-        case 1: buildingConstructor.updatePreparation();
+        case 1: // buildingConstructor.updatePreparation();
             break;
-        case 2: race->manageAttackGroups();
+        case 2: // race->manageAttackGroups();
             break;
         case 3: squadCommander.combatMicro();
             break;
@@ -78,14 +73,6 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self) {
         race->onUnitDestroy(Unit);
-    }
-    else if (Unit->getType().isMineralField()) {
-        try {
-            ecoBaseManager.removeMineral(Unit);
-        }
-        catch (char* err) {
-            BWAPI::Broodwar->sendText(err);
-        }
     }
     else if (Unit->getType().isBuilding()) {
         cartographer.removeBuildingLocation(
@@ -240,7 +227,6 @@ void GW::displayStatus()
     BWAPI::Broodwar->drawTextScreen(3, 3, "APM %d, FPS %d, avgFPS %f",
         BWAPI::Broodwar->getAPM(), BWAPI::Broodwar->getFPS(),
         BWAPI::Broodwar->getAverageFPS());
-    race->displayStatus();
     displayUnitInfo();
 }
 
