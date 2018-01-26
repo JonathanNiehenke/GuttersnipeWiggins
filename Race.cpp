@@ -30,7 +30,11 @@ void Race::onUnitMorph(const BWAPI::Unit& morphedUnit) {
 
 void Race::onUnitComplete(const BWAPI::Unit& completedUnit) {
     BWAPI::UnitType completedType = completedUnit->getType();
-    if (completedType.isBuilding())
+    if (completedType == workerType)
+        resourceSupplier->addWorker(completedUnit);
+    else if (completedType == centerType)
+        resourceSupplier->addBase(completedUnit);
+    else if (completedType.isBuilding())
         buildingConstructor->onComplete(completedUnit);
 }
 

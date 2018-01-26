@@ -44,15 +44,17 @@ class ResourceSupplier
         // For unit lookup of assigned Base.
         std::unordered_map<BWAPI::Unit, EcoBase*> unitToBase;
         std::vector<EcoBase*> Bases;
+        void initialWorkaround(const BWAPI::Unit& workerUnit);
     public:
         ResourceSupplier(const BWAPI::UnitType& workerType);
         ~ResourceSupplier();
         int getBaseAmount() { return baseAmount; }
         int getMineralAmount() { return mineralAmount; }
         int getWorkerAmount() { return workerAmount; }
-        void addBase(BWAPI::Unit baseCenter, UnitSeries mineralCluster);
+        void addBase(const BWAPI::Unit& baseCenter);
+        std::vector<BWAPI::Unit> getNearbyMinerals(const BWAPI::Unit&);
         void removeBase(BWAPI::Unit baseCenter);
-        void addWorker(BWAPI::Unit workerUnit);
+        void addWorker(const BWAPI::Unit& workerUnit);
         void removeWorker(BWAPI::Unit workerUnit);
         void removeMineral(BWAPI::Unit mineralUnit);
         bool canFillLackingMiners();

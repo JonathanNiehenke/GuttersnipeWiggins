@@ -51,16 +51,30 @@ ResourceSupplier::~ResourceSupplier() {
     for (EcoBase* Base: Bases) delete Base;
 }
 
-void ResourceSupplier::addBase(BWAPI::Unit baseCenter, UnitSeries mineralCluster)
-{
-    ++baseAmount;
-    mineralAmount += mineralCluster.size();
-    EcoBase *Base = new EcoBase(baseCenter, mineralCluster);
-    for (BWAPI::Unit Mineral: mineralCluster) {
+void ResourceSupplier::addBase(const BWAPI::Unit& baseCenter) {
+    std::vector<BWAPI::Unit> nearbyMinerals = getNearbyMinerals(baseCenter);
+    BWAPI::Broodwar << "Found " << nearbyMinerals.size() << " minerals"
+                    << std::endl;
+    EcoBase* Base = new EcoBase(baseCenter, nearbyMinerals);
+    for (BWAPI::Unit Mineral: nearbyMinerals) {
         unitToBase[Mineral] = Base;
     }
     unitToBase[baseCenter] = Base;
     Bases.push_back(Base);
+    mineralAmount += nearbyMinerals.size();
+    ++baseAmount;
+}
+
+ std::vector<BWAPI::Unit> ResourceSupplier::getNearbyMinerals(
+    const BWAPI::Unit& baseCenter)
+{
+    const BWAPI::Unitset nearbyMinerals = baseCenter->getUnitsInRadius(
+        200, IsMineralField);
+    std::vector<BWAPI::Unit> sortedMinerals = std::vector<BWAPI::Unit>(
+        nearbyMinerals.begin(), nearbyMinerals.end());
+    std::sort(sortedMinerals.begin(), sortedMinerals.end(),
+        Utils::Position::fromUnit(baseCenter).compareUnits());
+    return sortedMinerals;
 }
 
 void ResourceSupplier::removeBase(BWAPI::Unit baseCenter)
@@ -92,33 +106,44 @@ void ResourceSupplier::removeBase(BWAPI::Unit baseCenter)
     trash = nullptr;
 }
 
-void ResourceSupplier::addWorker(BWAPI::Unit workerUnit)
+void ResourceSupplier::addWorker(const BWAPI::Unit& workerUnit)
 {
-    ++workerAmount;
     BWAPI::Unit fromCenter = workerUnit->getClosestUnit(IsResourceDepot, 64);
-    EcoBase *Base = unitToBase[fromCenter];
-    if (!Base) throw "addWorker: found a missed connection to base";
-    Base->assignMiner(workerUnit);
-    unitToBase[workerUnit] = Base;
+    EcoBase* Base = unitToBase[fromCenter];
+    if (Base) {
+        Base->assignMiner(workerUnit);
+        unitToBase[workerUnit] = Base;
+        ++workerAmount;
+    }
+    else if (BWAPI::Broodwar->getFrameCount() < 10)
+        initialWorkaround(workerUnit);
+}
+
+void ResourceSupplier::initialWorkaround(const BWAPI::Unit& workerUnit) {
+    BWAPI::Broodwar->registerEvent(
+        [workerUnit, this](BWAPI::Game*) { this->addWorker(workerUnit); },
+        nullptr, 1);
 }
 
 // For when the unit is destroyed.
 void ResourceSupplier::removeWorker(BWAPI::Unit workerUnit)
 {
-    --workerAmount;
     EcoBase *Base = unitToBase[workerUnit];
-    if (!Base) throw "removeWorker: found a missed connection to base";
-    Base->removeMiner(workerUnit);
-    unitToBase.erase(workerUnit);
+    if (Base) {
+        Base->removeMiner(workerUnit);
+        unitToBase.erase(workerUnit);
+        --workerAmount;
+    }
 }
 
 void ResourceSupplier::removeMineral(BWAPI::Unit mineralUnit)
 {
-    --mineralAmount;
     EcoBase *Base = unitToBase[mineralUnit];
-    if (!Base) throw "removeMineral: found a missed connection to base";
-    Base->removeMineral(mineralUnit);
-    unitToBase.erase(mineralUnit);
+    if (Base) {
+        Base->removeMineral(mineralUnit);
+        unitToBase.erase(mineralUnit);
+        --mineralAmount;
+    }
 }
 
 bool ResourceSupplier::canFillLackingMiners() {
