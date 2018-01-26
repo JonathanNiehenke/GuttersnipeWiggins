@@ -3,7 +3,7 @@
 #include <vector>
 #include "Race.h"
 
-class BaseSupport {
+class DecisionSequence {
     private:
         struct ConditionalResponse {
             std::function<bool(void)> conditional;
@@ -15,6 +15,9 @@ class BaseSupport {
         std::map<std::string, ConditionalResponse> Objectives;
         std::vector<std::string> priorityList;
         Race* race = nullptr;
+        bool needsSupply() const;
+        bool readyForArmyFacility() const;
+        void constructArmyFacility() const;
     public:
         void onStart(Race* race);
         void update();
