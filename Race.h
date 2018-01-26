@@ -32,6 +32,6 @@ class Race {
         void createWorker();
         bool readyToTrainArmyUnit();
         void trainWarriors();
-        void construct(const BWAPI::UnitType& buildingType);
+        virtual void construct(const BWAPI::UnitType& buildingType);
 };
 
