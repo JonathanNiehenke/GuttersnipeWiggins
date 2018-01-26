@@ -5,10 +5,11 @@ class ArmyTrainer
 {
     private:
         std::vector<BWAPI::Unit> productionFacilities;
-        bool isTrainingQueueEmpty(BWAPI::Unit Facility) const;
+        bool isTrainingQueueEmpty(const BWAPI::Unit& Facility) const;
     public:
         void includeFacility(const BWAPI::Unit& Facility);
         void removeFacility(const BWAPI::Unit& Facility);
         int facilityCount() const;
+        bool readyToTrain() const;
         void trainUnits(const BWAPI::UnitType& unitType);
 };

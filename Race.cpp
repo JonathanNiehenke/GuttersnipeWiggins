@@ -43,6 +43,10 @@ void Race::onUnitDestroy(const BWAPI::Unit& destroyedUnit) {
         onDestroyedBuilding(destroyedUnit);
 }
 
+void Race::update() {
+    buildingConstructor->updatePreparation();
+}
+
 int Race::expectedSupplyProvided(const BWAPI::UnitType& providerType) const {
     const static int supplyProvided = providerType.supplyProvided();
     int providerCount = BWAPI::Broodwar->self()->allUnitCount(providerType);
@@ -73,11 +77,12 @@ void Race::createWorker() {
     resourceSupplier->createWorker();
 }
 
-void Race::trainArmyUnit(const BWAPI::UnitType& unitType) {
-    armyTrainer->trainUnits(unitType);
+bool Race::readyToTrainArmyUnit() {
+    return armyTrainer->readyToTrain();
 }
 
-void Race::techTo(const BWAPI::UnitType& unitType) {
+void Race::trainWarriors() {
+    armyTrainer->trainUnits(armyUnitType);
 }
 
 void Race::construct(const BWAPI::UnitType& buildingType) {
