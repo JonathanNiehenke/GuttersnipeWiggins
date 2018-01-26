@@ -39,9 +39,11 @@ void DecisionSequence::update() {
 }
 
 bool DecisionSequence::needsSupply() const {
-    const int workerBuffer = race->potentialSupplyUsed(race->getWorkerType()),
+    const int currentlyUsed = BWAPI::Broodwar->self()->supplyUsed(),
+              workerBuffer = race->potentialSupplyUsed(race->getWorkerType()),
               armyBuffer = race->potentialSupplyUsed(race->getArmyUnitType());
-    return race->expectedSupplyProvided() <= workerBuffer + armyBuffer;
+    const int expectedSupplyUsed = currentlyUsed + workerBuffer + armyBuffer;
+    return race->expectedSupplyProvided() <= expectedSupplyUsed;
 }
 
 bool DecisionSequence::readyForArmyFacility() const {
