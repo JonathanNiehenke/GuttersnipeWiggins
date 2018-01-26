@@ -99,6 +99,7 @@
     <ClCompile Include="SquadCommander.cpp" />
     <ClCompile Include="BuildingConstructor.cpp" />
     <ClCompile Include="ArmyTrainer.cpp" />
+    <ClCompile Include="DecisionSequence.cpp" />
     <ClCompile Include="Race.cpp" />
     <ClCompile Include="ProtossRace.cpp" />
     <ClCompile Include="TerranRace.cpp" />
@@ -114,6 +115,7 @@
     <ClInclude Include="SquadCommander.h" />
     <ClInclude Include="BuildingConstructor.h" />
     <ClInclude Include="ArmyTrainer.h" />
+    <ClInclude Include="DecisionSequence.h" />
     <ClInclude Include="Race.h" />
     <ClInclude Include="ProtossRace.h" />
     <ClInclude Include="TerranRace.h" />

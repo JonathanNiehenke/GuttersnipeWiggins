@@ -6,6 +6,7 @@
 #include "Cartographer.h"
 #include "CmdRescuer.h"
 #include "SquadCommander.h"
+#include "DecisionSequence.h"
 #include "Race.h"
 #include "ProtossRace.h"
 #include "TerranRace.h"
@@ -21,6 +22,7 @@ private:
     CmdRescuer::Rescuer cmdRescuer;
     Race *race;  // onStart initializes with polymorphic intentions.
     SquadCommander squadCommander;
+    DecisionSequence decisionSequence;
     void displayUnitInfo();
     void displayStatus();
 
