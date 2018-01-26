@@ -1,8 +1,8 @@
 #pragma once
 #include "BuildingConstructor.h"
 
-void BuildingConstructor::setSourceLocation(const BWAPI::TilePosition& srcLocation) {
-    this->srcLocation = srcLocation;
+BuildingConstructor::BuildingConstructor() {
+    this->srcLocation = BWAPI::Broodwar->self()->getStartLocation();
 }
 
 void BuildingConstructor::request(
@@ -36,6 +36,8 @@ BWAPI::TilePosition BuildingConstructor::getPlacement(
     BWAPI::TilePosition placement = BWAPI::Broodwar->getBuildLocation(
         Job.productType, srcLocation, 25);
     if (placement == BWAPI::TilePositions::Invalid)
+        throw std::runtime_error("Invalid placement found");
+    else if (placement == BWAPI::TilePositions::None)
         throw std::runtime_error("No suitable placement found");
     return placement;
 }

@@ -19,7 +19,7 @@ class BuildingConstructor {
         void construct(const ConstrunctionPO& Job);
         void queueReturnToMining(const BWAPI::Unit& worker);
     public:
-        void setSourceLocation(const BWAPI::TilePosition& srcLocation);
+        BuildingConstructor();
         void request(const BWAPI::UnitType& productType);
         void updatePreparation();
         void onCreate(const BWAPI::Unit& createdBuilding);
