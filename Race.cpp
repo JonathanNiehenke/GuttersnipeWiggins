@@ -24,7 +24,8 @@ void Race::onUnitCreate(const BWAPI::Unit& createdUnit) {
 }
 
 void Race::onUnitMorph(const BWAPI::Unit& morphedUnit) {
-    BWAPI::Broodwar << "Unhandled morph: " << morphedUnit->getType().c_str();
+    BWAPI::Broodwar << "Unhandled morph: " << morphedUnit->getType().c_str()
+                    << std::endl;
 }
 
 void Race::onUnitComplete(const BWAPI::Unit& completedUnit) {

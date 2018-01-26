@@ -18,7 +18,7 @@ void BuildingConstructor::beginPreparation(
     try {
         Preparing[productType] = createJob(productType); }
     catch (const std::runtime_error& e) {
-        BWAPI::Broodwar << e.what(); }
+        BWAPI::Broodwar << e.what() << std::endl; }
 }
 
 BuildingConstructor::ConstrunctionPO BuildingConstructor::createJob(
@@ -92,7 +92,8 @@ void BuildingConstructor::onCreate(const BWAPI::Unit& createdBuilding) {
         Producing[createdBuilding] = Job;
     }
     catch (std::out_of_range) {
-        BWAPI::Broodwar << "No Job found associated with created building";
+        BWAPI::Broodwar << "No Job found associated with created building"
+                        << std::endl;
     }
 }
 
