@@ -18,13 +18,13 @@ void DecisionSequence::onStart(Race* race) {
     Objectives["ArmyWarriors"] = ConditionalResponse(
         std::bind(&Race::readyToTrainArmyUnit, race),
         std::bind(&Race::trainWarriors, race));
-    Objectives["IncreaseArmyTraining"] = ConditionalResponse(
-        std::bind(&DecisionSequence::readyForArmyFacility, this),
-        std::bind(&DecisionSequence::constructArmyFacility, this));
+    // Objectives["IncreaseArmyTraining"] = ConditionalResponse(
+        // [this, race](){ return this->canProgressFor(race->getArmyUnitType()); },
+        // [this, race](){ this->techTo(race->getArmyUnitType()); });
     priorityList.push_back("EnoughSupply");
     // priorityList.push_back("FullSaturation");
     priorityList.push_back("ArmyWarriors");
-    priorityList.push_back("IncreaseArmyTraining");
+    // priorityList.push_back("IncreaseArmyTraining");
 }
 
 void DecisionSequence::update() {
@@ -46,20 +46,6 @@ bool DecisionSequence::needsSupply() const {
     return race->expectedSupplyProvided() <= expectedSupplyUsed;
 }
 
-bool DecisionSequence::readyForArmyFacility() const {
-    const static BWAPI::UnitType armyType = race->getArmyUnitType();
-    const static int armyUnitPrice = armyType.mineralPrice();
-    const static BWAPI::UnitType productionType = armyType.whatBuilds().first;
-    const static int facilityPrice = productionType.mineralPrice();
-    const int productionCount = (
-        BWAPI::Broodwar->self()->allUnitCount(productionType));
-    const int armyPriceBuffer = armyUnitPrice * productionCount;
-    const int mineralPrice = facilityPrice + armyPriceBuffer - 24;
-    return BWAPI::Broodwar->self()->minerals() > mineralPrice;
-}
-
-void DecisionSequence::constructArmyFacility() const {
-    race->construct(race->getArmyUnitType().whatBuilds().first);
 }
 
 DecisionSequence::ConditionalResponse::ConditionalResponse() {

@@ -2,15 +2,17 @@
 
 #pragma once
 #include <BWAPI.h>
-#include "ResourceSupplier.h"
-#include "BuildingConstructor.h"
 #include "ArmyTrainer.h"
+#include "BuildingConstructor.h"
+#include "ResourceSupplier.h"
+#include "TechTree.h"
 
 class Race {
     protected:
         ResourceSupplier* resourceSupplier;
         BuildingConstructor* buildingConstructor;
         ArmyTrainer* armyTrainer;
+        TechTree* techTree;
         BWAPI::UnitType centerType, workerType, supplyType, armyUnitType;
         int expectedSupplyProvided(const BWAPI::UnitType& providerType) const;
         virtual void onDestroyedBuilding(const BWAPI::Unit&) {}

@@ -16,8 +16,6 @@ class DecisionSequence {
         std::vector<std::string> priorityList;
         Race* race = nullptr;
         bool needsSupply() const;
-        bool readyForArmyFacility() const;
-        void constructArmyFacility() const;
     public:
         void onStart(Race* race);
         void update();

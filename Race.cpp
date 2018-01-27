@@ -5,6 +5,7 @@ Race::Race(const BWAPI::UnitType& armyUnitType) {
     this->resourceSupplier = new ResourceSupplier(workerType);
     this->buildingConstructor = new BuildingConstructor();
     this->armyTrainer = new ArmyTrainer();
+    this->techTree = new TechTree();
     const BWAPI::Race& r = BWAPI::Broodwar->self()->getRace();
     this->centerType = r.getCenter();
     this->workerType = r.getWorker();
@@ -16,6 +17,7 @@ Race::~Race() {
     delete buildingConstructor;
     delete resourceSupplier;
     delete armyTrainer;
+    delete techTree;
 }
 
 void Race::onUnitCreate(const BWAPI::Unit& createdUnit) {
