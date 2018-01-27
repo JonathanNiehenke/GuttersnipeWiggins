@@ -20,27 +20,32 @@ Race::~Race() {
     delete techTree;
 }
 
-void Race::onUnitCreate(const BWAPI::Unit& createdUnit) {
+void Race::onUnitCreate(const BWAPI::Unit& createdUnit) const {
     if (createdUnit->getType().isBuilding())
         buildingConstructor->onCreate(createdUnit);
 }
 
-void Race::onUnitMorph(const BWAPI::Unit& morphedUnit) {
+void Race::onUnitMorph(const BWAPI::Unit& morphedUnit) const {
     BWAPI::Broodwar << "Unhandled morph: " << morphedUnit->getType().c_str()
                     << std::endl;
 }
 
-void Race::onUnitComplete(const BWAPI::Unit& completedUnit) {
+void Race::onUnitComplete(const BWAPI::Unit& completedUnit) const {
     BWAPI::UnitType completedType = completedUnit->getType();
     if (completedType == workerType)
         resourceSupplier->addWorker(completedUnit);
-    else if (completedType == centerType)
-        resourceSupplier->addBase(completedUnit);
     else if (completedType.isBuilding())
-        buildingConstructor->onComplete(completedUnit);
+        onCompleteBuilding(completedUnit);
 }
 
-void Race::onUnitDestroy(const BWAPI::Unit& destroyedUnit) {
+void Race::onCompleteBuilding(const BWAPI::Unit& completedBuilding) const {
+    buildingConstructor->onComplete(completedBuilding);
+    techTree->addTech(completedBuilding->getType());
+    if (completedBuilding->getType() == centerType)
+        resourceSupplier->addBase(completedBuilding);
+}
+
+void Race::onUnitDestroy(const BWAPI::Unit& destroyedUnit) const {
     BWAPI::UnitType destroyedType = destroyedUnit->getType();
     if (destroyedType == workerType)
         resourceSupplier->removeWorker(destroyedUnit);
@@ -96,3 +101,8 @@ void Race::construct(const BWAPI::UnitType& buildingType) {
     buildingConstructor->request(buildingType);
 }
 
+BWAPI::UnitType Race::getNextRequiredBuilding(
+    const BWAPI::UnitType& unitType) const
+{
+    return techTree->getNextRequiredBuilding(unitType);
+}

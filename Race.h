@@ -15,7 +15,8 @@ class Race {
         TechTree* techTree;
         BWAPI::UnitType centerType, workerType, supplyType, armyUnitType;
         int expectedSupplyProvided(const BWAPI::UnitType& providerType) const;
-        virtual void onDestroyedBuilding(const BWAPI::Unit&) {}
+        virtual void onCompleteBuilding(const BWAPI::Unit&) const;
+        virtual void onDestroyedBuilding(const BWAPI::Unit&) const {}
     public:
         Race(const BWAPI::UnitType& armyUnitType);
         ~Race();
@@ -23,10 +24,10 @@ class Race {
         BWAPI::UnitType getWorkerType() const { return workerType; }
         BWAPI::UnitType getSupplyType() const { return supplyType; }
         BWAPI::UnitType getArmyUnitType() const { return armyUnitType; }
-        virtual void onUnitCreate(const BWAPI::Unit& unit);
-        virtual void onUnitMorph(const BWAPI::Unit& unit);
-        virtual void onUnitComplete(const BWAPI::Unit& unit);
-        virtual void onUnitDestroy(const BWAPI::Unit& unit);
+        virtual void onUnitCreate(const BWAPI::Unit& unit) const;
+        virtual void onUnitMorph(const BWAPI::Unit& unit) const;
+        virtual void onUnitComplete(const BWAPI::Unit& unit) const;
+        virtual void onUnitDestroy(const BWAPI::Unit& unit) const;
         void update();
         int expectedSupplyProvided() const;
         int potentialSupplyUsed(const BWAPI::UnitType& unitType) const;
@@ -35,5 +36,6 @@ class Race {
         bool readyToTrainArmyUnit();
         void trainWarriors();
         virtual void construct(const BWAPI::UnitType& buildingType);
+        BWAPI::UnitType getNextRequiredBuilding(const BWAPI::UnitType&) const;
 };
 
