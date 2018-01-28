@@ -10,5 +10,7 @@ class ProtossRace : public Race
         ProtossRace() : Race(BWAPI::UnitTypes::Enum::Protoss_Zealot) {}
         void ProtossRace::onUnitCreate(const BWAPI::Unit& createdUnit);
         void ProtossRace::construct(const BWAPI::UnitType& buildingType);
+        BWAPI::UnitType getNextRequiredBuilding(
+            const BWAPI::UnitType&) const;
 };
 

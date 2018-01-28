@@ -36,6 +36,7 @@ class Race {
         bool readyToTrainArmyUnit();
         void trainWarriors();
         virtual void construct(const BWAPI::UnitType& buildingType);
-        BWAPI::UnitType getNextRequiredBuilding(const BWAPI::UnitType&) const;
+        virtual BWAPI::UnitType getNextRequiredBuilding(
+            const BWAPI::UnitType&) const;
 };
 
