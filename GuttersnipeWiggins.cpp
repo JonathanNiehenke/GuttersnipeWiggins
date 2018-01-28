@@ -33,7 +33,7 @@ void GW::onFrame()
             break;
         case 1: race->update();
             break;
-        case 2: // race->manageAttackGroups();
+        case 2: squadCommander.manageAttackGroups();
             break;
         case 3: squadCommander.combatMicro();
             break;
@@ -67,6 +67,8 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self) {
         race->onUnitComplete(Unit);
+        if (Unit->getType() == race->getArmyUnitType())
+            squadCommander.assembleSquads(Unit);
     }
 }
 

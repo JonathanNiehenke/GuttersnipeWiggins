@@ -91,17 +91,17 @@ void SquadCommander::drawSquadGather(BWAPI::Position Pos, int Range)
         },  nullptr, 24);
 }
 
-void SquadCommander::assembleSquads(BWAPI::UnitType armyUnitType, int Range)
-{
-    // ToDo: Change army collection to around given positons.
-    for (BWAPI::Position Pos: cartographer->getFacilityPositions()) {
-        drawSquadGather(Pos, Range);
-        BWAPI::Unitset Squad = BWAPI::Broodwar->getUnitsInRadius(
-            Pos, Range, GetType == armyUnitType && IsOwned);
-        if (Squad.size() > 2) {
-            armySquads.push_back(Squad);
-        }
-    }
+void SquadCommander::manageAttackGroups() {
+    uniteSquads();
+    removeEmptySquads();
+}
+
+void SquadCommander::assembleSquads(BWAPI::Unit warrior) {
+    BWAPI::Unitset Squad = BWAPI::Broodwar->getUnitsInRadius(
+        warrior->getPosition(), 50, GetType == warrior->getType() && IsOwned);
+    drawSquadGather(warrior->getPosition(), 50);
+    if (Squad.size() > 2)
+        armySquads.push_back(Squad);
 }
 
 void SquadCommander::removeWarrior(BWAPI::Unit deadWarrior)
