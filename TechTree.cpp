@@ -42,8 +42,9 @@ TechTree::UTypeSeries TechTree::assembleImmediateTree(
 }
 
 void TechTree::joinSubTrees(UTypeSeries& immediateTree) {
-    for (const BWAPI::UnitType& requiredType: immediateTree) {
-        UTypeSeries subTree = getRequiredTree(requiredType);
+    int originalLength = immediateTree.size();
+    for (int i = 0; i < originalLength; ++i) {
+        UTypeSeries subTree = getRequiredTree(immediateTree[i]);
         immediateTree.insert(
             immediateTree.end(), subTree.begin(), subTree.end());
     }
