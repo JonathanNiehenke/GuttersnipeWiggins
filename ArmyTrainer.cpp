@@ -36,7 +36,7 @@ void ArmyTrainer::trainUnits(const BWAPI::UnitType& unitType) {
 bool ArmyTrainer::isTrainingQueueEmpty(const BWAPI::Unit& Facility) const {
     // Because getLarva() returns Unitset and getTrainingQueue() deque
     if (Facility->getType().producesLarva())
-        return Facility->getLarva().empty();
+        return !Facility->getLarva().empty();
     else
         return Facility->getTrainingQueue().empty();
 }
