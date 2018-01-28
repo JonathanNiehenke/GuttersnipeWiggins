@@ -55,7 +55,7 @@ void Race::onUnitDestroy(const BWAPI::Unit& destroyedUnit) const {
         onDestroyedBuilding(destroyedUnit);
 }
 
-void Race::update() {
+void Race::update() const {
     buildingConstructor->updatePreparation();
 }
 
@@ -81,23 +81,23 @@ int Race::potentialSupplyUsed(const BWAPI::UnitType& unitType) const {
     return unitsPerSupplyBuild * facilityAmount * unitType.supplyRequired();
 }
 
-void Race::createSupply() {
+void Race::createSupply() const {
     buildingConstructor->request(supplyType);
 }
 
-void Race::createWorker() {
+void Race::createWorker() const {
     resourceSupplier->createWorker();
 }
 
-bool Race::readyToTrainArmyUnit() {
+bool Race::readyToTrainArmyUnit() const {
     return armyTrainer->readyToTrain();
 }
 
-void Race::trainWarriors() {
+void Race::trainWarriors() const {
     armyTrainer->trainUnits(armyUnitType);
 }
 
-void Race::construct(const BWAPI::UnitType& buildingType) {
+void Race::construct(const BWAPI::UnitType& buildingType) const {
     buildingConstructor->request(buildingType);
 }
 

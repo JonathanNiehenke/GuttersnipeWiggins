@@ -24,18 +24,18 @@ class Race {
         BWAPI::UnitType getWorkerType() const { return workerType; }
         BWAPI::UnitType getSupplyType() const { return supplyType; }
         BWAPI::UnitType getArmyUnitType() const { return armyUnitType; }
-        virtual void onUnitCreate(const BWAPI::Unit& unit) const;
-        virtual void onUnitMorph(const BWAPI::Unit& unit) const;
-        virtual void onUnitComplete(const BWAPI::Unit& unit) const;
-        virtual void onUnitDestroy(const BWAPI::Unit& unit) const;
-        void update();
+        virtual void onUnitCreate(const BWAPI::Unit& createdUnit) const;
+        virtual void onUnitMorph(const BWAPI::Unit& morphedUnit) const;
+        virtual void onUnitComplete(const BWAPI::Unit& completedUnit) const;
+        virtual void onUnitDestroy(const BWAPI::Unit& destroyedUnit) const;
+        void update() const;
         int expectedSupplyProvided() const;
         int potentialSupplyUsed(const BWAPI::UnitType& unitType) const;
-        virtual void createSupply();
-        void createWorker();
-        bool readyToTrainArmyUnit();
-        void trainWarriors();
-        virtual void construct(const BWAPI::UnitType& buildingType);
+        virtual void createSupply() const;
+        void createWorker() const;
+        bool readyToTrainArmyUnit() const;
+        void trainWarriors() const;
+        virtual void construct(const BWAPI::UnitType& buildingType) const;
         virtual BWAPI::UnitType getNextRequiredBuilding(
             const BWAPI::UnitType&) const;
 };

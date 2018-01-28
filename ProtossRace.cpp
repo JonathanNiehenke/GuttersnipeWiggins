@@ -1,19 +1,21 @@
 #pragma once
 #include "ProtossRace.h"
 
-void ProtossRace::onUnitCreate(const BWAPI::Unit& createdUnit) {
+void ProtossRace::onUnitCreate(const BWAPI::Unit& createdUnit) const {
     if (createdUnit->getType() == BWAPI::UnitTypes::Protoss_Gateway)
         armyTrainer->includeFacility(createdUnit);
     Race::onUnitCreate(createdUnit);
 }
 
-void ProtossRace::onDestroyedBuilding(const BWAPI::Unit& destroyedBuilding) {
+void ProtossRace::onDestroyedBuilding(
+    const BWAPI::Unit& destroyedBuilding) const
+{
     buildingConstructor->onComplete(destroyedBuilding);
     if (destroyedBuilding->getType() == BWAPI::UnitTypes::Protoss_Gateway)
         armyTrainer->removeFacility(destroyedBuilding);
 }
 
-void ProtossRace::construct(const BWAPI::UnitType& buildingType) {
+void ProtossRace::construct(const BWAPI::UnitType& buildingType) const {
         buildingConstructor->request(buildingType);
 }
 
