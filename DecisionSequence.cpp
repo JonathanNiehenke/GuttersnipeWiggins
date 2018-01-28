@@ -48,14 +48,21 @@ bool DecisionSequence::needsSupply() const {
 
 bool DecisionSequence::canProgressFor(const BWAPI::UnitType& unitType) const {
     try {
-        return enoughResources(race->getNextRequiredBuilding(unitType)); }
+        return canBegin(race->getNextRequiredBuilding(unitType)); }
     catch (std::runtime_error) {
         return false; }
 }
 
+bool DecisionSequence::canBegin(const BWAPI::UnitType& unitType)  const {
+    return enoughResources(unitType) && !isIncomplete(unitType);
+}
+
+bool DecisionSequence::isIncomplete(const BWAPI::UnitType& unitType) const {
+    return BWAPI::Broodwar->self()->incompleteUnitCount(unitType) > 0;
+}
+
 bool DecisionSequence::enoughResources(const BWAPI::UnitType& unitType) const {
-    return (BWAPI::Broodwar->self()->minerals() >
-            unitType.mineralPrice() - 24);
+    return BWAPI::Broodwar->self()->minerals() > unitType.mineralPrice() - 24;
 }
 
 void DecisionSequence::techTo(const BWAPI::UnitType& unitType) const {

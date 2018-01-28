@@ -17,6 +17,8 @@ class DecisionSequence {
         Race* race = nullptr;
         bool needsSupply() const;
         bool canProgressFor(const BWAPI::UnitType& unitType) const; 
+        bool canBegin(const BWAPI::UnitType& unitType) const;
+        bool isIncomplete(const BWAPI::UnitType& unitType) const;
         bool enoughResources(const BWAPI::UnitType& unitType) const;
         void techTo(const BWAPI::UnitType& unitType) const;
     public:
