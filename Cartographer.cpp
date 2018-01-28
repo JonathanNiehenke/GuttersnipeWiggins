@@ -82,6 +82,15 @@ BWAPI::TilePosition Cartographer::getClosestEnemyLocation(
    return BWAPI::TilePositions::Unknown;
 }
 
+std::vector<BWAPI::Position> Cartographer::getUnexploredStartingPositions() {
+    std::vector<BWAPI::Position> startingPositions;
+    for (BWAPI::TilePosition Start:BWAPI::Broodwar->getStartLocations()) {
+        if (!BWAPI::Broodwar->isExplored(Start))
+            startingPositions.push_back(BWAPI::Position(Start));
+    }
+    return startingPositions;
+}
+
 Cartographer::locationSet Cartographer::getStartingLocations()
 {
     locationSet startingLocations;

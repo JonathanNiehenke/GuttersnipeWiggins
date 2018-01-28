@@ -224,9 +224,12 @@ void SquadCommander::attackPositon(BWAPI::Unitset Squad)
         Squad.getPosition());
     if (attackLocation == BWAPI::TilePositions::Unknown)
     {
-        // ToDo: Redirect all squads when a building is found.
-        // No enemy locations so attack every resource location.
-        attackLocations(Squad, cartographer->getResourcePositions());
+        std::vector<BWAPI::Position> unexploredStarts = (
+            cartographer->getUnexploredStartingPositions());
+        if (!unexploredStarts.empty())
+            attackLocations(Squad, unexploredStarts);
+        else
+            attackLocations(Squad, cartographer->getResourcePositions());
     }
     else {
         Squad.attack(BWAPI::Position(attackLocation));

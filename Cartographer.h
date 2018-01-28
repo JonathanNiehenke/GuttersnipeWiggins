@@ -30,6 +30,7 @@ class Cartographer
         void removeBuildingLocation(BWAPI::TilePosition buildingLocation);
         void removePlayerLocations(BWAPI::Player deadPlayer);
         BWAPI::TilePosition getClosestEnemyLocation(BWAPI::Position);
+        static std::vector<BWAPI::Position> getUnexploredStartingPositions();
         locationSet getStartingLocations();
         void cleanEnemyLocations();
         void addFacilityPosition(BWAPI::Position buildingPosition)
