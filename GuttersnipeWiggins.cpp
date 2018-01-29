@@ -8,7 +8,7 @@ void GW::onStart()
 {
     BWAPI::Broodwar->enableFlag(1);  // Enabled for debugging.
     Self = BWAPI::Broodwar->self();
-    cartographer.discoverResources();
+    cartographer.discoverResourcePositions();
     squadCommander.onStart(&cartographer);
     switch (Self->getRace()) {
         case BWAPI::Races::Enum::Protoss:
@@ -57,9 +57,8 @@ void GW::onUnitMorph(BWAPI::Unit Unit)
     if (Unit->getPlayer() == Self) {
         race->onUnitMorph(Unit);
     }
-    // Geyser structures morph back rather than get destroyed.
     else if (Unit->getType() == BWAPI::UnitTypes::Resource_Vespene_Geyser) {
-            cartographer.removeBuildingLocation(Unit->getTilePosition());
+            cartographer.removeGeyserLocation(Unit->getTilePosition());
     }
 }
 

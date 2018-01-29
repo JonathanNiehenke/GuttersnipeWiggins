@@ -3,7 +3,7 @@
 
 using namespace BWAPI::Filter;
 
-void Cartographer::discoverResources() {
+void Cartographer::discoverResourcePositions() {
     for (const auto& pair: getStarcraftMappedResources()) {
         const BWAPI::Unitset& groupedResources = pair.second;
         resourcePositions.push_back(groupedResources.getPosition());
@@ -39,8 +39,7 @@ void Cartographer::removeBuildingLocation(
     enemyLocations[owningPlayer].erase(buildingLocation);
 }
 
-// Upon "destruction" Geysers change ownership to neutral.
-void Cartographer::removeBuildingLocation(
+void Cartographer::removeGeyserLocation(
     const BWAPI::TilePosition& buildingLocation)
 {
     for (auto &playerLocations: enemyLocations) {

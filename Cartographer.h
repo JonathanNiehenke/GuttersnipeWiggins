@@ -12,14 +12,14 @@ class Cartographer
             std::map<int, BWAPI::Unitset> &groupedResources);
         static std::map<int, BWAPI::Unitset> getStarcraftMappedResources();
     public:
-        void discoverResources();
+        void discoverResourcePositions();
         std::vector<BWAPI::Position> getResourcePositions() const
             { return resourcePositions; }
         void addBuildingLocation(
             const BWAPI::Player&, const BWAPI::TilePosition&);
         void removeBuildingLocation(
             const BWAPI::Player&, const BWAPI::TilePosition&);
-        void removeBuildingLocation(
+        void removeGeyserLocation(
             const BWAPI::TilePosition& buildingLocation);
         void removePlayerLocations(const BWAPI::Player& deadPlayer);
         BWAPI::TilePosition getClosestEnemyLocation(
