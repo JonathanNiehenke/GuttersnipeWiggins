@@ -8,7 +8,7 @@ void GW::onStart()
 {
     BWAPI::Broodwar->enableFlag(1);  // Enabled for debugging.
     Self = BWAPI::Broodwar->self();
-    cartographer.discoverResources(BWAPI::Position(Self->getStartLocation()));
+    cartographer.discoverResources();
     squadCommander.onStart(&cartographer);
     switch (Self->getRace()) {
         case BWAPI::Races::Enum::Protoss:

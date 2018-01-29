@@ -5,42 +5,25 @@
 using namespace BWAPI::Filter;
 
 void Cartographer::groupResources(
-    const BWAPI::Unitset &Resources,
-    std::map<int, BWAPI::Unitset> &groupedResources)
+    const BWAPI::Unitset& Resources,
+    std::map<int, BWAPI::Unitset>& groupedResources)
 {
     for (BWAPI::Unit Resource: Resources)
         groupedResources[Resource->getResourceGroup()].insert(Resource);
 }
 
-bool Cartographer::isBreakableTerrain(std::vector<BWAPI::Unit> Minerals)
-{
-    return std::any_of(Minerals.begin(), Minerals.end(),
-            [](BWAPI::Unit Mineral) { return !Mineral->getResources(); });
+void Cartographer::discoverResources() {
+    for (const auto& pair: getStarcraftMappedResources()) {
+        const BWAPI::Unitset& groupedResources = pair.second;
+        resourcePositions.push_back(groupedResources.getPosition());
+    }
 }
 
-void Cartographer::discoverResources(const BWAPI::Position &startPosition)
-{
-    // Group minerals into "Starcraft" defined groups.
-    typedef std::pair<BWAPI::Position, BWAPI::Unitset> PositionedUnits;
+std::map<int, BWAPI::Unitset> Cartographer::getStarcraftMappedResources() {
     std::map<int, BWAPI::Unitset> groupsOfResources;
     groupResources(BWAPI::Broodwar->getStaticMinerals(), groupsOfResources);
     groupResources(BWAPI::Broodwar->getStaticGeysers(), groupsOfResources);
-    for (const auto &groupedResources: groupsOfResources) {
-        BWAPI::Unitset mineralCluster = groupedResources.second;
-        ResourceLocation resourceGroup(groupedResources.second);
-        if (!isBreakableTerrain(resourceGroup.getMinerals())) {
-            resourceGroups.push_back(resourceGroup);
-            resourcePositions.push_back(resourceGroup.getPosition());
-        }
-    }
-    std::sort(resourceGroups.begin(), resourceGroups.end(),
-        [startPosition](const ResourceLocation &a, const ResourceLocation &b)
-        {
-            return (startPosition.getApproxDistance(a.getPosition()) <
-                    startPosition.getApproxDistance(b.getPosition()));
-        });
-    resourceCount = resourceGroups.size();
-    assert(resourceCount);
+    return groupsOfResources;
 }
 
 void Cartographer::addBuildingLocation(
@@ -120,15 +103,6 @@ void Cartographer::cleanEnemyLocations()
     }
 }
 
-void Cartographer::removeFacilityPosition(BWAPI::Position buildingPosition)
-{
-    auto endIt = facilityPositions.end(),
-         foundIt = find(facilityPositions.begin(), endIt, buildingPosition);
-    if (foundIt != endIt) {
-        facilityPositions.erase(foundIt);
-    }
-}
-
 void Cartographer::displayStatus(int &row)
 {
     for (auto playerLocations: enemyLocations) {
@@ -145,12 +119,6 @@ void Cartographer::displayStatus(int &row)
         }
         row += 5;
     }
-}
-
-BWAPI::TilePosition Cartographer::operator[](int i)
-{
-    // Wrap around resource groups.
-    return resourceGroups[i % resourceGroups.size()].getLocation();
 }
 
 #endif

@@ -94,7 +94,6 @@
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="CmdRescuer.cpp" />
     <ClCompile Include="ResourceSupplier.cpp" />
-    <ClCompile Include="ResourceLocations.cpp" />
     <ClCompile Include="Cartographer.cpp" />
     <ClCompile Include="SquadCommander.cpp" />
     <ClCompile Include="BuildingConstructor.cpp" />
@@ -111,7 +110,6 @@
     <ClInclude Include="Utils.h" />
     <ClInclude Include="CmdRescuer.h" />
     <ClInclude Include="ResourceSupplier.h" />
-    <ClInclude Include="ResourceLocations.h" />
     <ClInclude Include="Cartographer.h" />
     <ClInclude Include="SquadCommander.h" />
     <ClInclude Include="BuildingConstructor.h" />
