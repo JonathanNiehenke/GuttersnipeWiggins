@@ -1,16 +1,7 @@
-#ifndef CARTOGRAPHER_CPP
-#define CARTOGRAPHER_CPP
+#pragma once
 #include "Cartographer.h"
 
 using namespace BWAPI::Filter;
-
-void Cartographer::groupResources(
-    const BWAPI::Unitset& Resources,
-    std::map<int, BWAPI::Unitset>& groupedResources)
-{
-    for (BWAPI::Unit Resource: Resources)
-        groupedResources[Resource->getResourceGroup()].insert(Resource);
-}
 
 void Cartographer::discoverResources() {
     for (const auto& pair: getStarcraftMappedResources()) {
@@ -26,33 +17,43 @@ std::map<int, BWAPI::Unitset> Cartographer::getStarcraftMappedResources() {
     return groupsOfResources;
 }
 
+void Cartographer::groupResources(
+    const BWAPI::Unitset& Resources,
+    std::map<int, BWAPI::Unitset>& groupedResources)
+{
+    for (BWAPI::Unit Resource: Resources)
+        groupedResources[Resource->getResourceGroup()].insert(Resource);
+}
+
 void Cartographer::addBuildingLocation(
-    BWAPI::Player owningPlayer, BWAPI::TilePosition buildingLocation)
+    const BWAPI::Player& owningPlayer,
+    const BWAPI::TilePosition& buildingLocation)
 {
     enemyLocations[owningPlayer].insert(buildingLocation);
 }
 
 void Cartographer::removeBuildingLocation(
-    BWAPI::Player owningPlayer, BWAPI::TilePosition buildingLocation)
+    const BWAPI::Player& owningPlayer,
+    const BWAPI::TilePosition& buildingLocation)
 {
     enemyLocations[owningPlayer].erase(buildingLocation);
 }
 
 // Upon "destruction" Geysers change ownership to neutral.
-void Cartographer::removeBuildingLocation(BWAPI::TilePosition buildingLocation)
+void Cartographer::removeBuildingLocation(
+    const BWAPI::TilePosition& buildingLocation)
 {
     for (auto &playerLocations: enemyLocations) {
         playerLocations.second.erase(buildingLocation);
     }
 }
 
-void Cartographer::removePlayerLocations(BWAPI::Player deadPlayer)
-{
+void Cartographer::removePlayerLocations(const BWAPI::Player& deadPlayer) {
     enemyLocations.erase(deadPlayer);
 }
 
 BWAPI::TilePosition Cartographer::getClosestEnemyLocation(
-    BWAPI::Position sourcePosition)
+    const BWAPI::Position& sourcePosition) const
 {
     for (auto playerLocations: enemyLocations) {
         locationSet buildingLocations = playerLocations.second;
@@ -74,7 +75,7 @@ std::vector<BWAPI::Position> Cartographer::getUnexploredStartingPositions() {
     return startingPositions;
 }
 
-Cartographer::locationSet Cartographer::getStartingLocations()
+Cartographer::locationSet Cartographer::getStartingLocations() const
 {
     locationSet startingLocations;
     // Prevents scouting for our and allies bases.
@@ -103,7 +104,7 @@ void Cartographer::cleanEnemyLocations()
     }
 }
 
-void Cartographer::displayStatus(int &row)
+void Cartographer::displayStatus(int &row) const
 {
     for (auto playerLocations: enemyLocations) {
         row += 10;
@@ -120,5 +121,3 @@ void Cartographer::displayStatus(int &row)
         row += 5;
     }
 }
-
-#endif

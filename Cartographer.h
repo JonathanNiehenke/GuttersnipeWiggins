@@ -1,6 +1,4 @@
-#ifndef CARTOGRAPHER_H
-#define CARTOGRAPHER_H
-#include <cassert>
+#pragma once
 #include <BWAPI.h>
 #include "Utils.h"
 
@@ -15,18 +13,19 @@ class Cartographer
         static std::map<int, BWAPI::Unitset> getStarcraftMappedResources();
     public:
         void discoverResources();
-        std::vector<BWAPI::Position> getResourcePositions()
+        std::vector<BWAPI::Position> getResourcePositions() const
             { return resourcePositions; }
-        void addBuildingLocation(BWAPI::Player, BWAPI::TilePosition);
-        void removeBuildingLocation(BWAPI::Player, BWAPI::TilePosition);
-        void removeBuildingLocation(BWAPI::TilePosition buildingLocation);
-        void removePlayerLocations(BWAPI::Player deadPlayer);
-        BWAPI::TilePosition getClosestEnemyLocation(BWAPI::Position);
+        void addBuildingLocation(
+            const BWAPI::Player&, const BWAPI::TilePosition&);
+        void removeBuildingLocation(
+            const BWAPI::Player&, const BWAPI::TilePosition&);
+        void removeBuildingLocation(
+            const BWAPI::TilePosition& buildingLocation);
+        void removePlayerLocations(const BWAPI::Player& deadPlayer);
+        BWAPI::TilePosition getClosestEnemyLocation(
+            const BWAPI::Position&) const;
         static std::vector<BWAPI::Position> getUnexploredStartingPositions();
-        locationSet getStartingLocations();
+        locationSet getStartingLocations() const;
         void cleanEnemyLocations();
-        void displayStatus(int &row);
+        void displayStatus(int &row) const;
 };
-
-#endif
-
