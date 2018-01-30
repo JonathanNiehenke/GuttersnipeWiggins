@@ -49,7 +49,7 @@ void Cartographer::removePlayer(const BWAPI::Player& deadPlayer) {
     enemyUnitPositions.erase(deadPlayer);
 }
 
-BWAPI::TilePosition Cartographer::getClosestEnemyBuildingLocation(
+BWAPI::TilePosition Cartographer::getEnemyBuildingLocation(
     const BWAPI::Position& sourcePosition) const
 {
     for (const auto& pair: enemyBuildingLocations) {
@@ -69,7 +69,7 @@ BWAPI::TilePosition Cartographer::closestLocation(
         Utils::Position(sourcePosition).compareLocations());
 }
 
-BWAPI::Position Cartographer::getClosestEnemyUnitPosition(
+BWAPI::Position Cartographer::getEnemyUnitPosition(
     const BWAPI::Position& sourcePosition) const
 {
     for (const auto& pair: enemyUnitPositions) {
@@ -121,7 +121,7 @@ void Cartographer::cleanEnemyBuildingLocations() {
 void Cartographer::removeMissingBuildings(locationSet& Locations) {
     // Reminder: remove_if doesn't work with set and iterator becomes
     // invaild during erase so no "for(;;++It)"
-    for (auto It = Locations.begin(); It != Locations.end();) {
+    for (auto& It = Locations.begin(); It != Locations.end();) {
         if (isBuildingGone(*It))
             Locations.erase(It++);
         else
@@ -142,7 +142,7 @@ void Cartographer::cleanEnemyUnitPositions() {
 void Cartographer::removeMissingUnits(positionSet& Positions) {
     // Reminder: remove_if doesn't work with set and iterator becomes
     // invaild during erase so no "for(;;++It)"
-    for (auto It = Positions.begin(); It != Positions.end(); ++It) {
+    for (auto& It = Positions.begin(); It != Positions.end();) {
         if (BWAPI::Broodwar->isVisible(BWAPI::TilePosition(*It)))
             Positions.erase(It++);
         else

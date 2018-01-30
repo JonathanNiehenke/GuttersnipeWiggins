@@ -38,8 +38,14 @@ class SquadCommander
         void drawBullsEye(BWAPI::Unit targetUnit);
         bool needToGroup(BWAPI::Unitset Squad, BWAPI::Position squadPos);
         void attackUnit(BWAPI::Unitset Squad, BWAPI::Unit targetUnit);
-        void attackLocations(BWAPI::Unitset, std::vector<BWAPI::Position>);
-        void attackPositon(BWAPI::Unitset Squad);
+        void attackSomething(const BWAPI::Unitset& Squad) const;
+        bool attackingLoggedTarget(const BWAPI::Unitset& Squad) const;
+        void attackBasePositions(const BWAPI::Unitset& Squad) const;
+        void attackMultiplePositions(
+            const BWAPI::Unitset&, const std::vector<BWAPI::Position>&) const;
+        static bool invisiblyReachable(
+            const BWAPI::Position& squadPos,
+            const BWAPI::Position& targetPos);
     public:
         SquadCommander::SquadCommander();
         void SquadCommander::onStart(Cartographer *cartographer );

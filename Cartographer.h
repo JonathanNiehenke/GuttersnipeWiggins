@@ -30,9 +30,9 @@ class Cartographer
         void removeUnit(const BWAPI::Unit& unit);
         void removeGeyser(const BWAPI::Unit& geyserUnit);
         void removePlayer(const BWAPI::Player& deadPlayer);
-        BWAPI::TilePosition getClosestEnemyBuildingLocation(
+        BWAPI::TilePosition getEnemyBuildingLocation(
             const BWAPI::Position& sourcePosition) const;
-        BWAPI::Position getClosestEnemyUnitPosition(
+        BWAPI::Position getEnemyUnitPosition(
             const BWAPI::Position& sourcePosition) const;
         static std::vector<BWAPI::Position> getUnexploredStartingPositions();
         locationSet getStartingLocations() const;

@@ -200,40 +200,47 @@ void SquadCommander::attackUnit(BWAPI::Unitset Squad, BWAPI::Unit targetUnit)
     }
 }
 
-void SquadCommander::attackLocations(
-    BWAPI::Unitset Squad, std::vector<BWAPI::Position> resourcePositions)
+void SquadCommander::attackSomething(const BWAPI::Unitset& Squad) const {
+    if (!attackingLoggedTarget(Squad))
+        attackBasePositions(Squad);
+}
+
+bool SquadCommander::attackingLoggedTarget(const BWAPI::Unitset& Squad) const {
+    BWAPI::Position Target = BWAPI::Position(
+        cartographer->getEnemyBuildingLocation(Squad.getPosition()));
+    if (Target == BWAPI::Positions::Unknown)
+        Target = cartographer->getEnemyUnitPosition(Squad.getPosition());
+    if (Target != BWAPI::Positions::Unknown)
+        return Squad.attack(Target);
+    return false;
+}
+
+void SquadCommander::attackBasePositions(const BWAPI::Unitset& Squad) const {
+    std::vector<BWAPI::Position> basePositions = (
+        cartographer->getUnexploredStartingPositions());
+    if (basePositions.empty())
+        basePositions = cartographer->getResourcePositions();
+    attackMultiplePositions(Squad, basePositions);
+}
+
+void SquadCommander::attackMultiplePositions(
+    const BWAPI::Unitset& Squad,
+    const std::vector<BWAPI::Position>& positions) const
 {
-    // Target closer resource positions first.
     BWAPI::Position squadPos = Squad.getPosition();
-    std::sort(resourcePositions.begin(), resourcePositions.end(),
-        Utils::Position(squadPos).comparePositions());
-    for (BWAPI::Position targetPos: resourcePositions) {
-        // The locations we see are likely ours and don't bother
-        // locations we can't reach.
-        if (!BWAPI::Broodwar->isVisible(BWAPI::TilePosition(targetPos)) &&
-            BWAPI::Broodwar->hasPath(squadPos, targetPos))
-        {
-            Squad.attack(targetPos, true);
-        }
+    // std::sort(positions.begin(), positions.end(),
+        // Utils::Position(squadPos).comparePositions());
+    for (auto& It = positions.begin(); It != positions.end(); ++It) {
+        if (invisiblyReachable(squadPos, *It))
+            Squad.attack(*It, It != positions.begin());
     }
 }
 
-void SquadCommander::attackPositon(BWAPI::Unitset Squad)
+bool SquadCommander::invisiblyReachable(
+    const BWAPI::Position& squadPos, const BWAPI::Position& targetPos)
 {
-    BWAPI::TilePosition attackLocation = (
-        cartographer->getClosestEnemyBuildingLocation( Squad.getPosition()));
-    if (attackLocation == BWAPI::TilePositions::Unknown)
-    {
-        std::vector<BWAPI::Position> unexploredStarts = (
-            cartographer->getUnexploredStartingPositions());
-        if (!unexploredStarts.empty())
-            attackLocations(Squad, unexploredStarts);
-        else
-            attackLocations(Squad, cartographer->getResourcePositions());
-    }
-    else {
-        Squad.attack(BWAPI::Position(attackLocation));
-    }
+    return (!BWAPI::Broodwar->isVisible(BWAPI::TilePosition(targetPos)) &&
+            BWAPI::Broodwar->hasPath(squadPos, targetPos));
 }
 
 void SquadCommander::combatMicro()
@@ -265,7 +272,7 @@ void SquadCommander::combatMicro()
             [](BWAPI::Unit unit)
                 { return (unit->getOrder() == BWAPI::Orders::PlayerGuard); }))
         {
-            attackPositon(Squad);
+            attackSomething(Squad);
         }
     }
 }
