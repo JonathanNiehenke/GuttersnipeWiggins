@@ -25,44 +25,67 @@ void Cartographer::groupResources(
         groupedResources[Resource->getResourceGroup()].insert(Resource);
 }
 
-void Cartographer::addBuildingLocation(
-    const BWAPI::Player& owningPlayer,
-    const BWAPI::TilePosition& buildingLocation)
-{
-    enemyLocations[owningPlayer].insert(buildingLocation);
+void Cartographer::addUnit(const BWAPI::Unit& unit) {
+    if (unit->getType().isBuilding())
+        enemyBuildingLocations[unit->getPlayer()].insert(
+            unit->getTilePosition());
+    else
+        enemyUnitPositions[unit->getPlayer()].insert(unit->getPosition());
 }
 
-void Cartographer::removeBuildingLocation(
-    const BWAPI::Player& owningPlayer,
-    const BWAPI::TilePosition& buildingLocation)
-{
-    enemyLocations[owningPlayer].erase(buildingLocation);
+void Cartographer::removeUnit(const BWAPI::Unit& unit) {
+    if (unit->getType().isBuilding())
+        enemyBuildingLocations[unit->getPlayer()].erase(
+            unit->getTilePosition());
 }
 
-void Cartographer::removeGeyserLocation(
-    const BWAPI::TilePosition& buildingLocation)
-{
-    for (auto &playerLocations: enemyLocations) {
-        playerLocations.second.erase(buildingLocation);
-    }
+void Cartographer::removeGeyser(const BWAPI::Unit& geyserUnit) {
+    for (auto& pair: enemyBuildingLocations)
+        pair.second.erase(geyserUnit->getTilePosition());
 }
 
-void Cartographer::removePlayerLocations(const BWAPI::Player& deadPlayer) {
-    enemyLocations.erase(deadPlayer);
+void Cartographer::removePlayer(const BWAPI::Player& deadPlayer) {
+    enemyBuildingLocations.erase(deadPlayer);
+    enemyUnitPositions.erase(deadPlayer);
 }
 
-BWAPI::TilePosition Cartographer::getClosestEnemyLocation(
+BWAPI::TilePosition Cartographer::getClosestEnemyBuildingLocation(
     const BWAPI::Position& sourcePosition) const
 {
-    for (auto playerLocations: enemyLocations) {
-        locationSet buildingLocations = playerLocations.second;
+    for (const auto& pair: enemyBuildingLocations) {
+        const locationSet& buildingLocations = pair.second;
         if (!buildingLocations.empty())
-            return *std::min_element(
-                buildingLocations.begin(),
-                buildingLocations.end(),
-                Utils::Position(sourcePosition).compareLocations());
+            return closestLocation(buildingLocations, sourcePosition);
     }
-   return BWAPI::TilePositions::Unknown;
+    return BWAPI::TilePositions::Unknown;
+}
+
+BWAPI::TilePosition Cartographer::closestLocation(
+    const locationSet& buildingLocations,
+    const BWAPI::Position& sourcePosition)
+{
+    return *std::min_element(
+        buildingLocations.begin(), buildingLocations.end(),
+        Utils::Position(sourcePosition).compareLocations());
+}
+
+BWAPI::Position Cartographer::getClosestEnemyUnitPosition(
+    const BWAPI::Position& sourcePosition) const
+{
+    for (const auto& pair: enemyUnitPositions) {
+        const positionSet& unitPositions = pair.second;
+        if (!unitPositions.empty())
+            return closestPosition(unitPositions, sourcePosition);
+    }
+    return BWAPI::Positions::Unknown;
+}
+
+BWAPI::Position Cartographer::closestPosition(
+    const positionSet& unitPositions, const BWAPI::Position& sourcePosition)
+{
+    return *std::min_element(
+        unitPositions.begin(), unitPositions.end(),
+        Utils::Position(sourcePosition).comparePositions());
 }
 
 std::vector<BWAPI::Position> Cartographer::getUnexploredStartingPositions() {
@@ -85,27 +108,51 @@ Cartographer::locationSet Cartographer::getStartingLocations() const
     return startingLocations;
 }
 
-void Cartographer::cleanEnemyLocations()
-{
-    for (auto &playerLocations: enemyLocations) {
-        locationSet &Locations = playerLocations.second;
-        for (auto It = Locations.begin(); It != Locations.end();) {
-            // Remove buildings that have canceled morphing or lifted.
-            if (BWAPI::Broodwar->isVisible(*It) &&
-                BWAPI::Broodwar->getUnitsOnTile(
-                    *It, IsEnemy && IsBuilding && !IsFlying).empty())
-            {
-                Locations.erase(It++);
-            }
-            else
-                It++;
-        }
+void Cartographer::cleanEnemyUnits() {
+    cleanEnemyBuildingLocations();
+    cleanEnemyUnitPositions();
+}
+
+void Cartographer::cleanEnemyBuildingLocations() {
+    for (auto& pair: enemyBuildingLocations)
+        removeMissingBuildings(pair.second);
+}
+
+void Cartographer::removeMissingBuildings(locationSet& Locations) {
+    // Reminder: remove_if doesn't work with set and iterator becomes
+    // invaild during erase so no "for(;;++It)"
+    for (auto It = Locations.begin(); It != Locations.end();) {
+        if (isBuildingGone(*It))
+            Locations.erase(It++);
+        else
+            ++It;
+    }
+}
+
+bool Cartographer::isBuildingGone(const BWAPI::TilePosition& Loc) {
+    return (BWAPI::Broodwar->isVisible(Loc) && BWAPI::Broodwar->getUnitsOnTile(
+            Loc, IsBuilding && !IsFlying).empty());
+}
+
+void Cartographer::cleanEnemyUnitPositions() {
+    for (auto& pair: enemyUnitPositions)
+        removeMissingUnits(pair.second);
+}
+
+void Cartographer::removeMissingUnits(positionSet& Positions) {
+    // Reminder: remove_if doesn't work with set and iterator becomes
+    // invaild during erase so no "for(;;++It)"
+    for (auto It = Positions.begin(); It != Positions.end(); ++It) {
+        if (BWAPI::Broodwar->isVisible(BWAPI::TilePosition(*It)))
+            Positions.erase(It++);
+        else
+            ++It;
     }
 }
 
 void Cartographer::displayStatus(int &row) const
 {
-    for (auto playerLocations: enemyLocations) {
+    for (auto playerLocations: enemyBuildingLocations) {
         row += 10;
         BWAPI::Player Player = playerLocations.first;
         locationSet buildingLocations = playerLocations.second;

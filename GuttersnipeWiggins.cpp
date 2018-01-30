@@ -39,7 +39,7 @@ void GW::onFrame()
             break;
         case 4:
             cmdRescuer.rescue();
-            cartographer.cleanEnemyLocations();
+            cartographer.cleanEnemyUnits();
             break;
         default: break;
     }
@@ -54,12 +54,10 @@ void GW::onUnitCreate(BWAPI::Unit Unit)
 
 void GW::onUnitMorph(BWAPI::Unit Unit)
 {
-    if (Unit->getPlayer() == Self) {
+    if (Unit->getPlayer() == Self)
         race->onUnitMorph(Unit);
-    }
-    else if (Unit->getType() == BWAPI::UnitTypes::Resource_Vespene_Geyser) {
-            cartographer.removeGeyserLocation(Unit->getTilePosition());
-    }
+    else if (Unit->getType() == BWAPI::UnitTypes::Resource_Vespene_Geyser)
+        cartographer.removeGeyser(Unit);
 }
 
 void GW::onUnitComplete(BWAPI::Unit Unit)
@@ -73,28 +71,18 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
 
 void GW::onUnitDestroy(BWAPI::Unit Unit)
 {
-    if (Unit->getPlayer() == Self) {
+    if (Unit->getPlayer() == Self)
         race->onUnitDestroy(Unit);
-    }
-    else if (Unit->getType().isBuilding()) {
-        cartographer.removeBuildingLocation(
-            Unit->getPlayer(), Unit->getTilePosition());
-    }
+    else
+        cartographer.removeUnit(Unit);
 }
 
 void GW::onUnitDiscover(BWAPI::Unit Unit)
 {
-    BWAPI::Player owningPlayer = Unit->getPlayer();
-    if (Self->isEnemy(owningPlayer) && Unit->getType().isBuilding() &&
-        !Unit->isFlying())
-    {
-        cartographer.addBuildingLocation(
-            owningPlayer, Unit->getTilePosition());
-    }
 }
 
-void GW::onUnitEvade(BWAPI::Unit Unit)
-{
+void GW::onUnitEvade(BWAPI::Unit Unit) {
+    cartographer.addUnit(Unit);
 }
 
 void GW::onUnitShow(BWAPI::Unit Unit)
@@ -183,7 +171,7 @@ void GW::onSaveGame(std::string gameName)
 
 void GW::onPlayerLeft(BWAPI::Player Player)
 {
-    cartographer.removePlayerLocations(Player);
+    cartographer.removePlayer(Player);
 }
 
 void GW::onEnd(bool IsWinner)

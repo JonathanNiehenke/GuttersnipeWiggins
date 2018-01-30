@@ -220,8 +220,8 @@ void SquadCommander::attackLocations(
 
 void SquadCommander::attackPositon(BWAPI::Unitset Squad)
 {
-    BWAPI::TilePosition attackLocation = cartographer->getClosestEnemyLocation(
-        Squad.getPosition());
+    BWAPI::TilePosition attackLocation = (
+        cartographer->getClosestEnemyBuildingLocation( Squad.getPosition()));
     if (attackLocation == BWAPI::TilePositions::Unknown)
     {
         std::vector<BWAPI::Position> unexploredStarts = (
