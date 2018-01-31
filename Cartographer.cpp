@@ -78,37 +78,41 @@ void Cartographer::EvasionTracker::update() {
 
 void Cartographer::EvasionTracker::updateCurrentPositions() {
     for (auto& It = currentPositions.begin(); It != currentPositions.end();) {
-        const BWAPI::Unit& unit = It->first;
         PositionalType& positionalType = It->second;
-        if (unit->isVisible()) {
-            positionalType.first = unit->getPosition();
-            ++It;
-        }
-        else if (isInFog(positionalType.first)) {
-            foggyPositions[positionalType.first] = positionalType.second;
-            currentPositions.erase(It++);
-        }
+        if (It->first->isVisible())
+            positionalType.first = (It++)->first->getPosition();
+        else if (isInFog(positionalType.first))
+            moveToFoggyPositions(*(It++));
         else
             ++It;
     }
+}
+
+void Cartographer::EvasionTracker::moveToFoggyPositions(
+    const std::pair<BWAPI::Unit, PositionalType>& pair)
+{
+    foggyPositions[pair.second.first] = pair.second.second;
+    currentPositions.erase(pair.first);
 }
 
 void Cartographer::EvasionTracker::updateFoggyPositions() {
     for (auto& It = foggyPositions.begin(); It != foggyPositions.end();) {
         if (!isInFog(It->first))
             foggyPositions.erase(It++);
-        else {
-            BWAPI::Broodwar->registerEvent(
-                [It](BWAPI::Game*){ BWAPI::Broodwar->drawTextMap(
-                    It->first, It->second.c_str()); },
-                nullptr, 5);
-            ++It;
-        }
+        else
+            draw(*(It++));
     }
 }
 
 bool Cartographer::EvasionTracker::isInFog(const BWAPI::Position& position) {
     return !BWAPI::Broodwar->isVisible(BWAPI::TilePosition(position));
+}
+
+void Cartographer::EvasionTracker::draw(const PositionalType& posType) {
+    BWAPI::Broodwar->registerEvent(
+        [posType](BWAPI::Game*){ BWAPI::Broodwar->drawTextMap(
+            posType.first, posType.second.c_str()); },
+        nullptr, 5);
 }
 
 BWAPI::Position Cartographer::EvasionTracker::getClosestEnemyPosition(

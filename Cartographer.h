@@ -14,6 +14,9 @@ class Cartographer
                 void updateCurrentPositions();
                 void updateFoggyPositions();
                 static bool isInFog(const BWAPI::Position& position);
+                void moveToFoggyPositions(
+                    const std::pair<BWAPI::Unit, PositionalType>& pair);
+                static void draw(const PositionalType& posType);
             public:
                 void addUnit(const BWAPI::Unit& unit);
                 void removeUnit(const BWAPI::Unit& unit);
