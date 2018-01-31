@@ -33,13 +33,14 @@ void GW::onFrame()
             break;
         case 1: race->update();
             break;
-        case 2: squadCommander.manageAttackGroups();
+        case 2: cartographer.update();
             break;
-        case 3: squadCommander.combatMicro();
+        case 3: squadCommander.manageAttackGroups();
             break;
-        case 4:
+        case 4: squadCommander.combatMicro();
+            break;
+        case 5:
             cmdRescuer.rescue();
-            cartographer.cleanEnemyUnits();
             break;
         default: break;
     }
@@ -56,8 +57,6 @@ void GW::onUnitMorph(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self)
         race->onUnitMorph(Unit);
-    else if (Unit->getType() == BWAPI::UnitTypes::Resource_Vespene_Geyser)
-        cartographer.removeGeyser(Unit);
 }
 
 void GW::onUnitComplete(BWAPI::Unit Unit)
@@ -79,10 +78,14 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
 
 void GW::onUnitDiscover(BWAPI::Unit Unit)
 {
+    if (Unit->getPlayer() != Self && !Unit->getPlayer()->isNeutral())
+        cartographer.addUnit(Unit);
 }
 
 void GW::onUnitEvade(BWAPI::Unit Unit) {
-    cartographer.addUnit(Unit);
+    // I don't understand the purpose/use when given the unit is only
+    // accessable if it were ours. As such it is a poor duplicate of
+    // onUnitDestroyed. Cartographer->update() preforms this function.
 }
 
 void GW::onUnitShow(BWAPI::Unit Unit)
@@ -171,7 +174,6 @@ void GW::onSaveGame(std::string gameName)
 
 void GW::onPlayerLeft(BWAPI::Player Player)
 {
-    cartographer.removePlayer(Player);
 }
 
 void GW::onEnd(bool IsWinner)

@@ -206,13 +206,11 @@ void SquadCommander::attackSomething(const BWAPI::Unitset& Squad) const {
 }
 
 bool SquadCommander::attackingLoggedTarget(const BWAPI::Unitset& Squad) const {
-    BWAPI::Position Target = BWAPI::Position(
-        cartographer->getEnemyBuildingLocation(Squad.getPosition()));
+    BWAPI::Position Target = (
+        cartographer->getClosestEnemyPosition(Squad.getPosition()));
     if (Target == BWAPI::Positions::Unknown)
-        Target = cartographer->getEnemyUnitPosition(Squad.getPosition());
-    if (Target != BWAPI::Positions::Unknown)
-        return Squad.attack(Target);
-    return false;
+        return false;
+    return Squad.attack(Target);
 }
 
 void SquadCommander::attackBasePositions(const BWAPI::Unitset& Squad) const {

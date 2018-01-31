@@ -5,37 +5,25 @@
 class Cartographer
 {
     private:
-        typedef std::set<BWAPI::TilePosition> locationSet;
-        typedef std::set<BWAPI::Position> positionSet;
+        typedef std::pair<BWAPI::Position, BWAPI::UnitType> PositionalType;
         std::vector<BWAPI::Position> resourcePositions;
-        std::map<BWAPI::Player, locationSet> enemyBuildingLocations;
-        std::map<BWAPI::Player, positionSet> enemyUnitPositions;
+        std::map<BWAPI::Unit, PositionalType> currentPositions;
+        std::map<BWAPI::Position, BWAPI::UnitType> foggyPositions;
+        static std::map<int, BWAPI::Unitset> getStarcraftMappedResources();
         static void groupResources(const BWAPI::Unitset &Resources,
             std::map<int, BWAPI::Unitset> &groupedResources);
-        static std::map<int, BWAPI::Unitset> getStarcraftMappedResources();
-        static BWAPI::TilePosition closestLocation(
-            const locationSet&, const BWAPI::Position&);
-        static BWAPI::Position closestPosition(
-            const positionSet&, const BWAPI::Position&);
-        void cleanEnemyBuildingLocations();
-        static void removeMissingBuildings(locationSet& Locations);
-        static bool isBuildingGone(const BWAPI::TilePosition& Loc);
-        void cleanEnemyUnitPositions();
-        static void removeMissingUnits(positionSet& Positions);
+        void updateCurrentPositions();
+        void updateFoggyPositions();
+        static bool isInFog(const BWAPI::Position& position);
     public:
         void discoverResourcePositions();
         std::vector<BWAPI::Position> getResourcePositions() const
             { return resourcePositions; }
         void addUnit(const BWAPI::Unit& unit);
         void removeUnit(const BWAPI::Unit& unit);
-        void removeGeyser(const BWAPI::Unit& geyserUnit);
-        void removePlayer(const BWAPI::Player& deadPlayer);
-        BWAPI::TilePosition getEnemyBuildingLocation(
-            const BWAPI::Position& sourcePosition) const;
-        BWAPI::Position getEnemyUnitPosition(
+        void update();
+        BWAPI::Position getClosestEnemyPosition(
             const BWAPI::Position& sourcePosition) const;
         static std::vector<BWAPI::Position> getUnexploredStartingPositions();
-        locationSet getStartingLocations() const;
-        void cleanEnemyUnits();
-        void displayStatus(int &row) const;
+        static std::vector<BWAPI::Position> getStartingPositions();
 };
