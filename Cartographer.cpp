@@ -25,68 +25,6 @@ void Cartographer::groupResources(
         groupedResources[Resource->getResourceGroup()].insert(Resource);
 }
 
-void Cartographer::addUnit(const BWAPI::Unit& unit) {
-    currentPositions[unit] = PositionalType(
-        unit->getPosition(), unit->getType());
-}
-
-void Cartographer::removeUnit(const BWAPI::Unit& unit) {
-    currentPositions.erase(unit);
-}
-
-void Cartographer::update() {
-    updateCurrentPositions();
-    updateFoggyPositions();
-}
-
-void Cartographer::updateCurrentPositions() {
-    for (auto& It = currentPositions.begin(); It != currentPositions.end();) {
-        const BWAPI::Unit& unit = It->first;
-        PositionalType& positionalType = It->second;
-        if (unit->isVisible()) {
-            positionalType.first = unit->getPosition();
-            ++It;
-        }
-        else if (isInFog(positionalType.first)) {
-            foggyPositions[positionalType.first] = positionalType.second;
-            currentPositions.erase(It++);
-        }
-        else
-            ++It;
-    }
-}
-
-void Cartographer::updateFoggyPositions() {
-    for (auto& It = foggyPositions.begin(); It != foggyPositions.end();) {
-        if (!isInFog(It->first))
-            foggyPositions.erase(It++);
-        else {
-            BWAPI::Broodwar->registerEvent(
-                [It](BWAPI::Game*){ BWAPI::Broodwar->drawTextMap(
-                    It->first, It->second.c_str()); },
-                nullptr, 5);
-            ++It;
-        }
-    }
-}
-
-bool Cartographer::isInFog(const BWAPI::Position& position) {
-    return !BWAPI::Broodwar->isVisible(BWAPI::TilePosition(position));
-}
-
-BWAPI::Position Cartographer::getClosestEnemyPosition(
-    const BWAPI::Position& sourcePosition) const
-{
-    if (foggyPositions.empty())
-        return BWAPI::Positions::Unknown;
-    std::vector<BWAPI::Position> loggedPositions;
-    for (const auto& pair: foggyPositions)
-        loggedPositions.push_back(pair.first);
-    return (*std::min_element(
-        loggedPositions.begin(), loggedPositions.end(),
-        Utils::Position(sourcePosition).comparePositions()));
-}
-
 std::vector<BWAPI::Position> Cartographer::getUnexploredStartingPositions() {
     std::vector<BWAPI::Position> startingPositions;
     for (BWAPI::TilePosition Start:BWAPI::Broodwar->getStartLocations()) {
@@ -105,3 +43,84 @@ std::vector<BWAPI::Position> Cartographer::getStartingPositions() {
     }
     return startingPositions;
 }
+
+void Cartographer::addUnit(const BWAPI::Unit& unit) {
+    evasionTracker.addUnit(unit);
+}
+
+void Cartographer::removeUnit(const BWAPI::Unit& unit) {
+    evasionTracker.removeUnit(unit);
+}
+
+void Cartographer::update() {
+    evasionTracker.update();
+}
+
+BWAPI::Position Cartographer::getClosestEnemyPosition(
+    const BWAPI::Position& sourcePosition) const
+{
+    return evasionTracker.getClosestEnemyPosition(sourcePosition);
+}
+
+void Cartographer::EvasionTracker::addUnit(const BWAPI::Unit& unit) {
+    currentPositions[unit] = PositionalType(
+        unit->getPosition(), unit->getType());
+}
+
+void Cartographer::EvasionTracker::removeUnit(const BWAPI::Unit& unit) {
+    currentPositions.erase(unit);
+}
+
+void Cartographer::EvasionTracker::update() {
+    updateCurrentPositions();
+    updateFoggyPositions();
+}
+
+void Cartographer::EvasionTracker::updateCurrentPositions() {
+    for (auto& It = currentPositions.begin(); It != currentPositions.end();) {
+        const BWAPI::Unit& unit = It->first;
+        PositionalType& positionalType = It->second;
+        if (unit->isVisible()) {
+            positionalType.first = unit->getPosition();
+            ++It;
+        }
+        else if (isInFog(positionalType.first)) {
+            foggyPositions[positionalType.first] = positionalType.second;
+            currentPositions.erase(It++);
+        }
+        else
+            ++It;
+    }
+}
+
+void Cartographer::EvasionTracker::updateFoggyPositions() {
+    for (auto& It = foggyPositions.begin(); It != foggyPositions.end();) {
+        if (!isInFog(It->first))
+            foggyPositions.erase(It++);
+        else {
+            BWAPI::Broodwar->registerEvent(
+                [It](BWAPI::Game*){ BWAPI::Broodwar->drawTextMap(
+                    It->first, It->second.c_str()); },
+                nullptr, 5);
+            ++It;
+        }
+    }
+}
+
+bool Cartographer::EvasionTracker::isInFog(const BWAPI::Position& position) {
+    return !BWAPI::Broodwar->isVisible(BWAPI::TilePosition(position));
+}
+
+BWAPI::Position Cartographer::EvasionTracker::getClosestEnemyPosition(
+    const BWAPI::Position& sourcePosition) const
+{
+    if (foggyPositions.empty())
+        return BWAPI::Positions::Unknown;
+    std::vector<BWAPI::Position> loggedPositions;
+    for (const auto& pair: foggyPositions)
+        loggedPositions.push_back(pair.first);
+    return (*std::min_element(
+        loggedPositions.begin(), loggedPositions.end(),
+        Utils::Position(sourcePosition).comparePositions()));
+}
+
