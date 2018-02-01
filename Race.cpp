@@ -60,7 +60,7 @@ void Race::update() const {
 }
 
 int Race::expectedSupplyProvided(const BWAPI::UnitType& providerType) const {
-    const static int supplyProvided = providerType.supplyProvided();
+    const int supplyProvided = providerType.supplyProvided();
     int providerCount = BWAPI::Broodwar->self()->allUnitCount(providerType);
     return supplyProvided * providerCount;
 }

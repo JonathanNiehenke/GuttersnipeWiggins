@@ -16,6 +16,7 @@ class DecisionSequence {
         std::vector<std::string> priorityList;
         Race* race = nullptr;
         bool needsSupply() const;
+        void createSupply() const;
         bool canProgressFor(const BWAPI::UnitType& unitType) const; 
         bool canBegin(const BWAPI::UnitType& unitType) const;
         bool isIncomplete(const BWAPI::UnitType& unitType) const;

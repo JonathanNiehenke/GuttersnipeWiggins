@@ -5,7 +5,7 @@ void DecisionSequence::onStart(Race* race) {
     this->race = race;
     Objectives["EnoughSupply"] = ConditionalResponse(
         std::bind(&DecisionSequence::needsSupply, this),
-        std::bind(&Race::createSupply, race));
+        std::bind(&DecisionSequence::createSupply, this));
     // Objectives["FullSaturation"] = ConditionalResponse(
         // std::bind(&Race::canFillLackingMiners, race),
         // std::bind(&Race::createWorker, race));
@@ -46,6 +46,11 @@ bool DecisionSequence::needsSupply() const {
     return race->expectedSupplyProvided() <= expectedSupplyUsed;
 }
 
+void DecisionSequence::createSupply() const {
+    if (enoughResources(race->getSupplyType()))
+        race->createSupply();
+}
+
 bool DecisionSequence::canProgressFor(const BWAPI::UnitType& unitType) const {
     try {
         return canBegin(race->getNextRequiredBuilding(unitType)); }
@@ -62,7 +67,8 @@ bool DecisionSequence::isIncomplete(const BWAPI::UnitType& unitType) const {
 }
 
 bool DecisionSequence::enoughResources(const BWAPI::UnitType& unitType) const {
-    return BWAPI::Broodwar->self()->minerals() > unitType.mineralPrice() - 24;
+    return (BWAPI::Broodwar->self()->minerals() > unitType.mineralPrice() - (
+        unitType.isBuilding() ? 24 : 0));
 }
 
 void DecisionSequence::techTo(const BWAPI::UnitType& unitType) const {
