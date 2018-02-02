@@ -14,6 +14,9 @@ BotName: Common\Path
 
 ================================================================================
 
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  PROTOSS  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 AIUR: src\
   # Zerg logic @ ConstructionManager.cpp[314]
   # Terran logic @ ConstructionManager.cpp[386]
@@ -35,6 +38,9 @@ McRave: McRave\
     Product: building->unit = *onUnitCreate* IsOwned && IsBuilding  // EventManager.cpp[8]
     Death: {Product} !IsCompleted() && !getBuildUnit() [closest free worker].rightClick(building.unit())  // BuildManager.cpp[21]
     Return: IsIdle() && gather [closest MineralField]  // WorkerManager.cpp[313]
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  TERRAN  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 BGHBot: Source\
   # Includes duplicate logic intended for other races
@@ -58,6 +64,21 @@ nova: ExampleAIModule\Source\
         2. Order == PlayerGaurd && [buildExist] then setJobAndExecute(
             State::Building, workerData, nullptr, {Placement}, workerData->buildType);  // WorkerManager.cpp[416]
 
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  ZERG  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+BroodwarBotQ: src\Macro
+  # HP for building cancel = 50
+  # Protoss logic  // Builder.cpp[282]
+  # onOffer is defined, but used only in Arbitrator\Arbitrator.h[488]
+  # Makes decisions with a bidding system through the Arbitrator
+  Building: {Contractor}->build({Position}, type))  // Builder.cpp[301]
+    Contractor:
+    MoveTo: ![withinDist] then worker->move(Position(tilePosition));  // Builder.cpp[282]
+    Placement:
+    Death:
+    Return:
+
 BlackCrow: src\
   Building: {Contractor}->build(type, {Placement})  // Planned.cpp[136]
     Contractor: droneOrBuilding = [worker from mineral with greatest miners]  // Planned.cpp[119]
@@ -65,6 +86,16 @@ BlackCrow: src\
     MoveTo: ![{Contractor} in vision {Placement}]  // Planned.cpp[134]
     Product: {Contractor} IsBuilding  // Planned.cpp[150]
     Death: !{Product}->exists() then [remove plannedBuilding]  // Planned.cpp[126]
+    Return: CAN'T ZERG RACE
+
+PeregrineBot: PeregrineBot\Source\
+  # ReturnsCargo if idle and carrying resources // WorkerManager.cpp[23]
+  Building: {Contractor}->build(buildingType, {Placement})  // OrderManager.cpp[38]
+    Contractor: IsWorker && [not waiting] && [first]  // PeregrineBot.cpp[262]
+    Placement: buildPosition = Broodwar->getBuildLocation([Pool|Hatchery], {Contractor}->getTilePosition());  // WorkerManager.cpp[43|52]
+    MoveTo: NA (Waits till enough minerals)
+    Product: [Set the pool flag]  // PeregrineBot.cpp[275]
+    Death: NA (Does not track builder)
     Return: CAN'T ZERG RACE
 
 ZZZKBot: ZZZKBot\Source\
@@ -75,6 +106,8 @@ ZZZKBot: ZZZKBot\Source\
     Product: [count of all UnitType] > 1;  // ZZZKBotAIModule.cpp[2599]
     Death: !{Contractor}->exists() then [get new builder]  // ZZZKBotAIModule.cpp[2811]
     Return: CAN'T ZERG RACE
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  RANDOM  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 GuttersnipeWiggins: .\
   Building: {Contractor}->build(Job.constructable, {Placement})  // BuildingConstructer.cpp[136]
@@ -102,18 +135,6 @@ ualbertabot: UAlbertaBot\Source
     Product: b.buildingUnit = Broodwar->self()->getUnits() IsBuilding && getTilePosition == {Position};  // WorkerManager.cpp[535];
     Death: [empty]  // BuildingManager.cpp[224]
     Return: {Unit}->isComplete() then [release worker]  // BuildingManager.cpp[240]
-
-BroodwarBotQ: src\Macro
-  # HP for building cancel = 50
-  # Protoss logic  // Builder.cpp[282]
-  # onOffer is defined, but used only in Arbitrator\Arbitrator.h[488]
-  # Makes decisions with a bidding system through the Arbitrator
-  Building: {Contractor}->build({Position}, type))  // Builder.cpp[301]
-    Contractor:
-    MoveTo: ![withinDist] then worker->move(Position(tilePosition));  // Builder.cpp[282]
-    Placement:
-    Death: 
-    Return:
 
 ================================================================================
 
