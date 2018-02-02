@@ -97,8 +97,14 @@ PeregrineBot: PeregrineBot\Source\
     Product: [Set the pool flag]  // PeregrineBot.cpp[275]
     Death: NA (Does not track builder)
     Return: CAN'T ZERG RACE
+  Attack: {Aggressor}->attack({Victim})  // OrderManager.cpp[20]
+    Aggressor: GetType == Zergling
+    Victim Priority: Closest
+        Vs Protoss 1. Base Army Unit or Defensive building 2. Supply 3. Worker 4. Anything  // ArmyManager.cpp[91]
+        Vs Else 1. Base Army Unit, Defensive building or Worker 2. Supply 4. Anything  // ArmyManager.cpp[112]
 
 ZZZKBot: ZZZKBot\Source\
+  # Contains logic for deep tech like Science Vessels and Defensive Matrix  // ZZZKBotAIModule.cpp[3546]
   Building: {Contractor}->build(buildingType, {Placement});  // ZZZKBotAIModule.cpp[2909]
     Contractor: builder = [closest to base, IsIdle | IsGatheringMineral | !IsCarryingGas, && isAvailableToBuild)  // ZZZKBotAIModule.cpp[2841]
     Placement: targetBuildLoc = Broodwar->getBuildLocation(buildingType, {Contractor}->getTilePosition())  // ZZZKBotAIModule.cpp[2883]
@@ -106,6 +112,12 @@ ZZZKBot: ZZZKBot\Source\
     Product: [count of all UnitType] > 1;  // ZZZKBotAIModule.cpp[2599]
     Death: !{Contractor}->exists() then [get new builder]  // ZZZKBotAIModule.cpp[2811]
     Return: CAN'T ZERG RACE
+  Attack: 
+    Condition: Building is 3/10th original Hp+Sh, dead Drone Count > scouts
+      Aggressor: Drone Worker
+      Victim Priority: Unit with the least health
+    getGroundWeaponCooldown
+    Pylon, ResourceDepot, AirTech, Factory, Barracks, Pool, Den, Nest, Archives
 
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  RANDOM  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -127,7 +139,7 @@ OpprimoBot: SCProjects\OpprimoBot\Source\
     Death: {Product} !getBuildUnit()->isConstructing() then [closest free worker].rightClick({Product}) // Commander\Commander.cpp[642]
     Return: {Contractor}->getTarget() !IsBeginConstructed && {Contractor}->isIdle() then {Contractor}->rightClick([closest])  // WorkerAgent.cpp[313]
 
-ualbertabot: UAlbertaBot\Source
+UAlbertabot: UAlbertaBot\Source
   Building: {Contractor}->build(b.type,{Position})  // BuildingManager.cpp[148]
     Contractor: b.builderUnit = [closest] IsComplete() IsGatheringMinerals  // WorkerManager.cpp[408]
     Placement: b.finalPosition =  [checks area size + padding for reservation]  // BuildingPlacer.cpp[122]
@@ -135,6 +147,19 @@ ualbertabot: UAlbertaBot\Source
     Product: b.buildingUnit = Broodwar->self()->getUnits() IsBuilding && getTilePosition == {Position};  // WorkerManager.cpp[535];
     Death: [empty]  // BuildingManager.cpp[224]
     Return: {Unit}->isComplete() then [release worker]  // BuildingManager.cpp[240]
+  Attack: {Aggressor}->attack(Victim);  // Micro.cpp[43,80]
+    Unit: {Attacker} !attackFrame && Command != Attack_Unit && Command.getTarget != target  // Micro.cpp[28]
+    Position: {Attacker} !attackFrame && Command != Attack_Move && Command.getTargetPosition != targetPosition  // Micro.cpp[65]
+    Kite: [weapon cooldown < timeToApproach] ? Attack : Move({Aggressor}.getPosition() * 2 + {Victim}.getPosition();  // Micro.cpp[226]
+    Victim: Closest and greatest priority rating
+      Melee Priority Rating;
+        13. Dark Templar vs misile turret 12. Dark Templar vs worker 11. Bunker
+        10. Medic, Weaponized except worker, Templar, Reaver, worker near choke
+        9. Worker 5. Pool, Pylon 4. cost gas 3. cost minerals 1. remaining
+      Ranged Priority Rating;
+        101. Flyer vs Carrier 100. Scourge vs Carrier, Worker constucing/repairing near home
+        90. Building near home 11. Bunker or Weaponed 5. Pool, Plyon 4. cost gas
+        3. cost minerals 1. remaining
 
 ================================================================================
 
