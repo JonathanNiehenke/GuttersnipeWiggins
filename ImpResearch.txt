@@ -26,11 +26,13 @@ AIUR: src\
     Placement: b->tilePosition = [spiral search w/ 1tile padding] if getUnitsOnTile isLifted  // BuildingPlacer.cpp[113]
     MoveTo: !{Contractor}->isConstructing && ![withinDist] then {Contractor}->rightClick({Placement})  // ConstructionManager.cpp[344]
     Product: b->buildingUnit = getUnitsOnTile({Position}) IsType && !IsLift  // ConstructionManager.cpp[306]
-    Death: !{Contractor}->isConstructing() || !{Product}->isBeingConstructed() then {Contractor}->rightClick({Product});  // ConstructionManager.cpp[386]
+    Death: !{Contractor}->isConstructing(), !{Product}->isBeingConstructed() then {Contractor}->rightClick({Product});  // ConstructionManager.cpp[386]
     Return: {Contractor} IsPlayerGuard then {Contractor}->rightClick(resource)  // WorkerManager.cpp[344]
 
 McRave: McRave\
   # Terran logic BuildManager.cpp[21]
+  # Terran Stim Pack use CommandManager.cpp[87]
+  # Terran Siege tank use CommandManager.cpp[93]
   Building: {Contractor}->build(worker.getBuildingType(), {Position})  // WorkerManager.cpp[281]
     Contractor: [Closest by ground] !scouter & !IsGathering !IsConstructing // WorkerManager.cpp[397]
     Placement: Buildings().getBuildLocation(b.first);  // BuildingManager.cpp[45]
@@ -38,6 +40,11 @@ McRave: McRave\
     Product: building->unit = *onUnitCreate* IsOwned && IsBuilding  // EventManager.cpp[8]
     Death: {Product} !IsCompleted() && !getBuildUnit() [closest free worker].rightClick(building.unit())  // BuildManager.cpp[21]
     Return: IsIdle() && gather [closest MineralField]  // WorkerManager.cpp[313]
+  Attack: {Aggressor}->attack(Victim);  // CommandManager.cpp[346]
+    Aggressor: Exists && !(Observer, Arbiter, Shuttle) && !(Maelstrommed, stasised, incomplete)
+    Unit: {Aggressor} Command != Attack_Unit, Command.getTarget != target  // CommandManager.cpp[343]
+    Kite: {Aggressor}.getTarget() !Building, {Reaver}.range < Target.range, {Aggresser}.isUnderAttack && >allyRange, health < 40
+    Victim:
 
 
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  TERRAN  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -148,8 +155,8 @@ UAlbertabot: UAlbertaBot\Source
     Death: [empty]  // BuildingManager.cpp[224]
     Return: {Unit}->isComplete() then [release worker]  // BuildingManager.cpp[240]
   Attack: {Aggressor}->attack(Victim);  // Micro.cpp[43,80]
-    Unit: {Attacker} !attackFrame && Command != Attack_Unit && Command.getTarget != target  // Micro.cpp[28]
-    Position: {Attacker} !attackFrame && Command != Attack_Move && Command.getTargetPosition != targetPosition  // Micro.cpp[65]
+    Unit: {Aggressor} !attackFrame && Command != Attack_Unit && Command.getTarget != target  // Micro.cpp[28]
+    Position: {Aggressor} !attackFrame && Command != Attack_Move && Command.getTargetPosition != targetPosition  // Micro.cpp[65]
     Kite: [weapon cooldown < timeToApproach] ? Attack : Move({Aggressor}.getPosition() * 2 + {Victim}.getPosition();  // Micro.cpp[226]
     Victim: Closest and greatest priority rating
       Melee Priority Rating;
