@@ -1,62 +1,41 @@
-#ifndef SQUADCOMMANDER_H
-#define SQUADCOMMANDER_H
-#include <vector>
-#include <utility>
+#pragma once
 #include <BWAPI.h>
-#include "Cartographer.h"
-#include "Utils.h"
 
-// Helper class for deciding the best enemy units to attack.
-class compareEnemyTargets
-{
+class SquadCommander {
     private:
-        BWAPI::Position sourcePosition = BWAPI::Positions::None;
-        int getDamage(BWAPI::UnitType);
-        int getDurability(BWAPI::Unit);
-        bool isJunk(BWAPI::Unit unit, BWAPI::UnitType unitType);
-    public:
-        compareEnemyTargets(BWAPI::Position position)
-            { sourcePosition = position; }
-        compareEnemyTargets(BWAPI::TilePosition location)
-            { sourcePosition = BWAPI::Position(location); }
-        compareEnemyTargets(BWAPI::Unit unit)
-            { sourcePosition = unit->getPosition(); }
-        BWAPI::Unit operator()(BWAPI::Unit, BWAPI::Unit);
-};
-
-// Manages the groups of army units.
-class SquadCommander
-{
-    private:
-        const BWAPI::WeaponType noWeapon = BWAPI::WeaponTypes::None;
-        BWAPI::Player self;
-        Cartographer *cartographer;
-        std::vector<BWAPI::Unitset> armySquads;
-        //! See comment within removeEmptySquad() definition;
-        // bool isEmptySquad(BWAPI::Unitset Squad);
-        void drawSqaudTargetRange(BWAPI::Position squadPos);
-        void drawBullsEye(BWAPI::Unit targetUnit);
-        bool needToGroup(BWAPI::Unitset Squad, BWAPI::Position squadPos);
-        void attackUnit(BWAPI::Unitset Squad, BWAPI::Unit targetUnit);
-        void attackSomething(const BWAPI::Unitset& Squad) const;
-        bool attackingLoggedTarget(const BWAPI::Unitset& Squad) const;
-        void attackBasePositions(const BWAPI::Unitset& Squad) const;
-        void attackMultiplePositions(
-            const BWAPI::Unitset&, const std::vector<BWAPI::Position>&) const;
-        static bool invisiblyReachable(
-            const BWAPI::Position& squadPos,
-            const BWAPI::Position& targetPos);
-    public:
-        SquadCommander::SquadCommander();
-        void SquadCommander::onStart(Cartographer *cartographer );
-        void drawSquadGather(BWAPI::Position Pos, int Range=70);
-        void manageAttackGroups();
-        void assembleSquads(BWAPI::Unit warrior);
-        void removeWarrior(BWAPI::Unit deadWarrior);
-        void uniteSquads();
+        class Squad;
+        class TargetAssessor;
+        Squad* rallyingSquad;
+        std::vector<Squad*> deployedForce;
+        bool isDeploymentReady();
+        bool deploymentCondition(const BWAPI::Unitset);
+        void uniteNearBySquads();
         void removeEmptySquads();
-        void combatMicro();
-        void displayStatus(int &row);
+    public:
+        void enlistForDeployment(const BWAPI::Unit& armyUnit);
+        void removeFromDuty(const BWAPI::Unit& armyUnit);
+        void updateGrouping();
+        void updateTargeting() {
+        void updateAttacking() {
 };
 
-#endif
+class SquadCommander::Squad {
+    private:
+        BWAPI::Unitset members;
+        BWAPI::Unitset enemyTargets;
+    public:
+        BWAPI::TilePosition aggresiveLocation, defensiveLocation;
+        BWAPI::Position getAvgPosition() const;
+        bool isEmpty() const;
+        void assign(const BWAPI::Unit armyUnit);
+        void remove(const BWAPI::Unit deadArmyUnit);
+        void join(Squad& otherSquad);
+        // void split(const int& newSquadAmount);
+        void aquireTargets();
+        void attack();
+        void attackPosition();
+        bool isAttackingPosition(const BWAPI::Unit& squdMember);
+        void attackTargets();
+        void isAttackingTarget(const BWAPI::Unit& squadMember);
+        bool memberIsTargeting(const BWAPI::Unit&, const BWAPI::Unit&);
+}

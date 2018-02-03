@@ -1,289 +1,134 @@
-#ifndef SQUADCOMMANDER_CPP
-#define SQUADCOMMANDER_CPP
+#pragma once
 #include "SquadCommander.h"
 
-using namespace BWAPI::Filter;
-
-int compareEnemyTargets::getDamage(BWAPI::UnitType unitType)
-{
-    // Zealots attack in two volleys so damage factor is included.
-    // Hydralisks have explosive damage so damage type is included.
-    BWAPI::WeaponType unitWeapon = unitType.groundWeapon();
-    return (unitWeapon.damageAmount() * unitWeapon.damageFactor() *
-        (unitWeapon.damageType() == BWAPI::DamageTypes::Explosive ? 0.5 : 1));
+void SquadCommander::enlistForDeployment(const BWAPI::Unit armyUnit) {
+    rallyingSquad->assign(armyUnit);
+    if (isDeploymentReady())
+        deployRallyingSquad();
 }
 
-int compareEnemyTargets::getDurability(BWAPI::Unit unit)
-{
-    return  (unit->getShields() + unit->getHitPoints() *
-        (unit->getType().armor() + 1));
+bool SquadCommander::isDeploymentReady() {
+    return deploymentCondition(rallySquad);
 }
 
-bool compareEnemyTargets::isJunk(BWAPI::Unit unit, BWAPI::UnitType unitType)
-{
-    return unitType.isBuilding() && (!unit->isPowered() || unitType.isAddon());
+bool SquadCommander::deploymentCondition(const BWAPI::Unitset Squad) {
+    return Squad.size() > 2;
 }
 
-BWAPI::Unit compareEnemyTargets::operator()(BWAPI::Unit u1, BWAPI::Unit u2)
-{
-    // Targeting to reduce incoming damage. Focus on those who deal
-    // greater damage, are attacking, are about to die, or are closer.
-    // Assuming most unequal unit types have different damage output.
-    BWAPI::UnitType u1Type = u1->getType(), u2Type = u2->getType();
-    if (u1Type != u2Type) {
-        // Causes harmful triggering of needToGroup during battle.
-        // Prioritizing high templar, medics, ghosts and lurkers.
-        // if (u1Type.isSpellcaster() || u1Type.isBurrowable() !=
-            // u2Type.isSpellcaster() || u2Type.isBurrowable())
-            // return u1Type.isSpellcaster() || u1Type.isBurrowable()? u1 : u2;
-        int u1Damage = getDamage(u1Type), u2Damage = getDamage(u2Type);
-        if (u1Damage != u2Damage)
-            return u1Damage > u2Damage ? u1 : u2;
-        // To reach this far I assume nearlly all are non-weaponized.
-        // Avoiding eggs (200hp, 10armor) then larva (25hp, 10armor).
-        if ((u1Type == BWAPI::UnitTypes::Zerg_Egg) !=
-            (u2Type == BWAPI::UnitTypes::Zerg_Egg))
-            return u1Type != BWAPI::UnitTypes::Zerg_Egg ? u1 : u2;
-        if ((u1Type == BWAPI::UnitTypes::Zerg_Larva) !=
-            (u2Type == BWAPI::UnitTypes::Zerg_Larva))
-            return u1Type != BWAPI::UnitTypes::Zerg_Larva ? u1 : u2;
-        // Avoiding powerless or addon buildings.
-        if (isJunk(u1, u1Type) != isJunk(u2, u2Type))
-            return !isJunk(u1, u1Type) ? u1 : u2;
-    }
-    // Prioritizing zerglings over drones who have the same damage.
-    // ToDo: Change condition, isAttacking is true during annimation.
-    if (u1->isAttacking() != u2->isAttacking())
-        return u1->isAttacking() ? u1 : u2;
-    // To reach this far I assume units are of the same unit type.
-    // Prioritizing the one closer to death. Dead units lack damage!
-    int u1Durability = getDurability(u1), u2Durability = getDurability(u2);
-    if (u1Durability != u2Durability)
-        return u1Durability < u2Durability ? u1 : u2;
-    // Lastly, prioritizing closer targets.
-    if (sourcePosition.getApproxDistance(u1->getPosition()) <
-        sourcePosition.getApproxDistance(u2->getPosition()))
-        return u1;
-    else
-        return u2;
+void SquadCommander::deployRallyingSquad() {
+    deployedForces.push_back(rallyingSquad);
+    rallyingSquad = new Squad();
 }
 
+void SquadCommander::removeFromDuty(const BWAPI::Unit& deadArmyUnit) {
+    rallyingSquad->remove(deadArmyUnit);
+    for (Squad* squad: deployedForces)
+        squad->remove(deadArmyUnit);
+};
 
-SquadCommander::SquadCommander()
-{
-    this->self = nullptr;
-    this->cartographer = nullptr;
-}
-
-void SquadCommander::onStart(Cartographer *cartographer)
-{
-    this->self = BWAPI::Broodwar->self();
-    this->cartographer = cartographer;
-}
-
-void SquadCommander::drawSquadGather(BWAPI::Position Pos, int Range)
-{
-    // Live debugging info.
-    BWAPI::Broodwar->registerEvent(
-        [Pos, Range](BWAPI::Game*){
-            BWAPI::Broodwar->drawCircleMap(Pos, Range,
-                BWAPI::Color(255, 127, 0), false);  // Orange range.
-        },  nullptr, 24);
-}
-
-void SquadCommander::manageAttackGroups() {
-    uniteSquads();
+void SquadCommander::updateGrouping() {
+    uniteNearBySquads();
     removeEmptySquads();
 }
 
-void SquadCommander::assembleSquads(BWAPI::Unit warrior) {
-    BWAPI::Unitset Squad = BWAPI::Broodwar->getUnitsInRadius(
-        warrior->getPosition(), 50, GetType == warrior->getType() && IsOwned);
-    drawSquadGather(warrior->getPosition(), 50);
-    if (Squad.size() > 2)
-        armySquads.push_back(Squad);
+void SquadCommander::updateTargeting() {
+    for (const auto& squad: deployedForces)
+        squad.aquireTargets();
 }
 
-void SquadCommander::removeWarrior(BWAPI::Unit deadWarrior)
-{
-    for (BWAPI::Unitset &Squad: armySquads) {
-        Squad.erase(deadWarrior);
-    }
+void SquadCommander::updateAttacking() {
+    for (const auto& squad: deployedForces)
+        squad.update();
 }
 
-void SquadCommander::uniteSquads()
-{
-    // Joining nearby squads to increase strength and coordination.
-    int armySquadLength = armySquads.size();
-    if (armySquadLength < 2) return;  // Prevent out of range error.
-    for (int i = 0; i < armySquadLength - 1; ++ i) {
-        BWAPI::Unitset &Squad = armySquads[i];
-        Utils::Position fromSquadPos(Squad.getPosition());
-        for (int j = i + 1; j < armySquadLength; ++j) {
-            BWAPI::Unitset &otherSquad = armySquads[j];
+void SquadCommander::uniteNearBySquads() {
+    // Preferring iteration by index to prevent pointers of pointers
+    if (deployedForces.size() < 2) return;
+    int forcesLength = deployedForces.size();
+    for (int i = 0; i < forcesLength - 1; ++ i) {
+        Utils::Position fromSquadPos(deployedForces[i]->getAvgPosition());
+        for (int j = i + 1; j < forcesLength; ++j) {
             if (fromSquadPos - otherSquad.getPosition() < 250)
-            {
-                Squad.insert(otherSquad.begin(), otherSquad.end());
-                otherSquad.clear();
-            }
+                deployedForces[i].join(deployedForces[j]);
         }
     }
 }
 
-void SquadCommander::removeEmptySquads()
-{
-    armySquads.erase(
+void SquadCommander::removeEmptySquads() {
+    // !!!
+    deployedForces.erase(
         std::remove_if(armySquads.begin(), armySquads.end(), 
-            //! C2064 Doesn't evaluate to a function taking 1 arguments
-            // &SquadCommander::isEmptySquad),
-            [](BWAPI::Unitset Squad) { return Squad.empty(); }),
+            [](Squad* squad) { return squad.isEmpty(); }),
         armySquads.end());
 }
 
-void SquadCommander::drawSqaudTargetRange(BWAPI::Position squadPos)
-{
-    // Live debugging info.
-    BWAPI::Broodwar->registerEvent(
-        [squadPos](BWAPI::Game*){
-            BWAPI::Broodwar->drawCircleMap(squadPos, 8,
-                BWAPI::Color(0, 255, 0), true);  // Green squadPos.
-            BWAPI::Broodwar->drawCircleMap(squadPos, 600,
-                BWAPI::Color(0, 0, 255), false);  // Blue range.
-        },  nullptr, 5);
+BWAPI::Position SquadCommander::Squad::getAvgPosition() const {
+    return members.getPosition();
 }
 
-void SquadCommander::drawBullsEye(BWAPI::Unit targetUnit)
-{
-    // Red with inset yellow circle for targetUnit.
-    BWAPI::Broodwar->registerEvent(
-        [targetUnit](BWAPI::Game*) {
-            BWAPI::Broodwar->drawCircleMap(
-                targetUnit->getPosition(), 6,
-                BWAPI::Color(255, 0, 0), true);
-            BWAPI::Broodwar->drawCircleMap(
-                targetUnit->getPosition(), 3,
-                BWAPI::Color(255, 255, 0), true);
-        }, nullptr, 5);
+void SquadCommander::Squad::isEmpty() const {
+    return members.empty();
 }
 
-bool SquadCommander::needToGroup(BWAPI::Unitset Squad, BWAPI::Position squadPos)
-{
-    bool notGrouped = false;
-    int groupSize = 23 * std::sqrt(Squad.size() * 5);
-    for (BWAPI::Unit Warrior: Squad) {
-        BWAPI::Unit currentTarget = Warrior->getTarget();
-        if (currentTarget && Warrior->isInWeaponRange(currentTarget))
-            return false;
-        notGrouped = notGrouped ? true :
-            squadPos.getApproxDistance(Warrior->getPosition()) > groupSize;
-    }
-    return notGrouped;
+void SquadCommander::Squad::assign(const BWAPI::Unit armyUnit) {
+    members.insert(armyUnit);
 }
 
-void SquadCommander::attackUnit(BWAPI::Unitset Squad, BWAPI::Unit targetUnit)
-{
-    for (BWAPI::Unit Warrior: Squad) {
-        // ?What is the difference between isAttacking and isAttackFrame.
-        if (Warrior->isAttackFrame()) return;  // Continue annimation.
-        BWAPI::UnitCommand lastCmd = Warrior->getLastCommand();
-        BWAPI::Unit attackedUnit = lastCmd.getTarget();
-        BWAPI::Position targetPosition = targetUnit->getPosition();
-        if (Warrior->isInWeaponRange(targetUnit) && attackedUnit != targetUnit)
-        {
-            Warrior->attack(targetUnit);
-        }
-        else if (!Warrior->canAttackUnit(attackedUnit)
-                 && lastCmd.getTargetPosition() != targetPosition)
-        {
-            Warrior->attack(targetPosition);
-        }
+void SquadCommander::Squad::remove(const BWAPI::Unit armyUnit) {
+    members.erase(armyUnit);
+}
+
+void SquadCommander::Squad::join(const Squad* otherSquad) {
+    members.insert(otherSquad->members.begin(), otherSquad.members->end());
+    otherSquad->members.clear();
+}
+
+void SquadCommander::Squad::aquireTargets(const Squad* otherSquad) {
+}
+
+void SquadCommander::Squad::attack() {
+    if (enemyTargets.empty())
+        isAttackPosition();
+    else
+        atackTargets();
+}
+
+void SquadCommander::Squad::isAttackPosition() {
+    for (const BWAPI::Unit& a& squadMember: members) {
+        if (!attackingPosition(squadMember))
+            squadMember->attack(enemyTargets.getPosition());
     }
 }
 
-void SquadCommander::attackSomething(const BWAPI::Unitset& Squad) const {
-    if (!attackingLoggedTarget(Squad))
-        attackBasePositions(Squad);
+bool SquadCommander::Squad::attackingPosition(const BWAPI::Unit& squdMember) {
+    const auto& lastCmd = squdMember.getLastCommand();
+    return ((lastCmd.getType() == BWAPI::UnitCommandTypes::Attack_Move &&
+        squadMember.getTargetPosition() == aggresivePosition));
 }
 
-bool SquadCommander::attackingLoggedTarget(const BWAPI::Unitset& Squad) const {
-    BWAPI::Position Target = (
-        cartographer->getClosestEnemyPosition(Squad.getPosition()));
-    if (Target == BWAPI::Positions::Unknown)
-        return false;
-    return Squad.attack(Target);
-}
-
-void SquadCommander::attackBasePositions(const BWAPI::Unitset& Squad) const {
-    std::vector<BWAPI::Position> basePositions = (
-        cartographer->getUnexploredStartingPositions());
-    if (basePositions.empty())
-        basePositions = cartographer->getResourcePositions();
-    attackMultiplePositions(Squad, basePositions);
-}
-
-void SquadCommander::attackMultiplePositions(
-    const BWAPI::Unitset& Squad,
-    const std::vector<BWAPI::Position>& positions) const
-{
-    BWAPI::Position squadPos = Squad.getPosition();
-    // std::sort(positions.begin(), positions.end(),
-        // Utils::Position(squadPos).comparePositions());
-    for (auto& It = positions.begin(); It != positions.end(); ++It) {
-        if (invisiblyReachable(squadPos, *It))
-            Squad.attack(*It, It != positions.begin());
+void SquadCommander::Squad::attackTargets() {
+    for (const BWAPI::Unit& a& squadMember: members) {
+        if (!member->isAttackFrame() || !isAttackingTarget(squadMember))
+            squadMember->attack(enemyTargets.getPosition());
     }
 }
 
-bool SquadCommander::invisiblyReachable(
-    const BWAPI::Position& squadPos, const BWAPI::Position& targetPos)
+void SquadCommander::Squad::isAttackingTarget(
+    const BWAPI::Unit& squadMember)
 {
-    return (!BWAPI::Broodwar->isVisible(BWAPI::TilePosition(targetPos)) &&
-            BWAPI::Broodwar->hasPath(squadPos, targetPos));
-}
-
-void SquadCommander::combatMicro()
-{
-    BWAPI::Unit targetUnit;
-    for (BWAPI::Unitset Squad: armySquads) {
-        BWAPI::Position squadPos = Squad.getPosition();
-        drawSqaudTargetRange(squadPos);  // Live debug info.
-        targetUnit = BWAPI::Broodwar->getBestUnit(
-            compareEnemyTargets(squadPos),  // Determines best after
-            IsEnemy && IsDetected && !IsFlying,  // these conditions
-            squadPos,  // are applied to units around this positon
-            600);  // at this range.
-        if (targetUnit) {
-            drawBullsEye(targetUnit);  // Live debug info.
-            bool canAttack = targetUnit->getType().groundWeapon() != noWeapon;
-            BWAPI::Unit beatUnit = targetUnit->getTarget();
-            beatUnit = beatUnit ? beatUnit : targetUnit->getOrderTarget();
-            bool isAttacking = beatUnit && beatUnit->getPlayer() == self;
-            if (canAttack && !isAttacking && needToGroup(Squad, squadPos)) {
-                Squad.move(squadPos);  // Move away
-                Squad.attack(targetUnit->getPosition(), true);
-            }
-            else {
-                attackUnit(Squad, targetUnit);
-            }
-        }
-        else if (std::any_of(Squad.begin(), Squad.end(),
-            [](BWAPI::Unit unit)
-                { return (unit->getOrder() == BWAPI::Orders::PlayerGuard); }))
-        {
-            attackSomething(Squad);
-        }
+    for (const BWAPI::Unit& target: enemyTargets) {
+        if (memberIsTargeting(target))
+            return true;
+        if (squadMember.isInWeaponRange(enemyTargets))
+            return armyUnit.attack(target);
     }
+    return false;
 }
 
-void SquadCommander::displayStatus(int &row)
+bool SquadCommander::Squad::memberIsTargeting(
+    const BWAPI::Unit& squadMember, const BWAPI::Unit& target)
 {
-    int armySquadlength = armySquads.size();
-    for (int i = 0; i < armySquadlength; ++i) {
-        row += 10;
-        BWAPI::Broodwar->drawTextScreen(
-            3, row, "Sqaud #%d: %d Warriors" , i, armySquads[i].size());
-    }
-    row += 5;
+    const auto& lastCmd = squdMember.getLastCommand();
+    return (lastCmd.getType() == BWAPI::UnitCommandTypes::Attack_Unit &&
+        squadMember.getType() == target);
 }
-
-#endif
