@@ -9,7 +9,7 @@ void GW::onStart()
     BWAPI::Broodwar->enableFlag(1);  // Enabled for debugging.
     Self = BWAPI::Broodwar->self();
     cartographer.discoverResourcePositions();
-    squadCommander.onStart(&cartographer);
+    squadCommander.setSafePosition(BWAPI::Position(Self->getStartLocation()));
     switch (Self->getRace()) {
         case BWAPI::Races::Enum::Protoss:
             race = new ProtossRace();
@@ -35,11 +35,13 @@ void GW::onFrame()
             break;
         case 2: cartographer.update();
             break;
-        case 3: squadCommander.manageAttackGroups();
+        case 3: squadCommander.updateGrouping();
             break;
-        case 4: squadCommander.combatMicro();
+        case 4: squadCommander.updateTargeting();
             break;
-        case 5:
+        case 5: squadCommander.updateAttacking();
+            break;
+        case 6:
             cmdRescuer.rescue();
             break;
         default: break;
@@ -63,8 +65,8 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self) {
         race->onUnitComplete(Unit);
-        if (Unit->getType() == race->getArmyUnitType())
-            squadCommander.assembleSquads(Unit);
+        if (Unit->getType() == race->getArmyUnitType());
+            squadCommander.enlistForDeployment(Unit);
     }
 }
 

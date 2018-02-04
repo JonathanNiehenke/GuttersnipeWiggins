@@ -1,22 +1,23 @@
 #pragma once
 #include <BWAPI.h>
+#include "Utils.h"
+
 
 class SquadCommander {
     private:
         class Squad;
-        class TargetAssessor;
-        Squad* rallyingSquad;
-        std::vector<Squad*> deployedForce;
-        bool isDeploymentReady();
-        bool deploymentCondition(const BWAPI::Unitset);
+        std::vector<Squad> deployedForces;
+        BWAPI::Position attackPosition, safePosition;
         void uniteNearBySquads();
         void removeEmptySquads();
     public:
-        void enlistForDeployment(const BWAPI::Unit& armyUnit);
+        void setAttackPosition(const BWAPI::Position& attackPosition);
+        void setSafePosition(const BWAPI::Position& safePosition);
+        void enlistForDeployment(const BWAPI::Unit& units);
         void removeFromDuty(const BWAPI::Unit& armyUnit);
         void updateGrouping();
-        void updateTargeting() {
-        void updateAttacking() {
+        void updateTargeting();
+        void updateAttacking();
 };
 
 class SquadCommander::Squad {

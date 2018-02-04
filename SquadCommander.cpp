@@ -1,29 +1,15 @@
 #pragma once
 #include "SquadCommander.h"
 
-void SquadCommander::enlistForDeployment(const BWAPI::Unit armyUnit) {
-    rallyingSquad->assign(armyUnit);
-    if (isDeploymentReady())
-        deployRallyingSquad();
-}
+using namespace BWAPI::Filter;
 
-bool SquadCommander::isDeploymentReady() {
-    return deploymentCondition(rallySquad);
-}
-
-bool SquadCommander::deploymentCondition(const BWAPI::Unitset Squad) {
-    return Squad.size() > 2;
-}
-
-void SquadCommander::deployRallyingSquad() {
-    deployedForces.push_back(rallyingSquad);
-    rallyingSquad = new Squad();
+void SquadCommander::enlistForDeployment(const BWAPI::Unit& unit) {
+    deployedForces.push_back(Squad(unit, attackPosition, safePosition));
 }
 
 void SquadCommander::removeFromDuty(const BWAPI::Unit& deadArmyUnit) {
-    rallyingSquad->remove(deadArmyUnit);
-    for (Squad* squad: deployedForces)
-        squad->remove(deadArmyUnit);
+    for (Squad& squad: deployedForces)
+        squad.remove(deadArmyUnit);
 };
 
 void SquadCommander::updateGrouping() {
@@ -32,13 +18,13 @@ void SquadCommander::updateGrouping() {
 }
 
 void SquadCommander::updateTargeting() {
-    for (const auto& squad: deployedForces)
+    for (Squad& squad: deployedForces)
         squad.aquireTargets();
 }
 
 void SquadCommander::updateAttacking() {
     for (const auto& squad: deployedForces)
-        squad.update();
+        squad.attack();
 }
 
 void SquadCommander::uniteNearBySquads() {
@@ -46,20 +32,19 @@ void SquadCommander::uniteNearBySquads() {
     if (deployedForces.size() < 2) return;
     int forcesLength = deployedForces.size();
     for (int i = 0; i < forcesLength - 1; ++ i) {
-        Utils::Position fromSquadPos(deployedForces[i]->getAvgPosition());
+        Utils::Position fromSquadPos(deployedForces[i].getAvgPosition());
         for (int j = i + 1; j < forcesLength; ++j) {
-            if (fromSquadPos - otherSquad.getPosition() < 250)
+            if (fromSquadPos - deployedForces[j].getAvgPosition() < 250)
                 deployedForces[i].join(deployedForces[j]);
         }
     }
 }
 
 void SquadCommander::removeEmptySquads() {
-    // !!!
     deployedForces.erase(
-        std::remove_if(armySquads.begin(), armySquads.end(), 
-            [](Squad* squad) { return squad.isEmpty(); }),
-        armySquads.end());
+        std::remove_if(deployedForces.begin(), deployedForces.end(), 
+            [](Squad squad) { return squad.isEmpty(); }),
+        deployedForces.end());
 }
 
 void SquadCommander::setAttackPosition(const BWAPI::Position& attackPosition) {
