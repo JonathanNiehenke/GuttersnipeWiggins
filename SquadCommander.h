@@ -22,7 +22,25 @@ class SquadCommander {
 class SquadCommander::Squad {
     private:
         BWAPI::Unitset members;
-        BWAPI::Unitset enemyTargets;
+        class TargetPrioritizer {
+            private:
+                std::vector<BWAPI::Unit> enemyUnits;
+                BWAPI::Position avgPosition;
+                static bool greaterPriority(
+                    const BWAPI::Unit&, const BWAPI::Unit&);
+                static int byType(const BWAPI::UnitType& unitType);
+                static bool hasWeapon(const BWAPI::UnitType& unitType);
+                static int byDamage(const BWAPI::UnitType& unitType);
+                static int byDurability(const BWAPI::Unit& unit);
+            public:
+                BWAPI::Position getAvgPosition() const { return avgPosition; }
+                void setTargets(const BWAPI::Unitset& targets);
+                std::vector<BWAPI::Unit>::const_iterator begin() const
+                    { return enemyUnits.cbegin(); }
+                std::vector<BWAPI::Unit>::const_iterator end() const
+                    { return enemyUnits.cend(); }
+                bool isEmpty() const { return enemyUnits.empty(); }
+        } targets;
     public:
         BWAPI::TilePosition aggresiveLocation, defensiveLocation;
         BWAPI::Position getAvgPosition() const;

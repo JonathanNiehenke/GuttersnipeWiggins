@@ -132,3 +132,81 @@ bool SquadCommander::Squad::memberIsTargeting(
     return (lastCmd.getType() == BWAPI::UnitCommandTypes::Attack_Unit &&
         squadMember.getType() == target);
 }
+
+void SquadCommander::Squad::TargetPrioritizer::setTargets(
+    const BWAPI::Unitset& targets)
+{
+    avgPosition = targets.getPosition();
+    enemyUnits.clear();
+    enemyUnits = std::vector<BWAPI::Unit>(targets.begin(), targets.end());
+    std::sort(enemyUnits.begin(), enemyUnits.end(), greaterPriority);
+}
+
+bool SquadCommander::Squad::TargetPrioritizer::greaterPriority(
+    const BWAPI::Unit& unit1, const BWAPI::Unit& unit2)
+{
+    const BWAPI::UnitType& unit1Type = unit1->getType();
+    const BWAPI::UnitType& unit2Type = unit2->getType();
+    if (byType(unit1Type) != byType(unit2Type))
+        return byType(unit1Type) > byType(unit2Type);
+    if (byDamage(unit1Type) != byDamage(unit2Type))
+        return byDamage(unit1Type) > byDamage(unit2Type);
+    return byDurability(unit1) < byDurability(unit2);
+}
+
+int SquadCommander::Squad::TargetPrioritizer::byType(
+    const BWAPI::UnitType& unitType)
+{
+    if (unitType == BWAPI::UnitTypes::Protoss_Shuttle ||
+        unitType == BWAPI::UnitTypes::Terran_Dropship)
+    {
+        return 5;
+    }
+    if (unitType == BWAPI::UnitTypes::Protoss_High_Templar ||
+        unitType == BWAPI::UnitTypes::Protoss_Dark_Archon ||
+        unitType == BWAPI::UnitTypes::Protoss_Reaver ||
+        unitType == BWAPI::UnitTypes::Protoss_Carrier ||
+        unitType == BWAPI::UnitTypes::Protoss_Arbiter ||
+        unitType == BWAPI::UnitTypes::Terran_Medic ||
+        unitType == BWAPI::UnitTypes::Terran_Science_Vessel ||
+        unitType == BWAPI::UnitTypes::Terran_Ghost ||
+        unitType == BWAPI::UnitTypes::Zerg_Queen ||
+        unitType == BWAPI::UnitTypes::Zerg_Lurker ||
+        unitType == BWAPI::UnitTypes::Zerg_Defiler)
+    {
+        return 4;
+    }
+    if (hasWeapon(unitType) && !unitType.isWorker())
+        return 3;
+    if (unitType == BWAPI::UnitTypes::Protoss_Photon_Cannon ||
+        unitType == BWAPI::UnitTypes::Terran_Bunker ||
+        unitType == BWAPI::UnitTypes::Zerg_Sunken_Colony)
+    {
+        return 2;
+    }
+    if (unitType.isWorker())
+        return 1;
+    return 0;
+}
+
+bool SquadCommander::Squad::TargetPrioritizer::hasWeapon(
+    const BWAPI::UnitType& unitType)
+{
+    return (unitType.groundWeapon() != BWAPI::WeaponTypes::None ||
+            unitType.airWeapon() != BWAPI::WeaponTypes::None);
+}
+
+int SquadCommander::Squad::TargetPrioritizer::byDamage(
+    const BWAPI::UnitType& unitType)
+{
+    BWAPI::WeaponType unitWeapon = unitType.groundWeapon();
+    return int(unitWeapon.damageAmount() * unitWeapon.damageFactor() *
+        (unitWeapon.damageType() == BWAPI::DamageTypes::Normal ? 1 : 0.65));
+}
+
+int SquadCommander::Squad::TargetPrioritizer::byDurability(
+    const BWAPI::Unit& unit)
+{
+    return  (unit->getShields() + unit->getHitPoints() +
+        unit->getType().armor() * 7);
+}
