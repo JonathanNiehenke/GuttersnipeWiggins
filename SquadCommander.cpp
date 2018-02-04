@@ -4,7 +4,10 @@
 using namespace BWAPI::Filter;
 
 void SquadCommander::enlistForDeployment(const BWAPI::Unit& unit) {
-    deployedForces.push_back(Squad(unit, attackPosition, safePosition));
+    const BWAPI::Position& attackPos = (attackSeries.size()
+        ? attackSeries[deployedForces.size() % attackSeries.size()]
+        : BWAPI::Positions::None);
+    deployedForces.push_back(Squad(unit, attackPos, safePosition));
 }
 
 void SquadCommander::removeFromDuty(const BWAPI::Unit& deadArmyUnit) {
@@ -32,9 +35,8 @@ void SquadCommander::uniteNearBySquads() {
     if (deployedForces.size() < 2) return;
     int forcesLength = deployedForces.size();
     for (int i = 0; i < forcesLength - 1; ++ i) {
-        Utils::Position fromSquadPos(deployedForces[i].getAvgPosition());
         for (int j = i + 1; j < forcesLength; ++j) {
-            if (fromSquadPos - deployedForces[j].getAvgPosition() < 250)
+            if (deployedForces[i].isJoinable(deployedForces[j]))
                 deployedForces[i].join(deployedForces[j]);
         }
     }
@@ -47,10 +49,23 @@ void SquadCommander::removeEmptySquads() {
         deployedForces.end());
 }
 
-void SquadCommander::setAttackPosition(const BWAPI::Position& attackPosition) {
-    this->attackPosition = attackPosition;
-    for (auto& squad: deployedForces)
-        squad.aggresivePosition = attackPosition;
+void SquadCommander::addAttackPosition(const BWAPI::Position& attackPosition) {
+    attackSeries.push_back(attackPosition);
+    if (deployedForces.size() == 0) return;
+    int idx = attackSeries.size() - 1;
+    deployedForces[idx % deployedForces.size()].aggresivePosition = attackPosition;
+}
+
+void SquadCommander::setAttackSeries(
+    const std::vector<BWAPI::Position>& attackSeries)
+{
+    this->attackSeries = attackSeries;
+    if (attackSeries.size() == 0 || deployedForces.size() == 0) return;
+    const int apSize = attackSeries.size(),
+              dfSize = deployedForces.size(),
+              maxSize = std::max(apSize, dfSize);
+    for (int i = 0; i < maxSize; ++i)
+        deployedForces[i%dfSize].aggresivePosition = attackSeries[i%apSize];
 }
 
 void SquadCommander::setSafePosition(const BWAPI::Position& safePosition) {
@@ -78,6 +93,12 @@ void SquadCommander::Squad::assign(const BWAPI::Unit& armyUnit) {
 
 void SquadCommander::Squad::remove(const BWAPI::Unit& armyUnit) {
     members.erase(armyUnit);
+}
+
+bool SquadCommander::Squad::isJoinable(const Squad& otherSquad) const {
+    if (aggresivePosition != otherSquad.aggresivePosition) return false;
+    return (members.getPosition().getApproxDistance(
+        otherSquad.members.getPosition()) < 250);
 }
 
 void SquadCommander::Squad::join(Squad& otherSquad) {
@@ -136,7 +157,7 @@ bool SquadCommander::Squad::memberIsTargeting(
 {
     const auto& lastCmd = squadMember->getLastCommand();
     return (lastCmd.getType() == BWAPI::UnitCommandTypes::Attack_Unit &&
-        squadMember.getType() == target);
+        lastCmd.getTarget() == target);
 }
 
 void SquadCommander::Squad::TargetPrioritizer::setTargets(

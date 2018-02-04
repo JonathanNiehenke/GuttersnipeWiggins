@@ -7,11 +7,13 @@ class SquadCommander {
     private:
         class Squad;
         std::vector<Squad> deployedForces;
-        BWAPI::Position attackPosition, safePosition;
+        std::vector<BWAPI::Position> attackSeries;
+        BWAPI::Position safePosition;
         void uniteNearBySquads();
         void removeEmptySquads();
     public:
-        void setAttackPosition(const BWAPI::Position& attackPosition);
+        void addAttackPosition(const BWAPI::Position& attackPosition);
+        void setAttackSeries(const std::vector<BWAPI::Position>&);
         void setSafePosition(const BWAPI::Position& safePosition);
         void enlistForDeployment(const BWAPI::Unit& units);
         void removeFromDuty(const BWAPI::Unit& armyUnit);
@@ -55,6 +57,7 @@ class SquadCommander::Squad {
         bool isEmpty() const { return members.empty(); };
         void assign(const BWAPI::Unit& armyUnit);
         void remove(const BWAPI::Unit& deadArmyUnit);
+        bool isJoinable(const Squad& otherSquad) const;
         void join(Squad& otherSquad);
         // void split(const int& newSquadAmount);
         void aquireTargets();

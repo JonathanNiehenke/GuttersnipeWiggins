@@ -9,6 +9,8 @@ void GW::onStart()
     BWAPI::Broodwar->enableFlag(1);  // Enabled for debugging.
     Self = BWAPI::Broodwar->self();
     cartographer.discoverResourcePositions();
+    squadCommander.setAttackSeries(
+        cartographer.getUnexploredStartingPositions());
     squadCommander.setSafePosition(BWAPI::Position(Self->getStartLocation()));
     switch (Self->getRace()) {
         case BWAPI::Races::Enum::Protoss:
@@ -26,7 +28,7 @@ void GW::onStart()
 
 void GW::onFrame()
 {
-    const int actionFrames = std::max(5, BWAPI::Broodwar->getLatency());
+    const int actionFrames = std::max(7, BWAPI::Broodwar->getLatency());
     GW::displayStatus();  // For debugging.
     switch(BWAPI::Broodwar->getFrameCount() % actionFrames) {
         case 0: decisionSequence.update();
@@ -65,7 +67,7 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self) {
         race->onUnitComplete(Unit);
-        if (Unit->getType() == race->getArmyUnitType());
+        if (Unit->getType() == race->getArmyUnitType())
             squadCommander.enlistForDeployment(Unit);
     }
 }
