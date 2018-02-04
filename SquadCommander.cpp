@@ -62,73 +62,94 @@ void SquadCommander::removeEmptySquads() {
         armySquads.end());
 }
 
+void SquadCommander::setAttackPosition(const BWAPI::Position& attackPosition) {
+    this->attackPosition = attackPosition;
+    for (auto& squad: deployedForces)
+        squad.aggresivePosition = attackPosition;
+}
+
+void SquadCommander::setSafePosition(const BWAPI::Position& safePosition) {
+    this->safePosition = safePosition;
+    for (auto& squad: deployedForces)
+        squad.defensivePosition = safePosition;
+}
+
+SquadCommander::Squad::Squad(const BWAPI::Unit& unit,
+    const BWAPI::Position& attackPosition,
+    const BWAPI::Position& safePosition)
+{
+    members.insert(unit) ;
+    aggresivePosition = attackPosition;
+    defensivePosition = safePosition;
+}
+
 BWAPI::Position SquadCommander::Squad::getAvgPosition() const {
     return members.getPosition();
 }
 
-void SquadCommander::Squad::isEmpty() const {
-    return members.empty();
-}
-
-void SquadCommander::Squad::assign(const BWAPI::Unit armyUnit) {
+void SquadCommander::Squad::assign(const BWAPI::Unit& armyUnit) {
     members.insert(armyUnit);
 }
 
-void SquadCommander::Squad::remove(const BWAPI::Unit armyUnit) {
+void SquadCommander::Squad::remove(const BWAPI::Unit& armyUnit) {
     members.erase(armyUnit);
 }
 
-void SquadCommander::Squad::join(const Squad* otherSquad) {
-    members.insert(otherSquad->members.begin(), otherSquad.members->end());
-    otherSquad->members.clear();
+void SquadCommander::Squad::join(Squad& otherSquad) {
+    members.insert(otherSquad.members.begin(), otherSquad.members.end());
+    otherSquad.members.clear();
 }
 
-void SquadCommander::Squad::aquireTargets(const Squad* otherSquad) {
+void SquadCommander::Squad::aquireTargets() {
+    targets.setTargets(
+        members.getUnitsInRadius(500, IsEnemy && IsDetected && !IsFlying));
 }
 
-void SquadCommander::Squad::attack() {
-    if (enemyTargets.empty())
-        isAttackPosition();
+void SquadCommander::Squad::attack() const {
+    if (targets.isEmpty())
+        attackPosition();
     else
-        atackTargets();
+        attackTargets();
 }
 
-void SquadCommander::Squad::isAttackPosition() {
-    for (const BWAPI::Unit& a& squadMember: members) {
-        if (!attackingPosition(squadMember))
-            squadMember->attack(enemyTargets.getPosition());
+void SquadCommander::Squad::attackPosition() const {
+    for (const BWAPI::Unit& squadMember: members) {
+        if (!isAttackingPosition(squadMember))
+            squadMember->attack(aggresivePosition);
     }
 }
 
-bool SquadCommander::Squad::attackingPosition(const BWAPI::Unit& squdMember) {
-    const auto& lastCmd = squdMember.getLastCommand();
-    return ((lastCmd.getType() == BWAPI::UnitCommandTypes::Attack_Move &&
-        squadMember.getTargetPosition() == aggresivePosition));
-}
-
-void SquadCommander::Squad::attackTargets() {
-    for (const BWAPI::Unit& a& squadMember: members) {
-        if (!member->isAttackFrame() || !isAttackingTarget(squadMember))
-            squadMember->attack(enemyTargets.getPosition());
-    }
-}
-
-void SquadCommander::Squad::isAttackingTarget(
-    const BWAPI::Unit& squadMember)
+bool SquadCommander::Squad::isAttackingPosition(
+    const BWAPI::Unit& squadMember) const
 {
-    for (const BWAPI::Unit& target: enemyTargets) {
-        if (memberIsTargeting(target))
+    const auto& lastCmd = squadMember->getLastCommand();
+    return ((lastCmd.getType() == BWAPI::UnitCommandTypes::Attack_Move &&
+        squadMember->getTargetPosition() == aggresivePosition));
+}
+
+void SquadCommander::Squad::attackTargets() const {
+    for (const BWAPI::Unit& squadMember: members) {
+        if (!squadMember->isAttackFrame() || !isAttackingTarget(squadMember))
+            squadMember->attack(targets.getAvgPosition());
+    }
+}
+
+bool SquadCommander::Squad::isAttackingTarget(
+    const BWAPI::Unit& squadMember) const
+{
+    for (const BWAPI::Unit& enemyTarget: targets) {
+        if (memberIsTargeting(squadMember, enemyTarget))
             return true;
-        if (squadMember.isInWeaponRange(enemyTargets))
-            return armyUnit.attack(target);
+        if (squadMember->isInWeaponRange(enemyTarget))
+            return squadMember->attack(enemyTarget);
     }
     return false;
 }
 
 bool SquadCommander::Squad::memberIsTargeting(
-    const BWAPI::Unit& squadMember, const BWAPI::Unit& target)
+    const BWAPI::Unit& squadMember, const BWAPI::Unit& target) const
 {
-    const auto& lastCmd = squdMember.getLastCommand();
+    const auto& lastCmd = squadMember->getLastCommand();
     return (lastCmd.getType() == BWAPI::UnitCommandTypes::Attack_Unit &&
         squadMember.getType() == target);
 }

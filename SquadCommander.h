@@ -41,19 +41,21 @@ class SquadCommander::Squad {
                     { return enemyUnits.cend(); }
                 bool isEmpty() const { return enemyUnits.empty(); }
         } targets;
+        void attackPosition() const;
+        bool isAttackingPosition(const BWAPI::Unit& squadMember) const;
+        void attackTargets() const;
+        bool isAttackingTarget(const BWAPI::Unit& squadMember) const;
+        bool memberIsTargeting(const BWAPI::Unit&, const BWAPI::Unit&) const;
     public:
-        BWAPI::TilePosition aggresiveLocation, defensiveLocation;
+        Squad(const BWAPI::Unit&, const BWAPI::Position&,
+            const BWAPI::Position&);
+        BWAPI::Position aggresivePosition, defensivePosition;
         BWAPI::Position getAvgPosition() const;
-        bool isEmpty() const;
-        void assign(const BWAPI::Unit armyUnit);
-        void remove(const BWAPI::Unit deadArmyUnit);
+        bool isEmpty() const { return members.empty(); };
+        void assign(const BWAPI::Unit& armyUnit);
+        void remove(const BWAPI::Unit& deadArmyUnit);
         void join(Squad& otherSquad);
         // void split(const int& newSquadAmount);
         void aquireTargets();
-        void attack();
-        void attackPosition();
-        bool isAttackingPosition(const BWAPI::Unit& squdMember);
-        void attackTargets();
-        void isAttackingTarget(const BWAPI::Unit& squadMember);
-        bool memberIsTargeting(const BWAPI::Unit&, const BWAPI::Unit&);
-}
+        void attack() const;
+};
