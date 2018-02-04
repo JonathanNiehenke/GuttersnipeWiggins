@@ -1,5 +1,4 @@
-#ifndef GUTTERSNIPEWIGGINS_CPP
-#define GUTTERSNIPEWIGGINS_CPP
+#pragma once
 #include "GuttersnipeWiggins.h"
 
 using namespace BWAPI::Filter;
@@ -44,7 +43,6 @@ void GW::onFrame()
         case 5: squadCommander.updateAttacking();
             break;
         case 6:
-            cmdRescuer.rescue();
             break;
         default: break;
     }
@@ -225,5 +223,3 @@ void GW::displayStatus()
         BWAPI::Broodwar->getAverageFPS());
     displayUnitInfo();
 }
-
-#endif

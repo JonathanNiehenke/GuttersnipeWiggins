@@ -1,10 +1,8 @@
-#ifndef GUTTERSNIPEWIGGINS_H
-#define GUTTERSNIPEWIGGINS_H
+#pragma once
 #include <vector>
 #include <set>
 #include <BWAPI.h>
 #include "Cartographer.h"
-#include "CmdRescuer.h"
 #include "SquadCommander.h"
 #include "DecisionSequence.h"
 #include "Race.h"
@@ -17,9 +15,7 @@ class GW : public BWAPI::AIModule
 private:
     int availableSupply = 0, workerBuffer = 0, armyBuffer = 0, supplyCount = 0;
     BWAPI::Player Self;
-    // Tracks resource, enemy and army facility locations.
     Cartographer cartographer;
-    CmdRescuer::Rescuer cmdRescuer;
     Race *race;  // onStart initializes with polymorphic intentions.
     SquadCommander squadCommander;
     DecisionSequence decisionSequence;
@@ -44,7 +40,4 @@ public:
     virtual void onSaveGame(std::string gameName);
     virtual void onPlayerLeft(BWAPI::Player player);
     virtual void onEnd(bool isWinner);
-
 };
-
-#endif
