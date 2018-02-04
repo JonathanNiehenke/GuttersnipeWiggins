@@ -107,8 +107,28 @@ void SquadCommander::Squad::join(Squad& otherSquad) {
 }
 
 void SquadCommander::Squad::aquireTargets() {
-    targets.setTargets(
-        members.getUnitsInRadius(500, IsEnemy && IsDetected && !IsFlying));
+    if (isUnderAttack())
+        aquireAggresiveTargets();
+    else
+        aquireNormalTargets();
+}
+
+bool SquadCommander::Squad::isUnderAttack() const {
+    for (const BWAPI::Unit& squadMember: members) {
+        if (squadMember->isUnderAttack())
+            return true;
+    }
+    return false;
+}
+
+void SquadCommander::Squad::aquireAggresiveTargets() {
+    targets.setTargets(members.getUnitsInRadius(300, IsEnemy && IsDetected &&
+        !IsFlying && GroundWeapon != BWAPI::WeaponTypes::None));
+}
+
+void SquadCommander::Squad::aquireNormalTargets() {
+    targets.setTargets(members.getUnitsInRadius(300, IsEnemy && IsDetected &&
+        !IsFlying && GetType != BWAPI::UnitTypes::Zerg_Larva));
 }
 
 void SquadCommander::Squad::attack() const {

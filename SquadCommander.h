@@ -44,6 +44,9 @@ class SquadCommander::Squad {
                     { return enemyUnits.cend(); }
                 bool isEmpty() const { return enemyUnits.empty(); }
         } targets;
+        bool isUnderAttack() const;
+        void aquireAggresiveTargets();
+        void aquireNormalTargets();
         void attackPosition() const;
         bool isAttackingPosition(const BWAPI::Unit& squadMember) const;
         void attackTargets() const;
