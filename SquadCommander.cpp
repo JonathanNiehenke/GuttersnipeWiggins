@@ -121,7 +121,7 @@ void SquadCommander::Squad::attack() const {
 void SquadCommander::Squad::attackPosition() const {
     for (const BWAPI::Unit& squadMember: members) {
         if (!isAttackingPosition(squadMember))
-            squadMember->attack(aggresivePosition);
+            squadMember->move(aggresivePosition);
     }
 }
 
@@ -129,14 +129,15 @@ bool SquadCommander::Squad::isAttackingPosition(
     const BWAPI::Unit& squadMember) const
 {
     const auto& lastCmd = squadMember->getLastCommand();
-    return ((lastCmd.getType() == BWAPI::UnitCommandTypes::Attack_Move &&
+    return ((lastCmd.getType() == BWAPI::UnitCommandTypes::Move &&
         squadMember->getTargetPosition() == aggresivePosition));
 }
 
 void SquadCommander::Squad::attackTargets() const {
     for (const BWAPI::Unit& squadMember: members) {
-        if (!squadMember->isAttackFrame() || !isAttackingTarget(squadMember))
-            squadMember->attack(targets.getAvgPosition());
+        if (squadMember->isAttackFrame()) continue;
+        if (!isAttackingTarget(squadMember))
+            squadMember->move((*targets.begin())->getPosition());
     }
 }
 
