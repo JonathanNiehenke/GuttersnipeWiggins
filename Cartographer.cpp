@@ -62,21 +62,21 @@ BWAPI::Position Cartographer::getClosestEnemyPosition(
     return evasionTracker.getClosestEnemyPosition(sourcePosition);
 }
 
-void Cartographer::EvasionTracker::addUnit(const BWAPI::Unit& unit) {
+void EvasionTracker::addUnit(const BWAPI::Unit& unit) {
     currentPositions[unit] = PositionalType(
         unit->getPosition(), unit->getType());
 }
 
-void Cartographer::EvasionTracker::removeUnit(const BWAPI::Unit& unit) {
+void EvasionTracker::removeUnit(const BWAPI::Unit& unit) {
     currentPositions.erase(unit);
 }
 
-void Cartographer::EvasionTracker::update() {
+void EvasionTracker::update() {
     updateCurrentPositions();
     updateFoggyPositions();
 }
 
-void Cartographer::EvasionTracker::updateCurrentPositions() {
+void EvasionTracker::updateCurrentPositions() {
     for (auto& It = currentPositions.begin(); It != currentPositions.end();) {
         PositionalType& positionalType = It->second;
         if (It->first->isVisible())
@@ -88,14 +88,14 @@ void Cartographer::EvasionTracker::updateCurrentPositions() {
     }
 }
 
-void Cartographer::EvasionTracker::moveToFoggyPositions(
+void EvasionTracker::moveToFoggyPositions(
     const std::pair<BWAPI::Unit, PositionalType>& pair)
 {
     foggyPositions[pair.second.first] = pair.second.second;
     currentPositions.erase(pair.first);
 }
 
-void Cartographer::EvasionTracker::updateFoggyPositions() {
+void EvasionTracker::updateFoggyPositions() {
     for (auto& It = foggyPositions.begin(); It != foggyPositions.end();) {
         if (!isInFog(It->first))
             foggyPositions.erase(It++);
@@ -104,18 +104,18 @@ void Cartographer::EvasionTracker::updateFoggyPositions() {
     }
 }
 
-bool Cartographer::EvasionTracker::isInFog(const BWAPI::Position& position) {
+bool EvasionTracker::isInFog(const BWAPI::Position& position) {
     return !BWAPI::Broodwar->isVisible(BWAPI::TilePosition(position));
 }
 
-void Cartographer::EvasionTracker::draw(const PositionalType& posType) {
+void EvasionTracker::draw(const PositionalType& posType) {
     BWAPI::Broodwar->registerEvent(
         [posType](BWAPI::Game*){ BWAPI::Broodwar->drawTextMap(
             posType.first, posType.second.c_str()); },
         nullptr, 5);
 }
 
-BWAPI::Position Cartographer::EvasionTracker::getClosestEnemyPosition(
+BWAPI::Position EvasionTracker::getClosestEnemyPosition(
     const BWAPI::Position& sourcePosition) const
 {
     if (foggyPositions.empty())
