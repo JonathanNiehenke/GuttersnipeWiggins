@@ -74,7 +74,7 @@ void SquadCommander::setSafePosition(const BWAPI::Position& safePosition) {
         squad.defensivePosition = safePosition;
 }
 
-SquadCommander::Squad::Squad(const BWAPI::Unit& unit,
+Squad::Squad(const BWAPI::Unit& unit,
     const BWAPI::Position& attackPosition,
     const BWAPI::Position& safePosition)
 {
@@ -83,37 +83,37 @@ SquadCommander::Squad::Squad(const BWAPI::Unit& unit,
     defensivePosition = safePosition;
 }
 
-BWAPI::Position SquadCommander::Squad::getAvgPosition() const {
+BWAPI::Position Squad::getAvgPosition() const {
     return members.getPosition();
 }
 
-void SquadCommander::Squad::assign(const BWAPI::Unit& armyUnit) {
+void Squad::assign(const BWAPI::Unit& armyUnit) {
     members.insert(armyUnit);
 }
 
-void SquadCommander::Squad::remove(const BWAPI::Unit& armyUnit) {
+void Squad::remove(const BWAPI::Unit& armyUnit) {
     members.erase(armyUnit);
 }
 
-bool SquadCommander::Squad::isJoinable(const Squad& otherSquad) const {
+bool Squad::isJoinable(const Squad& otherSquad) const {
     if (aggresivePosition != otherSquad.aggresivePosition) return false;
     return (members.getPosition().getApproxDistance(
         otherSquad.members.getPosition()) < 250);
 }
 
-void SquadCommander::Squad::join(Squad& otherSquad) {
+void Squad::join(Squad& otherSquad) {
     members.insert(otherSquad.members.begin(), otherSquad.members.end());
     otherSquad.members.clear();
 }
 
-void SquadCommander::Squad::aquireTargets() {
+void Squad::aquireTargets() {
     if (isUnderAttack())
         aquireAggresiveTargets();
     else
         aquireNormalTargets();
 }
 
-bool SquadCommander::Squad::isUnderAttack() const {
+bool Squad::isUnderAttack() const {
     for (const BWAPI::Unit& squadMember: members) {
         if (squadMember->isUnderAttack())
             return true;
@@ -121,31 +121,31 @@ bool SquadCommander::Squad::isUnderAttack() const {
     return false;
 }
 
-void SquadCommander::Squad::aquireAggresiveTargets() {
+void Squad::aquireAggresiveTargets() {
     targets.setTargets(members.getUnitsInRadius(300, IsEnemy && IsDetected &&
         !IsFlying && GroundWeapon != BWAPI::WeaponTypes::None));
 }
 
-void SquadCommander::Squad::aquireNormalTargets() {
+void Squad::aquireNormalTargets() {
     targets.setTargets(members.getUnitsInRadius(300, IsEnemy && IsDetected &&
         !IsFlying && GetType != BWAPI::UnitTypes::Zerg_Larva));
 }
 
-void SquadCommander::Squad::attack() const {
+void Squad::attack() const {
     if (targets.isEmpty())
         attackPosition();
     else
         attackTargets();
 }
 
-void SquadCommander::Squad::attackPosition() const {
+void Squad::attackPosition() const {
     for (const BWAPI::Unit& squadMember: members) {
         if (!isAttackingPosition(squadMember))
             squadMember->move(aggresivePosition);
     }
 }
 
-bool SquadCommander::Squad::isAttackingPosition(
+bool Squad::isAttackingPosition(
     const BWAPI::Unit& squadMember) const
 {
     const auto& lastCmd = squadMember->getLastCommand();
@@ -153,7 +153,7 @@ bool SquadCommander::Squad::isAttackingPosition(
         squadMember->getTargetPosition() == aggresivePosition));
 }
 
-void SquadCommander::Squad::attackTargets() const {
+void Squad::attackTargets() const {
     for (const BWAPI::Unit& squadMember: members) {
         if (squadMember->isAttackFrame()) continue;
         if (!isAttackingTarget(squadMember))
@@ -161,13 +161,13 @@ void SquadCommander::Squad::attackTargets() const {
     }
 }
 
-void SquadCommander::Squad::moveToClosestTarget(
+void Squad::moveToClosestTarget(
     const BWAPI::Unit& squadMember) const
 {
     squadMember->move(getClosestTarget(squadMember)->getPosition());
 }
 
-BWAPI::Unit SquadCommander::Squad::getClosestTarget(
+BWAPI::Unit Squad::getClosestTarget(
     const BWAPI::Unit& squadMember) const
 {
     const BWAPI::Position& squadPos = squadMember->getPosition();
@@ -183,7 +183,7 @@ BWAPI::Unit SquadCommander::Squad::getClosestTarget(
     return closestTarget;
 }
 
-bool SquadCommander::Squad::isAttackingTarget(
+bool Squad::isAttackingTarget(
     const BWAPI::Unit& squadMember) const
 {
     for (const BWAPI::Unit& enemyTarget: targets) {
@@ -195,7 +195,7 @@ bool SquadCommander::Squad::isAttackingTarget(
     return false;
 }
 
-bool SquadCommander::Squad::memberIsTargeting(
+bool Squad::memberIsTargeting(
     const BWAPI::Unit& squadMember, const BWAPI::Unit& target) const
 {
     const auto& lastCmd = squadMember->getLastCommand();
@@ -203,7 +203,7 @@ bool SquadCommander::Squad::memberIsTargeting(
         lastCmd.getTarget() == target);
 }
 
-void SquadCommander::Squad::TargetPrioritizer::setTargets(
+void TargetPrioritizer::setTargets(
     const BWAPI::Unitset& targets)
 {
     avgPosition = targets.getPosition();
@@ -212,7 +212,7 @@ void SquadCommander::Squad::TargetPrioritizer::setTargets(
     std::sort(enemyUnits.begin(), enemyUnits.end(), greaterPriority);
 }
 
-bool SquadCommander::Squad::TargetPrioritizer::greaterPriority(
+bool TargetPrioritizer::greaterPriority(
     const BWAPI::Unit& unit1, const BWAPI::Unit& unit2)
 {
     const BWAPI::UnitType& unit1Type = unit1->getType();
@@ -224,7 +224,7 @@ bool SquadCommander::Squad::TargetPrioritizer::greaterPriority(
     return byDurability(unit1) < byDurability(unit2);
 }
 
-int SquadCommander::Squad::TargetPrioritizer::byType(
+int TargetPrioritizer::byType(
     const BWAPI::UnitType& unitType)
 {
     if (unitType == BWAPI::UnitTypes::Protoss_Shuttle ||
@@ -259,14 +259,14 @@ int SquadCommander::Squad::TargetPrioritizer::byType(
     return 0;
 }
 
-bool SquadCommander::Squad::TargetPrioritizer::hasWeapon(
+bool TargetPrioritizer::hasWeapon(
     const BWAPI::UnitType& unitType)
 {
     return (unitType.groundWeapon() != BWAPI::WeaponTypes::None ||
             unitType.airWeapon() != BWAPI::WeaponTypes::None);
 }
 
-int SquadCommander::Squad::TargetPrioritizer::byDamage(
+int TargetPrioritizer::byDamage(
     const BWAPI::UnitType& unitType)
 {
     BWAPI::WeaponType unitWeapon = unitType.groundWeapon();
@@ -274,7 +274,7 @@ int SquadCommander::Squad::TargetPrioritizer::byDamage(
         (unitWeapon.damageType() == BWAPI::DamageTypes::Normal ? 1 : 0.65));
 }
 
-int SquadCommander::Squad::TargetPrioritizer::byDurability(
+int TargetPrioritizer::byDurability(
     const BWAPI::Unit& unit)
 {
     return  (unit->getShields() + unit->getHitPoints() +
