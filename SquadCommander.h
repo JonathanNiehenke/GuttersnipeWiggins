@@ -50,6 +50,8 @@ class SquadCommander::Squad {
         void attackPosition() const;
         bool isAttackingPosition(const BWAPI::Unit& squadMember) const;
         void attackTargets() const;
+        void moveToClosestTarget(const BWAPI::Unit& squadMember) const;
+        BWAPI::Unit getClosestTarget(const BWAPI::Unit& squadMember) const;
         bool isAttackingTarget(const BWAPI::Unit& squadMember) const;
         bool memberIsTargeting(const BWAPI::Unit&, const BWAPI::Unit&) const;
     public:

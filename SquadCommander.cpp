@@ -157,8 +157,30 @@ void SquadCommander::Squad::attackTargets() const {
     for (const BWAPI::Unit& squadMember: members) {
         if (squadMember->isAttackFrame()) continue;
         if (!isAttackingTarget(squadMember))
-            squadMember->move((*targets.begin())->getPosition());
+            moveToClosestTarget(squadMember);
     }
+}
+
+void SquadCommander::Squad::moveToClosestTarget(
+    const BWAPI::Unit& squadMember) const
+{
+    squadMember->move(getClosestTarget(squadMember)->getPosition());
+}
+
+BWAPI::Unit SquadCommander::Squad::getClosestTarget(
+    const BWAPI::Unit& squadMember) const
+{
+    const BWAPI::Position& squadPos = squadMember->getPosition();
+    BWAPI::Unit closestTarget = *targets.begin();
+    int closestDist = squadPos.getApproxDistance(closestTarget->getPosition());
+    for (const BWAPI::Unit& enemyTarget: targets) {
+        int dist = squadPos.getApproxDistance(enemyTarget->getPosition());
+        if (dist < closestDist) {
+            closestTarget = enemyTarget;
+            closestDist = dist;
+        }
+    }
+    return closestTarget;
 }
 
 bool SquadCommander::Squad::isAttackingTarget(
