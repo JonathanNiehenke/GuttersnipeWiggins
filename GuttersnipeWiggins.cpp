@@ -8,9 +8,6 @@ void GW::onStart()
     BWAPI::Broodwar->enableFlag(1);  // Enabled for debugging.
     Self = BWAPI::Broodwar->self();
     cartographer.discoverResourcePositions();
-    squadCommander.setAttackSeries(
-        cartographer.getUnexploredStartingPositions());
-    squadCommander.setSafePosition(BWAPI::Position(Self->getStartLocation()));
     switch (Self->getRace()) {
         case BWAPI::Races::Enum::Protoss:
             race = new ProtossRace();
@@ -65,8 +62,10 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self) {
         race->onUnitComplete(Unit);
-        if (Unit->getType() == race->getArmyUnitType())
-            squadCommander.enlistForDeployment(Unit);
+        if (Unit->getType() == race->getArmyUnitType()) {
+            squadCommander.sendUnitToAttack(
+                Unit, cartographer.getNextPosition(Unit->getPosition()));
+        }
     }
 }
 
@@ -81,10 +80,7 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
 void GW::onUnitDiscover(BWAPI::Unit Unit)
 {
     if (cartographer.lacksEnemySighting() && Self->isEnemy(Unit->getPlayer()))
-    {
-        std::vector<BWAPI::Position> temp = {Unit->getPosition()};
-        squadCommander.setAttackSeries(temp);
-    }
+        squadCommander.commandSquadsTo(Unit->getPosition());
     if (Self->isEnemy(Unit->getPlayer()))
         cartographer.addUnit(Unit);
 }

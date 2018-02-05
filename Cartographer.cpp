@@ -60,6 +60,18 @@ void Cartographer::update() {
     evasionTracker.update();
 }
 
+BWAPI::Position Cartographer::getNextPosition(
+    const BWAPI::Position& sourcePosition)
+{
+    if (!evasionTracker.empty())
+        return evasionTracker.getClosestEnemyPosition(sourcePosition);
+    const auto& startPositions = getUnexploredStartingPositions();
+    if (!startPositions.empty())
+        return startPositions[attackIdx++ % startPositions.size()];
+    return BWAPI::Positions::None;
+}
+
+
 BWAPI::Position Cartographer::getClosestEnemyPosition(
     const BWAPI::Position& sourcePosition) const
 {

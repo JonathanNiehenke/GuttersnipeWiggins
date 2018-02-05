@@ -40,9 +40,8 @@ namespace {
             bool memberIsTargeting(
                 const BWAPI::Unit&, const BWAPI::Unit&) const;
         public:
-            Squad(const BWAPI::Unit&, const BWAPI::Position&,
-                const BWAPI::Position&);
-            BWAPI::Position aggresivePosition, defensivePosition;
+            Squad(const BWAPI::Unit&, const BWAPI::Position&);
+            BWAPI::Position aggresivePosition;
             BWAPI::Position getAvgPosition() const;
             bool isEmpty() const { return members.empty(); };
             void assign(const BWAPI::Unit& armyUnit);
@@ -58,15 +57,11 @@ namespace {
 class SquadCommander {
     private:
         std::vector<Squad> deployedForces;
-        std::vector<BWAPI::Position> attackSeries;
-        BWAPI::Position safePosition;
         void uniteNearBySquads();
         void removeEmptySquads();
     public:
-        void addAttackPosition(const BWAPI::Position& attackPosition);
-        void setAttackSeries(const std::vector<BWAPI::Position>&);
-        void setSafePosition(const BWAPI::Position& safePosition);
-        void enlistForDeployment(const BWAPI::Unit& units);
+        void commandSquadsTo(const BWAPI::Position& attackPosition);
+        void sendUnitToAttack(const BWAPI::Unit&, const BWAPI::Position&);
         void removeFromDuty(const BWAPI::Unit& armyUnit);
         void updateGrouping();
         void updateTargeting();

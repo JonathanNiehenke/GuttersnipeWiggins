@@ -3,11 +3,10 @@
 
 using namespace BWAPI::Filter;
 
-void SquadCommander::enlistForDeployment(const BWAPI::Unit& unit) {
-    const BWAPI::Position& attackPos = (attackSeries.size()
-        ? attackSeries[deployedForces.size() % attackSeries.size()]
-        : BWAPI::Positions::None);
-    deployedForces.push_back(Squad(unit, attackPos, safePosition));
+void SquadCommander::sendUnitToAttack(
+    const BWAPI::Unit& unit, const BWAPI::Position& attackPos)
+{
+    deployedForces.push_back(Squad(unit, attackPos));
 }
 
 void SquadCommander::removeFromDuty(const BWAPI::Unit& deadArmyUnit) {
@@ -49,38 +48,23 @@ void SquadCommander::removeEmptySquads() {
         deployedForces.end());
 }
 
-void SquadCommander::addAttackPosition(const BWAPI::Position& attackPosition) {
-    attackSeries.push_back(attackPosition);
-    if (deployedForces.size() == 0) return;
-    int idx = attackSeries.size() - 1;
-    deployedForces[idx % deployedForces.size()].aggresivePosition = attackPosition;
+void SquadCommander::commandSquadsTo(const BWAPI::Position& attackPosition) {
+    for (Squad& squad: deployedForces)
+        squad.aggresivePosition = attackPosition;
 }
 
-void SquadCommander::setAttackSeries(
-    const std::vector<BWAPI::Position>& attackSeries)
-{
-    this->attackSeries = attackSeries;
-    if (attackSeries.size() == 0 || deployedForces.size() == 0) return;
-    const int apSize = attackSeries.size(),
-              dfSize = deployedForces.size(),
-              maxSize = std::max(apSize, dfSize);
-    for (int i = 0; i < maxSize; ++i)
-        deployedForces[i%dfSize].aggresivePosition = attackSeries[i%apSize];
+/*
+std::vector<BWAPI::Position> SquadCommander::getSquadAttackPositions() const {
+    std::vector<BWAPI::Position> attackPositions;
+    for (Squad& squad: deployedForces)
+        attackPositions.push_back(squad.aggresivePosition);
+    return attackPositions;
 }
+*/
 
-void SquadCommander::setSafePosition(const BWAPI::Position& safePosition) {
-    this->safePosition = safePosition;
-    for (auto& squad: deployedForces)
-        squad.defensivePosition = safePosition;
-}
-
-Squad::Squad(const BWAPI::Unit& unit,
-    const BWAPI::Position& attackPosition,
-    const BWAPI::Position& safePosition)
-{
+Squad::Squad(const BWAPI::Unit& unit, const BWAPI::Position& attackPosition) {
     members.insert(unit) ;
     aggresivePosition = attackPosition;
-    defensivePosition = safePosition;
 }
 
 BWAPI::Position Squad::getAvgPosition() const {
