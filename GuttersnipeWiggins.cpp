@@ -80,7 +80,12 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
 
 void GW::onUnitDiscover(BWAPI::Unit Unit)
 {
-    if (Unit->getPlayer() != Self && !Unit->getPlayer()->isNeutral())
+    if (cartographer.lacksEnemySighting() && Self->isEnemy(Unit->getPlayer()))
+    {
+        std::vector<BWAPI::Position> temp = {Unit->getPosition()};
+        squadCommander.setAttackSeries(temp);
+    }
+    if (Self->isEnemy(Unit->getPlayer()))
         cartographer.addUnit(Unit);
 }
 

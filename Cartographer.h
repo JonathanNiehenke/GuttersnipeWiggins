@@ -16,6 +16,7 @@ namespace {
                 const std::pair<BWAPI::Unit, PositionalType>& pair);
             static void draw(const PositionalType& posType);
         public:
+            bool empty() const;
             void addUnit(const BWAPI::Unit& unit);
             void removeUnit(const BWAPI::Unit& unit);
             void update();
@@ -38,6 +39,7 @@ class Cartographer {
             { return resourcePositions; }
         static std::vector<BWAPI::Position> getUnexploredStartingPositions();
         static std::vector<BWAPI::Position> getStartingPositions();
+        bool lacksEnemySighting() const;
         void addUnit(const BWAPI::Unit& unit);
         void removeUnit(const BWAPI::Unit& unit);
         void update();

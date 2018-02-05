@@ -44,6 +44,10 @@ std::vector<BWAPI::Position> Cartographer::getStartingPositions() {
     return startingPositions;
 }
 
+bool Cartographer::lacksEnemySighting() const {
+    return evasionTracker.empty();
+}
+
 void Cartographer::addUnit(const BWAPI::Unit& unit) {
     evasionTracker.addUnit(unit);
 }
@@ -60,6 +64,10 @@ BWAPI::Position Cartographer::getClosestEnemyPosition(
     const BWAPI::Position& sourcePosition) const
 {
     return evasionTracker.getClosestEnemyPosition(sourcePosition);
+}
+
+bool EvasionTracker::empty() const {
+    return currentPositions.empty() && foggyPositions.empty();
 }
 
 void EvasionTracker::addUnit(const BWAPI::Unit& unit) {
