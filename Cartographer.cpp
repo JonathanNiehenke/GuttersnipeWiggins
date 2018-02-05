@@ -126,9 +126,11 @@ void EvasionTracker::draw(const PositionalType& posType) {
 BWAPI::Position EvasionTracker::getClosestEnemyPosition(
     const BWAPI::Position& sourcePosition) const
 {
-    if (foggyPositions.empty())
-        return BWAPI::Positions::Unknown;
+    if (empty())
+        return BWAPI::Positions::None;
     std::vector<BWAPI::Position> loggedPositions;
+    for (const std::pair<BWAPI::Unit, PositionalType>& pair: currentPositions)
+        loggedPositions.push_back(pair.second.first);
     for (const auto& pair: foggyPositions)
         loggedPositions.push_back(pair.first);
     return (*std::min_element(
