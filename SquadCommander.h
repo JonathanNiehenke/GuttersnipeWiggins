@@ -21,7 +21,7 @@ namespace {
                 { return enemyUnits.cbegin(); }
             std::vector<BWAPI::Unit>::const_iterator end() const
                 { return enemyUnits.cend(); }
-            bool isEmpty() const { return enemyUnits.empty(); }
+            bool empty() const { return enemyUnits.empty(); }
     };
 
     class Squad {
@@ -51,6 +51,7 @@ namespace {
             // void split(const int& newSquadAmount);
             void aquireTargets();
             void attack() const;
+            bool completedAttack() const;
     };
 }
 
@@ -66,4 +67,6 @@ class SquadCommander {
         void updateGrouping();
         void updateTargeting();
         void updateAttacking();
+        std::vector<BWAPI::Position*> completed();
+        void completeMissions();
 };

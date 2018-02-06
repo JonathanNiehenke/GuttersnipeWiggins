@@ -53,6 +53,15 @@ void SquadCommander::commandSquadsTo(const BWAPI::Position& attackPosition) {
         squad.aggresivePosition = attackPosition;
 }
 
+std::vector<BWAPI::Position*> SquadCommander::completed() {
+    std::vector<BWAPI::Position*> completedPositions;
+    for (Squad& squad: deployedForces) {
+        if (squad.completedAttack())
+            completedPositions.push_back(&squad.aggresivePosition);
+    }
+    return completedPositions;
+}
+
 /*
 std::vector<BWAPI::Position> SquadCommander::getSquadAttackPositions() const {
     std::vector<BWAPI::Position> attackPositions;
@@ -116,7 +125,7 @@ void Squad::aquireNormalTargets() {
 }
 
 void Squad::attack() const {
-    if (targets.isEmpty())
+    if (targets.empty())
         attackPosition();
     else
         attackTargets();
@@ -185,6 +194,11 @@ bool Squad::memberIsTargeting(
     const auto& lastCmd = squadMember->getLastCommand();
     return (lastCmd.getType() == BWAPI::UnitCommandTypes::Attack_Unit &&
         lastCmd.getTarget() == target);
+}
+
+bool Squad::completedAttack() const {
+    return (targets.empty() &&
+        aggresivePosition.getApproxDistance(members.getPosition()) < 150);
 }
 
 void TargetPrioritizer::setTargets(
