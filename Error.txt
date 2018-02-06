@@ -1,0 +1,44 @@
+Microsoft (R) Build Engine version 12.0.40629.0
+[Microsoft .NET Framework, version 4.0.30319.34011]
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Build started 2/6/2018 3:04:45 PM.
+Project "Z:\GW\GuttersnipeWiggins.vcxproj" on node 1 (default targets).
+InitializeBuildStatus:
+  Touching "Debug\Guttersn.2E63AE74.tlog\unsuccessfulbuild".
+ClCompile:
+  C:\Program Files\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"C:\Program Files\BWAPI/include" /Zi /nologo /W3 /WX- /MP /Od /Oy- /D NOMINMAX /D WIN32 /D _DEBUG /D _WINDOWS /D _USRDLL /D GUTTERSNIPEWIGGINS_EXPORTS /D _WINDLL /D _UNICODE /D UNICODE /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar
+  _t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:queue Cartographer.cpp
+  Cartographer.cpp
+Cartographer.cpp(86): error C2665: 'iterator::iterator' : none of the 2 overloads could convert all the argument types [Z:\GW\GuttersnipeWiggins.vcxproj]
+          z:\gw\Cartographer.h(14): could be 'iterator::iterator(FogIt,FogIt)'
+          while trying to match the argument list '(std::_Tree_const_iterator<std::_Tree_val<std::_Tree_simple_types<std::pair<const _Kty,_Ty>>>>, std::_Tree_const_iterator<std::_Tree_val<std::_Tree_simple_types<std::pair<const _Kty,_Ty>>>>)'
+          with
+          [
+              _Kty=BWAPI::Position
+  ,            _Ty=BWAPI::UnitType
+          ]
+Cartographer.cpp(92): error C2665: 'iterator::iterator' : none of the 2 overloads could convert all the argument types [Z:\GW\GuttersnipeWiggins.vcxproj]
+          z:\gw\Cartographer.h(14): could be 'iterator::iterator(FogIt,FogIt)'
+          while trying to match the argument list '(std::_Tree_const_iterator<std::_Tree_val<std::_Tree_simple_types<std::pair<const _Kty,_Ty>>>>, std::_Tree_const_iterator<std::_Tree_val<std::_Tree_simple_types<std::pair<const _Kty,_Ty>>>>)'
+          with
+          [
+              _Kty=BWAPI::Position
+  ,            _Ty=BWAPI::UnitType
+          ]
+Done Building Project "Z:\GW\GuttersnipeWiggins.vcxproj" (default targets) -- FAILED.
+
+
+Build FAILED.
+
+"Z:\GW\GuttersnipeWiggins.vcxproj" (default target) (1) ->
+(ClCompile target) ->
+  Cartographer.cpp(86): error C2665: 'iterator::iterator' : none of the 2 overloads could convert all the argument types [Z:\GW\GuttersnipeWiggins.vcxproj]
+  Cartographer.cpp(92): error C2665: 'iterator::iterator' : none of the 2 overloads could convert all the argument types [Z:\GW\GuttersnipeWiggins.vcxproj]
+
+    0 Warning(s)
+    2 Error(s)
+
+Time Elapsed 00:00:02.78
+
+Z:\GW>

@@ -63,8 +63,10 @@ void Cartographer::update() {
 BWAPI::Position Cartographer::getNextPosition(
     const BWAPI::Position& sourcePosition)
 {
-    if (!evasionTracker.empty())
-        return evasionTracker.getClosestEnemyPosition(sourcePosition);
+    BWAPI::Position enemyPosition = evasionTracker.getClosestEnemyPosition(
+        sourcePosition);
+    if (enemyPosition.isValid())
+        return enemyPosition;
     const auto& startPositions = getUnexploredStartingPositions();
     if (!startPositions.empty())
         return startPositions[attackIdx++ % startPositions.size()];
@@ -76,6 +78,18 @@ BWAPI::Position Cartographer::getClosestEnemyPosition(
     const BWAPI::Position& sourcePosition) const
 {
     return evasionTracker.getClosestEnemyPosition(sourcePosition);
+}
+
+iterator EvasionTracker::begin() const {
+   return iterator(
+        // currentPositions.begin(), currentPositions.end(),
+        foggyPositions.begin(), foggyPositions.end());
+}
+
+iterator EvasionTracker::end() const {
+   return iterator(
+        // currentPositions.end(), currentPositions.end(),
+        foggyPositions.end(), foggyPositions.end());
 }
 
 bool EvasionTracker::empty() const {
@@ -116,7 +130,7 @@ void EvasionTracker::moveToFoggyPositions(
 }
 
 void EvasionTracker::updateFoggyPositions() {
-    for (auto& It = foggyPositions.begin(); It != foggyPositions.end();) {
+	for (std::map<BWAPI::Position, BWAPI::UnitType>::iterator& It = foggyPositions.begin(); It != foggyPositions.end();) {
         if (!isInFog(It->first))
             foggyPositions.erase(It++);
         else
@@ -150,3 +164,46 @@ BWAPI::Position EvasionTracker::getClosestEnemyPosition(
         Utils::Position(sourcePosition).comparePositions()));
 }
 
+
+iterator::iterator(std::map<BWAPI::Position,BWAPI::UnitType>::iterator fIt, std::map<BWAPI::Position,BWAPI::UnitType>::iterator fEnd) {
+    // currentPositionsIt = cIt;
+    // currentPositionsEnd = cEnd;
+    foggyPositionsIt = fIt;
+    foggyPositionsEnd = fEnd;
+}
+
+/*
+'`anonymous-namespace'::iterator::iterator(
+    `anonymous-namespace'::iterator::CurIt,
+    `anonymous-namespace'::iterator::CurIt,
+    `anonymous-namespace'::iterator::std::map<BWAPI::Position,BWAPI::UnitType>::iterator,
+    `anonymous-namespace'::iterator::std::map<BWAPI::Position,BWAPI::UnitType>::iterator)'
+
+'(std::_Tree_const_iterator<std::_Tree_val<std::_Tree_simple_types<std::pair<const _Kty,_Ty>>>>,
+  std::_Tree_const_iterator<std::_Tree_val<std::_Tree_simple_types<std::pair<const _Kty,_Ty>>>>,
+  std::_Tree_const_iterator<std::_Tree_val<std::_Tree_simple_types<std::pair<const _Kty,_Ty>>>>,
+  std::_Tree_const_iterator<std::_Tree_val<std::_Tree_simple_types<std::pair<const _Kty,_Ty>>>>)'
+*/
+
+iterator& iterator::operator++() {
+    // if (currentPositionsIt == currentPositionsEnd)
+        ++foggyPositionsIt;
+    // else
+        // ++currentPositionsIt;
+    return *this;
+}
+
+bool iterator::operator==(iterator other) const {
+    return ( // currentPositionsIt == other.currentPositionsIt // &&
+        foggyPositionsIt == other.foggyPositionsIt);
+}
+
+bool iterator::operator!=(iterator other) const {
+    return !(*this == other);
+}
+
+PositionalType iterator::operator*() const {
+    //if (currentPositionsIt != currentPositionsEnd)
+        // return currentPositionsIt->second;
+    return *foggyPositionsIt;
+}
