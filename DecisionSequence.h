@@ -22,6 +22,8 @@ class DecisionSequence {
         bool isIncomplete(const BWAPI::UnitType& unitType) const;
         bool enoughResources(const BWAPI::UnitType& unitType) const;
         void techTo(const BWAPI::UnitType& unitType) const;
+        bool canExtend(const BWAPI::UnitType& unitType) const;
+        void increaseFacilities(const BWAPI::UnitType& unitType) const;
     public:
         void onStart(Race* race);
         void update();

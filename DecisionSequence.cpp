@@ -21,10 +21,14 @@ void DecisionSequence::onStart(Race* race) {
     Objectives["TechToArmy"] = ConditionalResponse(
         [this, race](){ return this->canProgressFor(race->getArmyUnitType()); },
         [this, race](){ this->techTo(race->getArmyUnitType()); });
+    Objectives["IncreaseArmyFacilities"] = ConditionalResponse(
+        [this, race](){ return this->canExtend(race->getArmyUnitType()); },
+        [this, race](){ this->increaseFacilities(race->getArmyUnitType()); });
     priorityList.push_back("EnoughSupply");
     priorityList.push_back("FullSaturation");
     priorityList.push_back("ArmyWarriors");
     priorityList.push_back("TechToArmy");
+    priorityList.push_back("IncreaseArmyFacilities");
 }
 
 void DecisionSequence::update() {
@@ -67,7 +71,7 @@ bool DecisionSequence::isIncomplete(const BWAPI::UnitType& unitType) const {
 }
 
 bool DecisionSequence::enoughResources(const BWAPI::UnitType& unitType) const {
-    return (BWAPI::Broodwar->self()->minerals() > unitType.mineralPrice() - (
+    return (BWAPI::Broodwar->self()->minerals() >= unitType.mineralPrice() - (
         unitType.isBuilding() ? 24 : 0));
 }
 
@@ -76,6 +80,21 @@ void DecisionSequence::techTo(const BWAPI::UnitType& unitType) const {
         race->construct(race->getNextRequiredBuilding(unitType)); }
     catch (const std::runtime_error& e) {
         BWAPI::Broodwar << "techTo: " << e.what() << "!!!!!" << std::endl; }
+}
+
+bool DecisionSequence::canExtend(const BWAPI::UnitType& unitType) const {
+    const BWAPI::UnitType& facilityType = unitType.whatBuilds().first;
+    const int facilityCount = BWAPI::Broodwar->self()->allUnitCount(
+        facilityType);
+    const int expenseBuffer = facilityCount * unitType.mineralPrice() + 100,
+              expense = facilityType.mineralPrice() + expenseBuffer;
+    return BWAPI::Broodwar->self()->minerals() >= expense;
+}
+
+void DecisionSequence::increaseFacilities(
+    const BWAPI::UnitType& unitType) const
+{
+    race->construct(unitType.whatBuilds().first);
 }
 
 DecisionSequence::ConditionalResponse::ConditionalResponse() {
