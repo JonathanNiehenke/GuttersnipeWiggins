@@ -34,7 +34,7 @@ void ZergRace::removeLarvaProducers() const {
 }
 
 void ZergRace::createSupply() const {
-    armyTrainer->trainUnits(supplyType);
+    resourceSupplier->createOverlord();
 }
 
 void ZergRace::construct(const BWAPI::UnitType& buildingType) const {

@@ -148,21 +148,28 @@ void ResourceSupplier::removeMineral(BWAPI::Unit mineralUnit)
 
 bool ResourceSupplier::canFillLackingMiners() {
     for (EcoBase *Base: Bases) {
-        if (isWorkerQueueEmpty(Base->getCenter()) && Base->isLackingMiners())
+        if (isQueueEmpty(Base->getCenter()) && Base->isLackingMiners())
             return true;
     }
     return false;
 }
 
+void ResourceSupplier::createOverlord() const {
+    for (EcoBase *Base: Bases) {
+        if (isQueueEmpty(Base->getCenter()))
+            Base->getCenter()->train(BWAPI::UnitTypes::Zerg_Overlord);
+    }
+}
+
 void ResourceSupplier::createWorker()
 {
     for (EcoBase *Base: Bases) {
-        if (isWorkerQueueEmpty(Base->getCenter()) && Base->isLackingMiners())
+        if (isQueueEmpty(Base->getCenter()) && Base->isLackingMiners())
             Base->getCenter()->train(workerType);
     }
 }
 
-bool ResourceSupplier::isWorkerQueueEmpty(const BWAPI::Unit& Center) {
+bool ResourceSupplier::isQueueEmpty(const BWAPI::Unit& Center) {
     // Because getLarva() returns Unitset and getTrainingQueue() deque
     if (Center->getType().producesLarva())
         return !Center->getLarva().empty();

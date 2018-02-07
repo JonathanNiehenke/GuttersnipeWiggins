@@ -45,7 +45,7 @@ class ResourceSupplier
         std::unordered_map<BWAPI::Unit, EcoBase*> unitToBase;
         std::vector<EcoBase*> Bases;
         void initialWorkaround(const BWAPI::Unit& workerUnit);
-        static bool isWorkerQueueEmpty(const BWAPI::Unit& Base);
+        static bool isQueueEmpty(const BWAPI::Unit& Base);
     public:
         ResourceSupplier(const BWAPI::UnitType& workerType);
         ~ResourceSupplier();
@@ -59,6 +59,7 @@ class ResourceSupplier
         void removeWorker(BWAPI::Unit workerUnit);
         void removeMineral(BWAPI::Unit mineralUnit);
         bool canFillLackingMiners();
+        void createOverlord() const;
         void createWorker();
         bool isAtCapacity();
         BWAPI::Unit getFirstCenter() { return Bases.front()->getCenter(); }
