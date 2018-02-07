@@ -25,12 +25,12 @@ void Race::onUnitCreate(const BWAPI::Unit& createdUnit) const {
         buildingConstructor->onCreate(createdUnit);
 }
 
-void Race::onUnitMorph(const BWAPI::Unit& morphedUnit) const {
+void Race::onUnitMorph(const BWAPI::Unit& morphedUnit) {
     BWAPI::Broodwar << "Unhandled morph: " << morphedUnit->getType().c_str()
                     << std::endl;
 }
 
-void Race::onUnitComplete(const BWAPI::Unit& completedUnit) const {
+void Race::onUnitComplete(const BWAPI::Unit& completedUnit) {
     BWAPI::UnitType completedType = completedUnit->getType();
     if (completedType == workerType)
         resourceSupplier->addWorker(completedUnit);
@@ -60,9 +60,9 @@ void Race::update() const {
 }
 
 int Race::expectedSupplyProvided(const BWAPI::UnitType& providerType) const {
-    const int supplyProvided = providerType.supplyProvided();
-    int providerCount = BWAPI::Broodwar->self()->allUnitCount(providerType);
-    return supplyProvided * providerCount;
+    const int providerCount = BWAPI::Broodwar->self()->allUnitCount(
+        providerType);
+    return providerType.supplyProvided() * providerCount;
 }
 
 int Race::expectedSupplyProvided() const {

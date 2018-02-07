@@ -14,9 +14,9 @@ class Race {
         ArmyTrainer* armyTrainer;
         TechTree* techTree;
         BWAPI::UnitType centerType, workerType, supplyType, armyUnitType;
-        int expectedSupplyProvided(const BWAPI::UnitType& providerType) const;
         virtual void onCompleteBuilding(const BWAPI::Unit&) const;
         virtual void onDestroyedBuilding(const BWAPI::Unit&) const {}
+        virtual int expectedSupplyProvided(const BWAPI::UnitType&) const;
     public:
         Race(const BWAPI::UnitType& armyUnitType);
         ~Race();
@@ -25,8 +25,8 @@ class Race {
         BWAPI::UnitType getSupplyType() const { return supplyType; }
         BWAPI::UnitType getArmyUnitType() const { return armyUnitType; }
         virtual void onUnitCreate(const BWAPI::Unit& createdUnit) const;
-        virtual void onUnitMorph(const BWAPI::Unit& morphedUnit) const;
-        virtual void onUnitComplete(const BWAPI::Unit& completedUnit) const;
+        virtual void onUnitMorph(const BWAPI::Unit& morphedUnit);
+        virtual void onUnitComplete(const BWAPI::Unit& completedUnit);
         virtual void onUnitDestroy(const BWAPI::Unit& destroyedUnit) const;
         void update() const;
         int expectedSupplyProvided() const;

@@ -14,8 +14,21 @@ void ZergRace::includeLarvaProducers() const {
     }
 }
 
-void ZergRace::onUnitMorph(const BWAPI::Unit& morphedUnit) const {
+void ZergRace::onUnitMorph(const BWAPI::Unit& morphedUnit) {
+    if (isIncompleteOverlord(morphedUnit))
+        ++incompleteOverlordCount;
     onUnitCreate(morphedUnit);
+}
+
+bool ZergRace::isIncompleteOverlord(const BWAPI::Unit& unit) {
+    return (unit->getType() == BWAPI::UnitTypes::Zerg_Egg &&
+        unit->getBuildType() == BWAPI::UnitTypes::Zerg_Overlord);
+}
+
+void ZergRace::onUnitComplete(const BWAPI::Unit& completedUnit) {
+    if (completedUnit->getType() == supplyType && incompleteOverlordCount > 0)
+        --incompleteOverlordCount;
+    Race::onUnitComplete(completedUnit);
 }
 
 void ZergRace::onDestroyedBuilding(
@@ -31,6 +44,16 @@ void ZergRace::removeLarvaProducers() const {
         if (unit->getType().producesLarva())
             armyTrainer->removeFacility(unit);
     }
+}
+
+int ZergRace::expectedSupplyProvided(
+    const BWAPI::UnitType& providerType) const
+{
+    int providerCount = BWAPI::Broodwar->self()->allUnitCount(
+        providerType);
+    if (providerType == supplyType)
+       providerCount  += incompleteOverlordCount;
+    return providerType.supplyProvided() * providerCount;
 }
 
 void ZergRace::createSupply() const {
