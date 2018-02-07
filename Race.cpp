@@ -2,15 +2,15 @@
 #include "Race.h"
 
 Race::Race(const BWAPI::UnitType& armyUnitType) {
-    this->resourceSupplier = new ResourceSupplier(workerType);
-    this->buildingConstructor = new BuildingConstructor();
-    this->armyTrainer = new ArmyTrainer();
-    this->techTree = new TechTree();
     const BWAPI::Race& r = BWAPI::Broodwar->self()->getRace();
     this->centerType = r.getCenter();
     this->workerType = r.getWorker();
     this->supplyType = r.getSupplyProvider();
     this->armyUnitType = armyUnitType;
+    this->resourceSupplier = new ResourceSupplier(workerType);
+    this->buildingConstructor = new BuildingConstructor();
+    this->armyTrainer = new ArmyTrainer();
+    this->techTree = new TechTree();
 }
 
 Race::~Race() {
@@ -83,6 +83,10 @@ int Race::potentialSupplyUsed(const BWAPI::UnitType& unitType) const {
 
 void Race::createSupply() const {
     buildingConstructor->request(supplyType);
+}
+
+bool Race::canFillLackingMiners() const {
+    return resourceSupplier->canFillLackingMiners();
 }
 
 void Race::createWorker() const {

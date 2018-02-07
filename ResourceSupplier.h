@@ -45,6 +45,7 @@ class ResourceSupplier
         std::unordered_map<BWAPI::Unit, EcoBase*> unitToBase;
         std::vector<EcoBase*> Bases;
         void initialWorkaround(const BWAPI::Unit& workerUnit);
+        static bool isWorkerQueueEmpty(const BWAPI::Unit& Base);
     public:
         ResourceSupplier(const BWAPI::UnitType& workerType);
         ~ResourceSupplier();

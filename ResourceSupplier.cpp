@@ -147,9 +147,8 @@ void ResourceSupplier::removeMineral(BWAPI::Unit mineralUnit)
 }
 
 bool ResourceSupplier::canFillLackingMiners() {
-    BWAPI::Unit centerUnit = nullptr;
     for (EcoBase *Base: Bases) {
-        if (Utils::isIdle(Base->getCenter()) && Base->isLackingMiners())
+        if (isWorkerQueueEmpty(Base->getCenter()) && Base->isLackingMiners())
             return true;
     }
     return false;
@@ -157,13 +156,18 @@ bool ResourceSupplier::canFillLackingMiners() {
 
 void ResourceSupplier::createWorker()
 {
-    BWAPI::Unit centerUnit = nullptr;
     for (EcoBase *Base: Bases) {
-        centerUnit = Base->getCenter();
-        if (Utils::isIdle(centerUnit) && Base->isLackingMiners()) {
-            centerUnit->train(workerType);
-        }
+        if (isWorkerQueueEmpty(Base->getCenter()) && Base->isLackingMiners())
+            Base->getCenter()->train(workerType);
     }
+}
+
+bool ResourceSupplier::isWorkerQueueEmpty(const BWAPI::Unit& Center) {
+    // Because getLarva() returns Unitset and getTrainingQueue() deque
+    if (Center->getType().producesLarva())
+        return !Center->getLarva().empty();
+    else
+        return Center->getTrainingQueue().empty();
 }
 
 bool ResourceSupplier::isAtCapacity()

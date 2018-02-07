@@ -32,6 +32,7 @@ class Race {
         int expectedSupplyProvided() const;
         int potentialSupplyUsed(const BWAPI::UnitType& unitType) const;
         virtual void createSupply() const;
+        bool canFillLackingMiners() const;
         void createWorker() const;
         bool readyToTrainArmyUnit() const;
         void trainWarriors() const;

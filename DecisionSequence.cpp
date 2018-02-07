@@ -6,9 +6,9 @@ void DecisionSequence::onStart(Race* race) {
     Objectives["EnoughSupply"] = ConditionalResponse(
         std::bind(&DecisionSequence::needsSupply, this),
         std::bind(&DecisionSequence::createSupply, this));
-    // Objectives["FullSaturation"] = ConditionalResponse(
-        // std::bind(&Race::canFillLackingMiners, race),
-        // std::bind(&Race::createWorker, race));
+    Objectives["FullSaturation"] = ConditionalResponse(
+        std::bind(&Race::canFillLackingMiners, race),
+        std::bind(&Race::createWorker, race));
     // Objectives["MinimalSaturation"] = ConditionalResponse(
         // std::bind(&Race::lackingMinimalMiners, race),
         // std::bind(&Race::createWorkers, race));
@@ -22,7 +22,7 @@ void DecisionSequence::onStart(Race* race) {
         [this, race](){ return this->canProgressFor(race->getArmyUnitType()); },
         [this, race](){ this->techTo(race->getArmyUnitType()); });
     priorityList.push_back("EnoughSupply");
-    // priorityList.push_back("FullSaturation");
+    priorityList.push_back("FullSaturation");
     priorityList.push_back("ArmyWarriors");
     priorityList.push_back("TechToArmy");
 }
