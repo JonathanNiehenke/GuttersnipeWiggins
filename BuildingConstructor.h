@@ -13,8 +13,6 @@ class BuildingConstructor {
         BuildingPlacer* buildingPlacer;
         BWAPI::TilePosition srcLocation;
         void beginPreparation(const BWAPI::UnitType& productType);
-        ConstrunctionPO createJob(const BWAPI::UnitType& productType);
-        BWAPI::TilePosition getPlacement(const ConstrunctionPO& Job) const;
         BWAPI::Unit getContractor(const ConstrunctionPO& Job);
         BWAPI::Position toJobCenter(const ConstrunctionPO& Job);
         bool isPrepared(const ConstrunctionPO& Job);

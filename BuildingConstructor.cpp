@@ -20,40 +20,19 @@ void BuildingConstructor::request(
 void BuildingConstructor::beginPreparation(
     const BWAPI::UnitType& productType)
 {
-    try {
-        Preparing[productType] = createJob(productType); }
-    catch (const std::runtime_error& e) {
-        BWAPI::Broodwar << e.what() << std::endl; }
-}
-
-BuildingConstructor::ConstrunctionPO BuildingConstructor::createJob(
-    const BWAPI::UnitType& productType)
-{
     ConstrunctionPO Job(productType);
-    Job.placement = getPlacement(Job);
+    Job.placement = buildingPlacer->getPlacement(Job.productType);
     Job.contractor = getContractor(Job);
-    return Job;
-}
-
-BWAPI::TilePosition BuildingConstructor::getPlacement(
-    const ConstrunctionPO& Job) const
-{
-    BWAPI::TilePosition placement = buildingPlacer->getPlacement(
-        Job.productType);
-    if (placement == BWAPI::TilePositions::None)
-        throw std::runtime_error("No suitable placement found");
-    return placement;
+    Preparing[productType] = Job;
 }
 
 BWAPI::Unit BuildingConstructor::getContractor(
     const ConstrunctionPO& Job)
 {
+    if (Job.placement == BWAPI::TilePositions::None) return nullptr;
     // IsGatheringMinerals assumes IsWorker && IsOwned
-    BWAPI::Unit contractor = BWAPI::Broodwar->getClosestUnit(toJobCenter(Job),
+    return BWAPI::Broodwar->getClosestUnit(toJobCenter(Job),
         IsGatheringMinerals && CurrentOrder == BWAPI::Orders::MoveToMinerals);
-    if (!contractor)
-        throw std::runtime_error("No suitable contractor found");
-    return contractor;
 }
 
 BWAPI::Position BuildingConstructor::toJobCenter(const ConstrunctionPO& Job) {
@@ -62,9 +41,13 @@ BWAPI::Position BuildingConstructor::toJobCenter(const ConstrunctionPO& Job) {
 }
 
 void BuildingConstructor::updatePreparation() {
-    for (const auto& prepPair: Preparing) {
-        ConstrunctionPO Job = prepPair.second;
-        if (isPrepared(Job))
+    for (auto& prepPair: Preparing) {
+        ConstrunctionPO& Job = prepPair.second;
+        if (Job.placement == BWAPI::TilePositions::None)
+            Job.placement = buildingPlacer->getPlacement(Job.productType);
+        else if (!Job.contractor)
+            Job.contractor = getContractor(Job);
+        else if (isPrepared(Job))
             construct(Job);
         else if (Job.contractor->isGatheringMinerals())
             Job.contractor->move(toJobCenter(Job));
