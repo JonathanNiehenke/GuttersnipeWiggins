@@ -7,12 +7,15 @@ using namespace BWAPI::Filter;
 class BuildingConstructor {
     private:
         struct ConstrunctionPO;
+        class RadicalOffset;
         std::map<BWAPI::UnitType, ConstrunctionPO> Preparing;
         std::map<BWAPI::Unit, ConstrunctionPO> Producing;
         BWAPI::TilePosition srcLocation;
         void beginPreparation(const BWAPI::UnitType& productType);
         ConstrunctionPO createJob(const BWAPI::UnitType& productType);
-        BWAPI::TilePosition getPlacement(const ConstrunctionPO& Job);
+        BWAPI::TilePosition getPlacement(const ConstrunctionPO& Job) const;
+        BWAPI::TilePosition getPlacement(
+            const BWAPI::UnitType& buildingType) const;
         BWAPI::Unit getContractor(const ConstrunctionPO& Job);
         BWAPI::Position toJobCenter(const ConstrunctionPO& Job);
         bool isPrepared(const ConstrunctionPO& Job);
@@ -33,4 +36,26 @@ struct BuildingConstructor::ConstrunctionPO {
     BWAPI::Unit product;
     ConstrunctionPO();
     ConstrunctionPO(const BWAPI::UnitType& productType);
+};
+
+class BuildingConstructor::RadicalOffset {
+    private:
+        class iterator;
+        const int radius;
+    public:
+        RadicalOffset(int radius) : radius(radius) {}
+        BuildingConstructor::RadicalOffset::iterator begin();
+        BuildingConstructor::RadicalOffset::iterator end();
+};
+
+class BuildingConstructor::RadicalOffset::iterator {
+    private:
+        const int radius;
+        int count;
+    public:
+        iterator(int radius, int count) : radius(radius), count(count) {}
+        void operator++();
+        bool operator==(iterator other) const;
+        bool operator!=(iterator other) const;
+        BWAPI::TilePosition operator*() const;
 };

@@ -31,15 +31,27 @@ BuildingConstructor::ConstrunctionPO BuildingConstructor::createJob(
 }
 
 BWAPI::TilePosition BuildingConstructor::getPlacement(
-    const ConstrunctionPO& Job)
+    const ConstrunctionPO& Job) const
 {
-    BWAPI::TilePosition placement = BWAPI::Broodwar->getBuildLocation(
-        Job.productType, srcLocation, 25);
-    if (placement == BWAPI::TilePositions::Invalid)
-        throw std::runtime_error("Invalid placement found");
-    else if (placement == BWAPI::TilePositions::None)
+    BWAPI::TilePosition placement = getPlacement(
+        Job.productType);
+    if (placement == BWAPI::TilePositions::None)
         throw std::runtime_error("No suitable placement found");
     return placement;
+}
+
+BWAPI::TilePosition BuildingConstructor::getPlacement(
+    const BWAPI::UnitType& buildingType) const
+{
+    const BWAPI::TilePosition startPos = BWAPI::Broodwar->self()->getStartLocation();
+    for (int radius = 0; radius < 4; ++radius) {
+        for (const BWAPI::TilePosition& offset: RadicalOffset(radius)) {
+            BWAPI::TilePosition buildLocation = startPos + offset * 5;
+            if (BWAPI::Broodwar->canBuildHere(buildLocation, buildingType))
+                return buildLocation;
+        }
+    }
+    return BWAPI::TilePositions::None;
 }
 
 BWAPI::Unit BuildingConstructor::getContractor(
@@ -116,3 +128,44 @@ BuildingConstructor::ConstrunctionPO::ConstrunctionPO(const BWAPI::UnitType& pro
     this->contractor = nullptr;
     this->product = nullptr;
 };
+
+
+BuildingConstructor::RadicalOffset::iterator
+    BuildingConstructor::RadicalOffset::begin()
+{
+    return iterator(radius, 0);
+}
+
+BuildingConstructor::RadicalOffset::iterator
+    BuildingConstructor::RadicalOffset::end()
+{
+    return iterator(radius, radius * 8);
+}
+
+void BuildingConstructor::RadicalOffset::iterator::operator++() {
+    ++count;
+}
+
+bool BuildingConstructor::RadicalOffset::iterator::operator==(
+    iterator other) const
+{
+    return radius == other.radius && count == other.count;
+}
+
+bool BuildingConstructor::RadicalOffset::iterator::operator!=(
+    iterator other) const
+{
+    return !(*this == other);
+}
+
+BWAPI::TilePosition BuildingConstructor::RadicalOffset::iterator::operator*()
+    const
+{
+    if (count <= radius*2)
+        return BWAPI::TilePosition(count - radius, -radius);
+    if (count <= radius*4)
+        return BWAPI::TilePosition(radius, count - radius*3);
+    if (count <= radius*6)
+        return BWAPI::TilePosition(radius*5 - count, radius);
+    return BWAPI::TilePosition(-radius, radius*7 - count);
+}
