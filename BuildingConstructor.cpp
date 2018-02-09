@@ -43,15 +43,41 @@ BWAPI::TilePosition BuildingConstructor::getPlacement(
 BWAPI::TilePosition BuildingConstructor::getPlacement(
     const BWAPI::UnitType& buildingType) const
 {
-    const BWAPI::TilePosition startPos = BWAPI::Broodwar->self()->getStartLocation();
+    bool small = buildingType.tileSize().y == 2;
+    const BWAPI::TilePosition& startPos = BWAPI::Broodwar->self()->getStartLocation();
     for (int radius = 0; radius < 4; ++radius) {
         for (const BWAPI::TilePosition& offset: RadicalOffset(radius)) {
             BWAPI::TilePosition buildLocation = startPos + offset * 5;
             if (BWAPI::Broodwar->canBuildHere(buildLocation, buildingType))
                 return buildLocation;
+            if (small && canBuildAdjacent(buildLocation))
+                return adjacentBuildLocation(buildLocation);
         }
     }
     return BWAPI::TilePositions::None;
+}
+
+bool BuildingConstructor::canBuildAdjacent(
+    const BWAPI::TilePosition& buildingLocation) const
+{
+    const BWAPI::Position buildingPos = BWAPI::Position(buildingLocation);
+    const BWAPI::Unitset& adjacent = BWAPI::Broodwar->getUnitsInRectangle(
+        buildingPos, buildingPos + BWAPI::Position(4*32, 4*32));
+    if (!std::all_of(adjacent.begin(), adjacent.end(), IsBuilding && &isSmall))
+        return false;
+    if (adjacent.size() > 1)
+        return false;
+    return true;
+}
+
+bool BuildingConstructor::isSmall(const BWAPI::Unit& unit) {
+    return unit->getType().tileSize().y == 2;
+}
+
+BWAPI::TilePosition BuildingConstructor::adjacentBuildLocation(
+    const BWAPI::TilePosition& buildingLocation) const
+{
+    return buildingLocation + BWAPI::TilePosition(0, 2);
 }
 
 BWAPI::Unit BuildingConstructor::getContractor(
