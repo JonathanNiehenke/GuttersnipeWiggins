@@ -16,11 +16,12 @@ class BuildingConstructor {
         BWAPI::TilePosition getPlacement(const ConstrunctionPO& Job) const;
         BWAPI::TilePosition getPlacement(
             const BWAPI::UnitType& buildingType) const;
-        bool canBuildAdjacent(
-            const BWAPI::TilePosition& buildingLocation) const;
-        static bool isSmall(const BWAPI::Unit& unit);
-        BWAPI::TilePosition adjacentBuildLocation(
-            const BWAPI::TilePosition& buildingLocation) const;
+        static bool canBuildAdjacent(
+            const BWAPI::TilePosition& buildingLocation,
+            const BWAPI::UnitType& buildingType);
+        static BWAPI::TilePosition adjacentBuildLocation(
+            const BWAPI::TilePosition& buildingLocation,
+            const BWAPI::UnitType& buildingType);
         BWAPI::Unit getContractor(const ConstrunctionPO& Job);
         BWAPI::Position toJobCenter(const ConstrunctionPO& Job);
         bool isPrepared(const ConstrunctionPO& Job);

@@ -50,34 +50,43 @@ BWAPI::TilePosition BuildingConstructor::getPlacement(
             BWAPI::TilePosition buildLocation = startPos + offset * 5;
             if (BWAPI::Broodwar->canBuildHere(buildLocation, buildingType))
                 return buildLocation;
-            if (small && canBuildAdjacent(buildLocation))
-                return adjacentBuildLocation(buildLocation);
+            if (small && canBuildAdjacent(buildLocation, buildingType))
+                return adjacentBuildLocation(buildLocation, buildingType);
         }
     }
     return BWAPI::TilePositions::None;
 }
 
 bool BuildingConstructor::canBuildAdjacent(
-    const BWAPI::TilePosition& buildingLocation) const
+    const BWAPI::TilePosition& buildingLocation,
+    const BWAPI::UnitType& buildingType)
 {
+    const BWAPI::TilePosition buildingSize = buildingType.tileSize();
     const BWAPI::Position buildingPos = BWAPI::Position(buildingLocation);
     const BWAPI::Unitset& adjacent = BWAPI::Broodwar->getUnitsInRectangle(
         buildingPos, buildingPos + BWAPI::Position(4*32, 4*32));
-    if (!std::all_of(adjacent.begin(), adjacent.end(), IsBuilding && &isSmall))
+    auto isSimilarSize = (
+        [buildingSize](const BWAPI::Unit& unit) -> bool {
+            return unit->getType().tileSize() == buildingSize; });
+    if (!std::all_of(adjacent.begin(), adjacent.end(), isSimilarSize))
         return false;
-    if (adjacent.size() > 1)
+    if (adjacent.size() >= (buildingSize.x == 2 ? size_t(4) : size_t(2)))
         return false;
     return true;
 }
 
-bool BuildingConstructor::isSmall(const BWAPI::Unit& unit) {
-    return unit->getType().tileSize().y == 2;
-}
-
 BWAPI::TilePosition BuildingConstructor::adjacentBuildLocation(
-    const BWAPI::TilePosition& buildingLocation) const
+    const BWAPI::TilePosition& buildingLocation,
+    const BWAPI::UnitType& buildingType)
 {
-    return buildingLocation + BWAPI::TilePosition(0, 2);
+    BWAPI::TilePosition& newBuildingLoc = (
+        buildingLocation + BWAPI::TilePosition(0, 2));
+    if (BWAPI::Broodwar->canBuildHere(newBuildingLoc, buildingType))
+        return newBuildingLoc;
+    newBuildingLoc = buildingLocation + BWAPI::TilePosition(2, 0);
+    if (BWAPI::Broodwar->canBuildHere(newBuildingLoc, buildingType))
+        return newBuildingLoc;
+    return buildingLocation + BWAPI::TilePosition(2, 2);
 }
 
 BWAPI::Unit BuildingConstructor::getContractor(
