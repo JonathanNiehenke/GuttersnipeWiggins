@@ -13,7 +13,6 @@ class ZergRace : public Race
         bool doesTechExist(const BWAPI::UnitType& buildingType) const;
     public:
         ZergRace() : Race(BWAPI::UnitTypes::Enum::Zerg_Zergling) {}
-        void onUnitCreate(const BWAPI::Unit& createdUnit) const;
         void onUnitMorph(const BWAPI::Unit& morphedUnit);
         void onUnitComplete(const BWAPI::Unit& completedUnit);
         void createSupply() const;

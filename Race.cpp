@@ -40,8 +40,11 @@ void Race::onUnitComplete(const BWAPI::Unit& completedUnit) {
 
 void Race::onCompleteBuilding(const BWAPI::Unit& completedBuilding) const {
     buildingConstructor->onComplete(completedBuilding);
-    techTree->addTech(completedBuilding->getType());
-    if (completedBuilding->getType() == centerType)
+    BWAPI::UnitType buildingType = completedBuilding->getType();
+    techTree->addTech(buildingType);
+    if (buildingType.canProduce())
+        armyTrainer->includeFacility(completedBuilding);
+    if (buildingType == centerType)
         resourceSupplier->addBase(completedBuilding);
 }
 
@@ -90,11 +93,11 @@ bool Race::canFillLackingMiners() const {
 }
 
 void Race::createWorker() const {
-    resourceSupplier->createWorker();
+    armyTrainer->trainUnits(workerType);
 }
 
 bool Race::readyToTrainArmyUnit() const {
-    return armyTrainer->readyToTrain();
+    return armyTrainer->readyToTrain(armyUnitType);
 }
 
 void Race::trainWarriors() const {

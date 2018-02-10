@@ -59,8 +59,6 @@ class ResourceSupplier
         void removeWorker(BWAPI::Unit workerUnit);
         void removeMineral(BWAPI::Unit mineralUnit);
         bool canFillLackingMiners();
-        void createOverlord() const;
-        void createWorker();
         bool isAtCapacity();
         BWAPI::Unit getFirstCenter() { return Bases.front()->getCenter(); }
         BWAPI::Unit getLastCenter() { return Bases.back()->getCenter(); }

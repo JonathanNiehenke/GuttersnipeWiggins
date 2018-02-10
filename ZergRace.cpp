@@ -1,12 +1,6 @@
 #pragma once
 #include "ZergRace.h"
 
-void ZergRace::onUnitCreate(const BWAPI::Unit& createdUnit) const {
-    if (createdUnit->getType() == BWAPI::UnitTypes::Zerg_Spawning_Pool)
-        includeLarvaProducers();
-    Race::onUnitCreate(createdUnit);
-}
-
 void ZergRace::includeLarvaProducers() const {
     for (const BWAPI::Unit& unit: BWAPI::Broodwar->self()->getUnits()) {
         if (unit->getType().producesLarva())
@@ -57,7 +51,7 @@ int ZergRace::expectedSupplyProvided(
 }
 
 void ZergRace::createSupply() const {
-    resourceSupplier->createOverlord();
+    armyTrainer->trainUnits(supplyType);
 }
 
 void ZergRace::construct(const BWAPI::UnitType& buildingType) const {

@@ -18,9 +18,9 @@ int ArmyTrainer::facilityCount() const {
     return productionFacilities.size();
 }
 
-bool ArmyTrainer::readyToTrain() const {
+bool ArmyTrainer::readyToTrain(const BWAPI::UnitType& unitType) const {
     for (const BWAPI::Unit& Facility: productionFacilities) {
-        if (Facility->isCompleted() && isTrainingQueueEmpty(Facility))
+        if (Facility->canTrain(unitType) && isTrainingQueueEmpty(Facility))
             return true;
     }
     return false;
