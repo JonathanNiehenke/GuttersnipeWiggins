@@ -49,27 +49,40 @@ void BuildingConstructor::updatePreparation() {
             Job.contractor = getContractor(Job);
         else if (isPrepared(Job))
             construct(Job);
-        else if (Job.contractor->isGatheringMinerals())
+        else if (!isPreparing(Job))
             Job.contractor->move(toJobCenter(Job));
     }
 }
 
 bool BuildingConstructor::isPrepared(const ConstructionPO& Job) {
-    BWAPI::Position contractorPos = Job.contractor->getPosition();
+    const BWAPI::Position& contractorPos = Job.contractor->getPosition();
     return (contractorPos.getApproxDistance(toJobCenter(Job)) < 64 &&
-            Job.contractor->canBuild(Job.productType, Job.placement));
+            Job.contractor->canBuild(Job.productType));
 }
 
-    // Reduces checks at completion by queueing the return to mining
 void BuildingConstructor::construct(ConstructionPO& Job) {
     if (Job.contractor->build(Job.productType, Job.placement))
         queueReturnToMining(Job.contractor);
+    else if (isObstructed(Job))
+        Job.placement = buildingPlacer->getPlacement(Job.productType);
 }
 
 void BuildingConstructor::queueReturnToMining(const BWAPI::Unit& worker) {
     BWAPI::Unit closestMineral = BWAPI::Broodwar->getClosestUnit(
         worker->getPosition(), IsMineralField);
     worker->gather(closestMineral, true);
+}
+
+bool BuildingConstructor::isObstructed(const ConstructionPO& Job) {
+    return !BWAPI::Broodwar->getUnitsInRectangle(
+        BWAPI::Position(Job.placement),
+        BWAPI::Position(Job.placement + Job.productType.tileSize()),
+        IsBuilding || IsEnemy || !IsMoving).empty();
+}
+
+bool BuildingConstructor::isPreparing(const ConstructionPO& Job) {
+    return (Job.contractor->getTargetPosition().getApproxDistance(
+        toJobCenter(Job)) <= 10);
 }
 
 void BuildingConstructor::onCreate(const BWAPI::Unit& createdBuilding) {

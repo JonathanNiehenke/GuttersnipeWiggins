@@ -14,10 +14,12 @@ class BuildingConstructor {
         BWAPI::TilePosition srcLocation;
         void beginPreparation(const BWAPI::UnitType& productType);
         BWAPI::Unit getContractor(const ConstructionPO& Job);
-        BWAPI::Position toJobCenter(const ConstructionPO& Job);
+        static BWAPI::Position toJobCenter(const ConstructionPO& Job);
         bool isPrepared(const ConstructionPO& Job);
         void construct(ConstructionPO& Job);
         void queueReturnToMining(const BWAPI::Unit& worker);
+        static bool isObstructed(const ConstructionPO& Job);
+        static bool isPreparing(const ConstructionPO& Job);
     public:
         BuildingConstructor();
         ~BuildingConstructor();
