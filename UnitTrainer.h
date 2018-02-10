@@ -1,7 +1,7 @@
 #pragma once
 #include <BWAPI.h>
 
-class ArmyTrainer
+class UnitTrainer
 {
     private:
         std::vector<BWAPI::Unit> productionFacilities;

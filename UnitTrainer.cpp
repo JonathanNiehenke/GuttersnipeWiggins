@@ -1,24 +1,24 @@
 #pragma once
-#include "ArmyTrainer.h"
+#include "UnitTrainer.h"
 
 using namespace BWAPI::Filter;
 
-void ArmyTrainer::includeFacility(const BWAPI::Unit& Facility) {
+void UnitTrainer::includeFacility(const BWAPI::Unit& Facility) {
     productionFacilities.push_back(Facility);
 }
 
-void ArmyTrainer::removeFacility(const BWAPI::Unit& Facility) {
+void UnitTrainer::removeFacility(const BWAPI::Unit& Facility) {
     auto endIt = productionFacilities.end(),
          foundIt = find(productionFacilities.begin(), endIt, Facility);
     if (foundIt != endIt)
         productionFacilities.erase(foundIt);
 }
 
-int ArmyTrainer::facilityCount() const {
+int UnitTrainer::facilityCount() const {
     return productionFacilities.size();
 }
 
-bool ArmyTrainer::readyToTrain(const BWAPI::UnitType& unitType) const {
+bool UnitTrainer::readyToTrain(const BWAPI::UnitType& unitType) const {
     for (const BWAPI::Unit& Facility: productionFacilities) {
         if (Facility->canTrain(unitType) && isTrainingQueueEmpty(Facility))
             return true;
@@ -26,14 +26,14 @@ bool ArmyTrainer::readyToTrain(const BWAPI::UnitType& unitType) const {
     return false;
 }
 
-void ArmyTrainer::trainUnits(const BWAPI::UnitType& unitType) {
+void UnitTrainer::trainUnits(const BWAPI::UnitType& unitType) {
     for (BWAPI::Unit& Facility: productionFacilities) {
         if (isTrainingQueueEmpty(Facility))
             Facility->train(unitType);
     }
 }
 
-bool ArmyTrainer::isTrainingQueueEmpty(const BWAPI::Unit& Facility) const {
+bool UnitTrainer::isTrainingQueueEmpty(const BWAPI::Unit& Facility) const {
     // Because getLarva() returns Unitset and getTrainingQueue() deque
     if (Facility->getType().producesLarva())
         return !Facility->getLarva().empty();

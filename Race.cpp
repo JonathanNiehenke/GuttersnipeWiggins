@@ -9,14 +9,14 @@ Race::Race(const BWAPI::UnitType& armyUnitType) {
     this->armyUnitType = armyUnitType;
     this->resourceSupplier = new ResourceSupplier(workerType);
     this->buildingConstructor = new BuildingConstructor();
-    this->armyTrainer = new ArmyTrainer();
+    this->unitTrainer = new UnitTrainer();
     this->techTree = new TechTree();
 }
 
 Race::~Race() {
     delete buildingConstructor;
     delete resourceSupplier;
-    delete armyTrainer;
+    delete unitTrainer;
     delete techTree;
 }
 
@@ -43,7 +43,7 @@ void Race::onCompleteBuilding(const BWAPI::Unit& completedBuilding) const {
     BWAPI::UnitType buildingType = completedBuilding->getType();
     techTree->addTech(buildingType);
     if (buildingType.canProduce())
-        armyTrainer->includeFacility(completedBuilding);
+        unitTrainer->includeFacility(completedBuilding);
     if (buildingType == centerType)
         resourceSupplier->addBase(completedBuilding);
 }
@@ -80,7 +80,7 @@ int Race::potentialSupplyUsed(const BWAPI::UnitType& unitType) const {
              supplyBuildTime / unitType.buildTime()));
     const int facilityAmount = (unitType == workerType
         ? resourceSupplier->getBaseAmount()
-        : armyTrainer->facilityCount());
+        : unitTrainer->facilityCount());
     return unitsPerSupplyBuild * facilityAmount * unitType.supplyRequired();
 }
 
@@ -93,15 +93,15 @@ bool Race::canFillLackingMiners() const {
 }
 
 void Race::createWorker() const {
-    armyTrainer->trainUnits(workerType);
+    unitTrainer->trainUnits(workerType);
 }
 
 bool Race::readyToTrainArmyUnit() const {
-    return armyTrainer->readyToTrain(armyUnitType);
+    return unitTrainer->readyToTrain(armyUnitType);
 }
 
 void Race::trainWarriors() const {
-    armyTrainer->trainUnits(armyUnitType);
+    unitTrainer->trainUnits(armyUnitType);
 }
 
 void Race::construct(const BWAPI::UnitType& buildingType) const {

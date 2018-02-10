@@ -4,5 +4,5 @@
 void TerranRace::onDestroyedBuilding(const BWAPI::Unit& destroyedBuilding) const {
     buildingConstructor->onComplete(destroyedBuilding);
     if (destroyedBuilding->getType() == BWAPI::UnitTypes::Terran_Barracks)
-        armyTrainer->removeFacility(destroyedBuilding);
+        unitTrainer->removeFacility(destroyedBuilding);
 }

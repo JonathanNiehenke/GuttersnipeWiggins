@@ -4,7 +4,7 @@
 void ZergRace::includeLarvaProducers() const {
     for (const BWAPI::Unit& unit: BWAPI::Broodwar->self()->getUnits()) {
         if (unit->getType().producesLarva())
-            armyTrainer->includeFacility(unit);
+            unitTrainer->includeFacility(unit);
     }
 }
 
@@ -36,7 +36,7 @@ void ZergRace::onDestroyedBuilding(
 void ZergRace::removeLarvaProducers() const {
     for (const BWAPI::Unit& unit: BWAPI::Broodwar->self()->getUnits()) {
         if (unit->getType().producesLarva())
-            armyTrainer->removeFacility(unit);
+            unitTrainer->removeFacility(unit);
     }
 }
 
@@ -51,7 +51,7 @@ int ZergRace::expectedSupplyProvided(
 }
 
 void ZergRace::createSupply() const {
-    armyTrainer->trainUnits(supplyType);
+    unitTrainer->trainUnits(supplyType);
 }
 
 void ZergRace::construct(const BWAPI::UnitType& buildingType) const {

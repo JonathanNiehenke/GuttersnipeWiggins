@@ -6,7 +6,7 @@ void ProtossRace::onDestroyedBuilding(
 {
     buildingConstructor->onComplete(destroyedBuilding);
     if (destroyedBuilding->getType() == BWAPI::UnitTypes::Protoss_Gateway)
-        armyTrainer->removeFacility(destroyedBuilding);
+        unitTrainer->removeFacility(destroyedBuilding);
 }
 
 void ProtossRace::construct(const BWAPI::UnitType& buildingType) const {

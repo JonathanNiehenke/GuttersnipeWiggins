@@ -2,7 +2,7 @@
 
 #pragma once
 #include <BWAPI.h>
-#include "ArmyTrainer.h"
+#include "UnitTrainer.h"
 #include "BuildingConstructor.h"
 #include "ResourceSupplier.h"
 #include "TechTree.h"
@@ -11,7 +11,7 @@ class Race {
     protected:
         ResourceSupplier* resourceSupplier;
         BuildingConstructor* buildingConstructor;
-        ArmyTrainer* armyTrainer;
+        UnitTrainer* unitTrainer;
         TechTree* techTree;
         BWAPI::UnitType centerType, workerType, supplyType, armyUnitType;
         virtual void onCompleteBuilding(const BWAPI::Unit&) const;
