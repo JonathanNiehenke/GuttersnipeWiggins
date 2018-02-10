@@ -7,16 +7,16 @@ using namespace BWAPI::Filter;
 
 class BuildingConstructor {
     private:
-        struct ConstrunctionPO;
-        std::map<BWAPI::UnitType, ConstrunctionPO> Preparing;
-        std::map<BWAPI::Unit, ConstrunctionPO> Producing;
+        struct ConstructionPO;
+        std::map<BWAPI::UnitType, ConstructionPO> Preparing;
+        std::map<BWAPI::Unit, ConstructionPO> Producing;
         BuildingPlacer* buildingPlacer;
         BWAPI::TilePosition srcLocation;
         void beginPreparation(const BWAPI::UnitType& productType);
-        BWAPI::Unit getContractor(const ConstrunctionPO& Job);
-        BWAPI::Position toJobCenter(const ConstrunctionPO& Job);
-        bool isPrepared(const ConstrunctionPO& Job);
-        void construct(const ConstrunctionPO& Job);
+        BWAPI::Unit getContractor(const ConstructionPO& Job);
+        BWAPI::Position toJobCenter(const ConstructionPO& Job);
+        bool isPrepared(const ConstructionPO& Job);
+        void construct(ConstructionPO& Job);
         void queueReturnToMining(const BWAPI::Unit& worker);
     public:
         BuildingConstructor();
@@ -27,11 +27,11 @@ class BuildingConstructor {
         void onComplete(const BWAPI::Unit& completedBuilding);
 };
 
-struct BuildingConstructor::ConstrunctionPO {
+struct BuildingConstructor::ConstructionPO {
     BWAPI::UnitType productType;
     BWAPI::TilePosition placement;
     BWAPI::Unit contractor;
     BWAPI::Unit product;
-    ConstrunctionPO();
-    ConstrunctionPO(const BWAPI::UnitType& productType);
+    ConstructionPO();
+    ConstructionPO(const BWAPI::UnitType& productType);
 };
