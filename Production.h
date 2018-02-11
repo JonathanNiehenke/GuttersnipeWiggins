@@ -66,6 +66,8 @@ class ZergProduction : public Production
     private:
         int incompleteOverlordCount = 0;
         static bool isIncompleteOverlord(const BWAPI::Unit& unit);
+        virtual void onCompleteBuilding(const BWAPI::Unit&) const;
+        static bool Alone(const BWAPI::Unit& unit);
         int expectedSupplyProvided(const BWAPI::UnitType&) const;
         bool doesTechExist(const BWAPI::UnitType& buildingType) const;
     public:

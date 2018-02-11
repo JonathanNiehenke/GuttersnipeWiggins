@@ -158,6 +158,21 @@ void ZergProduction::onUnitComplete(const BWAPI::Unit& completedUnit) {
     Production::onUnitComplete(completedUnit);
 }
 
+void ZergProduction::onCompleteBuilding(
+    const BWAPI::Unit& completedBuilding) const
+{
+    buildingConstructor->onComplete(completedBuilding);
+    techTree->addTech(completedBuilding->getType());
+    if (completedBuilding->getType().canProduce())
+        unitTrainer->includeFacility(completedBuilding);
+    if (completedBuilding->getType() == centerType && Alone(completedBuilding))
+        resourceSupplier->addBase(completedBuilding);
+}
+
+bool ZergProduction::Alone(const BWAPI::Unit& unit) {
+    return unit->getUnitsInRadius(300, GetType == unit->getType()).empty();
+}
+
 int ZergProduction::expectedSupplyProvided(
     const BWAPI::UnitType& providerType) const
 {
