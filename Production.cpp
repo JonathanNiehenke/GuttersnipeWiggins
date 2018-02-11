@@ -123,8 +123,10 @@ BWAPI::UnitType Production::getNextRequiredBuilding(
     return techTree->getNextRequiredBuilding(unitType);
 }
 
-void ProtossProduction::construct(const BWAPI::UnitType& buildingType) const {
-        buildingConstructor->request(buildingType);
+BWAPI::UnitType Production::facilityFor(
+    const BWAPI::UnitType& unitType) const
+{
+    return unitType.whatBuilds().first;
 }
 
 BWAPI::UnitType ProtossProduction::getNextRequiredBuilding(
@@ -179,4 +181,11 @@ void ZergProduction::construct(const BWAPI::UnitType& buildingType) const {
 
 bool ZergProduction::doesTechExist(const BWAPI::UnitType& buildingType) const {
     return BWAPI::Broodwar->self()->allUnitCount(buildingType) > 0;
+}
+
+BWAPI::UnitType ZergProduction::facilityFor(
+    const BWAPI::UnitType& unitType) const
+{
+    return (unitType.whatBuilds().first == BWAPI::UnitTypes::Zerg_Larva
+        ? BWAPI::UnitTypes::Zerg_Hatchery : unitType.whatBuilds().first);
 }

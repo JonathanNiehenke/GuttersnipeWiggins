@@ -88,7 +88,7 @@ void DecisionSequence::techTo(const BWAPI::UnitType& unitType) const {
 }
 
 bool DecisionSequence::canExtend(const BWAPI::UnitType& unitType) const {
-    const BWAPI::UnitType& facilityType = unitType.whatBuilds().first;
+    const BWAPI::UnitType& facilityType = (production->facilityFor(unitType));
     const int facilityCount = BWAPI::Broodwar->self()->allUnitCount(
         facilityType);
     const int expenseBuffer = facilityCount * unitType.mineralPrice() + 100,
@@ -99,7 +99,7 @@ bool DecisionSequence::canExtend(const BWAPI::UnitType& unitType) const {
 void DecisionSequence::increaseFacilities(
     const BWAPI::UnitType& unitType) const
 {
-    production->construct(unitType.whatBuilds().first);
+    production->construct(production->facilityFor(unitType));
 }
 
 DecisionSequence::ConditionalResponse::ConditionalResponse() {

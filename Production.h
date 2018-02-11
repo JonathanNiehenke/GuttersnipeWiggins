@@ -38,7 +38,8 @@ class Production {
         void trainWarriors() const;
         virtual void construct(const BWAPI::UnitType& buildingType) const;
         virtual BWAPI::UnitType getNextRequiredBuilding(
-            const BWAPI::UnitType&) const;
+            const BWAPI::UnitType& unitType) const;
+        virtual BWAPI::UnitType facilityFor(const BWAPI::UnitType&) const;
 };
 
 class ProtossProduction : public Production
@@ -48,7 +49,6 @@ class ProtossProduction : public Production
     public:
         ProtossProduction() : Production(
             BWAPI::UnitTypes::Enum::Protoss_Zealot) {}
-        void construct(const BWAPI::UnitType& buildingType) const;
         BWAPI::UnitType getNextRequiredBuilding(
             const BWAPI::UnitType& unitType) const;
 };
@@ -74,4 +74,5 @@ class ZergProduction : public Production
         void onUnitComplete(const BWAPI::Unit& completedUnit);
         void createSupply() const;
         void construct(const BWAPI::UnitType& buildingType) const;
+        BWAPI::UnitType facilityFor(const BWAPI::UnitType& unitType) const;
 };
