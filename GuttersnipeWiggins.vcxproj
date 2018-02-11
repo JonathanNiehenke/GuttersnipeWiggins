@@ -101,9 +101,6 @@
     <ClCompile Include="DecisionSequence.cpp" />
     <ClCompile Include="TechTree.cpp" />
     <ClCompile Include="Race.cpp" />
-    <ClCompile Include="ProtossRace.cpp" />
-    <ClCompile Include="TerranRace.cpp" />
-    <ClCompile Include="ZergRace.cpp" />
     <ClCompile Include="GuttersnipeWiggins.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -117,9 +114,6 @@
     <ClInclude Include="DecisionSequence.h" />
     <ClInclude Include="TechTree.h" />
     <ClInclude Include="Race.h" />
-    <ClInclude Include="ProtossRace.h" />
-    <ClInclude Include="TerranRace.h" />
-    <ClInclude Include="ZergRace.h" />
     <ClInclude Include="GuttersnipeWiggins.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -6,9 +6,6 @@
 #include "SquadCommander.h"
 #include "DecisionSequence.h"
 #include "Race.h"
-#include "ProtossRace.h"
-#include "TerranRace.h"
-#include "ZergRace.h"
 
 class GW : public BWAPI::AIModule
 {
