@@ -5,10 +5,7 @@ class ZergRace : public Race
 {
     private:
         int incompleteOverlordCount = 0;
-        void includeLarvaProducers() const;
-        void removeLarvaProducers() const;
         static bool isIncompleteOverlord(const BWAPI::Unit& unit);
-        void onDestroyedBuilding(const BWAPI::Unit&) const;
         virtual int expectedSupplyProvided(const BWAPI::UnitType&) const;
         bool doesTechExist(const BWAPI::UnitType& buildingType) const;
     public:

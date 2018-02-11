@@ -31,31 +31,34 @@ void Race::onUnitMorph(const BWAPI::Unit& morphedUnit) {
 }
 
 void Race::onUnitComplete(const BWAPI::Unit& completedUnit) {
-    BWAPI::UnitType completedType = completedUnit->getType();
-    if (completedType == workerType)
+    if (completedUnit->getType() == workerType)
         resourceSupplier->addWorker(completedUnit);
-    else if (completedType.isBuilding())
+    else if (completedUnit->getType().isBuilding())
         onCompleteBuilding(completedUnit);
 }
 
 void Race::onCompleteBuilding(const BWAPI::Unit& completedBuilding) const {
     buildingConstructor->onComplete(completedBuilding);
-    BWAPI::UnitType buildingType = completedBuilding->getType();
-    techTree->addTech(buildingType);
-    if (buildingType.canProduce())
+    techTree->addTech(completedBuilding->getType());
+    if (completedBuilding->getType().canProduce())
         unitTrainer->includeFacility(completedBuilding);
-    if (buildingType == centerType)
+    if (completedBuilding->getType() == centerType)
         resourceSupplier->addBase(completedBuilding);
 }
 
 void Race::onUnitDestroy(const BWAPI::Unit& destroyedUnit) const {
-    BWAPI::UnitType destroyedType = destroyedUnit->getType();
-    if (destroyedType == workerType)
+    if (destroyedUnit->getType() == workerType)
         resourceSupplier->removeWorker(destroyedUnit);
-    else if (destroyedType == centerType)
-        resourceSupplier->removeBase(destroyedUnit);
-    else if (destroyedType.isBuilding())
+    else if (destroyedUnit->getType().isBuilding())
         onDestroyedBuilding(destroyedUnit);
+}
+
+void Race::onDestroyedBuilding(const BWAPI::Unit& destroyedBuilding) const {
+    buildingConstructor->onComplete(destroyedBuilding);
+    if (destroyedBuilding->getType().canProduce())
+        unitTrainer->removeFacility(destroyedBuilding);
+    if (destroyedBuilding->getType() == centerType)
+        resourceSupplier->removeBase(destroyedBuilding);
 }
 
 void Race::update() const {

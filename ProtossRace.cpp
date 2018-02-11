@@ -1,14 +1,6 @@
 #pragma once
 #include "ProtossRace.h"
 
-void ProtossRace::onDestroyedBuilding(
-    const BWAPI::Unit& destroyedBuilding) const
-{
-    buildingConstructor->onComplete(destroyedBuilding);
-    if (destroyedBuilding->getType() == BWAPI::UnitTypes::Protoss_Gateway)
-        unitTrainer->removeFacility(destroyedBuilding);
-}
-
 void ProtossRace::construct(const BWAPI::UnitType& buildingType) const {
         buildingConstructor->request(buildingType);
 }

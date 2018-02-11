@@ -1,13 +1,6 @@
 #pragma once
 #include "ZergRace.h"
 
-void ZergRace::includeLarvaProducers() const {
-    for (const BWAPI::Unit& unit: BWAPI::Broodwar->self()->getUnits()) {
-        if (unit->getType().producesLarva())
-            unitTrainer->includeFacility(unit);
-    }
-}
-
 void ZergRace::onUnitMorph(const BWAPI::Unit& morphedUnit) {
     if (isIncompleteOverlord(morphedUnit))
         ++incompleteOverlordCount;
@@ -23,21 +16,6 @@ void ZergRace::onUnitComplete(const BWAPI::Unit& completedUnit) {
     if (completedUnit->getType() == supplyType && incompleteOverlordCount > 0)
         --incompleteOverlordCount;
     Race::onUnitComplete(completedUnit);
-}
-
-void ZergRace::onDestroyedBuilding(
-    const BWAPI::Unit& destroyedBuilding) const
-{
-    buildingConstructor->onComplete(destroyedBuilding);
-    if (destroyedBuilding->getType() == BWAPI::UnitTypes::Zerg_Spawning_Pool)
-        removeLarvaProducers();
-}
-
-void ZergRace::removeLarvaProducers() const {
-    for (const BWAPI::Unit& unit: BWAPI::Broodwar->self()->getUnits()) {
-        if (unit->getType().producesLarva())
-            unitTrainer->removeFacility(unit);
-    }
 }
 
 int ZergRace::expectedSupplyProvided(

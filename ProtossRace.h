@@ -4,7 +4,6 @@
 class ProtossRace : public Race
 {
     private:
-        void onDestroyedBuilding(const BWAPI::Unit& destroyedBuilding) const;
         bool doesPylonExist() const;
     public:
         ProtossRace() : Race(BWAPI::UnitTypes::Enum::Protoss_Zealot) {}

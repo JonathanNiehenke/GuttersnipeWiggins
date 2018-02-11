@@ -14,8 +14,8 @@ class Race {
         UnitTrainer* unitTrainer;
         TechTree* techTree;
         BWAPI::UnitType centerType, workerType, supplyType, armyUnitType;
-        virtual void onCompleteBuilding(const BWAPI::Unit&) const;
-        virtual void onDestroyedBuilding(const BWAPI::Unit&) const {}
+        void onCompleteBuilding(const BWAPI::Unit&) const;
+        void onDestroyedBuilding(const BWAPI::Unit&) const;
         virtual int expectedSupplyProvided(const BWAPI::UnitType&) const;
     public:
         Race(const BWAPI::UnitType& armyUnitType);
