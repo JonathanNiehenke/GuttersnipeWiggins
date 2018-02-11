@@ -14,10 +14,6 @@ void UnitTrainer::removeFacility(const BWAPI::Unit& Facility) {
         productionFacilities.erase(foundIt);
 }
 
-int UnitTrainer::facilityCount() const {
-    return productionFacilities.size();
-}
-
 bool UnitTrainer::readyToTrain(const BWAPI::UnitType& unitType) const {
     for (const BWAPI::Unit& Facility: productionFacilities) {
         if (Facility->canTrain(unitType) && isTrainingQueueEmpty(Facility))

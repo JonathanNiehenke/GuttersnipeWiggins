@@ -9,7 +9,6 @@ class UnitTrainer
     public:
         void includeFacility(const BWAPI::Unit& Facility);
         void removeFacility(const BWAPI::Unit& Facility);
-        int facilityCount() const;
         bool readyToTrain(const BWAPI::UnitType& unitType) const;
         void trainUnits(const BWAPI::UnitType& unitType);
 };

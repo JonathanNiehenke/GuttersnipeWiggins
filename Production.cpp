@@ -87,9 +87,8 @@ int Production::potentialSupplyUsed(const BWAPI::UnitType& unitType) const {
     const static float supplyBuildTime = float(supplyType.buildTime());
     const int unitsPerSupplyBuild = int(std::ceil(
              supplyBuildTime / unitType.buildTime()));
-    const int facilityAmount = (unitType == workerType
-        ? resourceSupplier->getBaseAmount()
-        : unitTrainer->facilityCount());
+    const int facilityAmount = BWAPI::Broodwar->self()->allUnitCount(
+        facilityFor(unitType));
     return unitsPerSupplyBuild * facilityAmount * unitType.supplyRequired();
 }
 
