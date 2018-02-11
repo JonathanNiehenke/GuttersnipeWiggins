@@ -1,7 +1,7 @@
 #pragma once
 #include <map>
 #include <vector>
-#include "Race.h"
+#include "Production.h"
 
 class DecisionSequence {
     private:
@@ -14,7 +14,7 @@ class DecisionSequence {
         };
         std::map<std::string, ConditionalResponse> Objectives;
         std::vector<std::string> priorityList;
-        Race* race = nullptr;
+        Production* production = nullptr;
         bool needsSupply() const;
         void createSupply() const;
         bool canProgressFor(const BWAPI::UnitType& unitType) const; 
@@ -25,6 +25,6 @@ class DecisionSequence {
         bool canExtend(const BWAPI::UnitType& unitType) const;
         void increaseFacilities(const BWAPI::UnitType& unitType) const;
     public:
-        void onStart(Race* race);
+        void onStart(Production* production);
         void update();
 };

@@ -10,16 +10,16 @@ void GW::onStart()
     cartographer.discoverResourcePositions();
     switch (Self->getRace()) {
         case BWAPI::Races::Enum::Protoss:
-            race = new ProtossRace();
+            production = new ProtossProduction();
             break;
         case BWAPI::Races::Enum::Terran:
-            race = new TerranRace();
+            production = new TerranProduction();
             break;
         case BWAPI::Races::Enum::Zerg:
-            race = new ZergRace();
+            production = new ZergProduction();
             break;
     }
-    decisionSequence.onStart(race);
+    decisionSequence.onStart(production);
 }
 
 void GW::onFrame()
@@ -29,7 +29,7 @@ void GW::onFrame()
     switch(BWAPI::Broodwar->getFrameCount() % actionFrames) {
         case 0: decisionSequence.update();
             break;
-        case 1: race->update();
+        case 1: production->update();
             break;
         case 2: cartographer.update();
             break;
@@ -50,21 +50,21 @@ void GW::onFrame()
 void GW::onUnitCreate(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self) {
-        race->onUnitCreate(Unit);
+        production->onUnitCreate(Unit);
     }
 }
 
 void GW::onUnitMorph(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self)
-        race->onUnitMorph(Unit);
+        production->onUnitMorph(Unit);
 }
 
 void GW::onUnitComplete(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self) {
-        race->onUnitComplete(Unit);
-        if (Unit->getType() == race->getArmyUnitType()) {
+        production->onUnitComplete(Unit);
+        if (Unit->getType() == production->getArmyUnitType()) {
             squadCommander.sendUnitToAttack(
                 Unit, cartographer.getNextPosition(Unit->getPosition()));
         }
@@ -74,7 +74,7 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
 void GW::onUnitDestroy(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self)
-        race->onUnitDestroy(Unit);
+        production->onUnitDestroy(Unit);
     else
         cartographer.removeUnit(Unit);
 }
@@ -183,7 +183,7 @@ void GW::onPlayerLeft(BWAPI::Player Player)
 
 void GW::onEnd(bool IsWinner)
 {
-    delete race;
+    delete production;
 }
 
 void GW::displayUnitInfo()

@@ -7,19 +7,19 @@
 #include "ResourceSupplier.h"
 #include "TechTree.h"
 
-class Race {
+class Production {
     protected:
         ResourceSupplier* resourceSupplier;
         BuildingConstructor* buildingConstructor;
         UnitTrainer* unitTrainer;
         TechTree* techTree;
         BWAPI::UnitType centerType, workerType, supplyType, armyUnitType;
-        void onCompleteBuilding(const BWAPI::Unit&) const;
+        virtual void onCompleteBuilding(const BWAPI::Unit&) const;
         void onDestroyedBuilding(const BWAPI::Unit&) const;
         virtual int expectedSupplyProvided(const BWAPI::UnitType&) const;
     public:
-        Race(const BWAPI::UnitType& armyUnitType);
-        ~Race();
+        Production(const BWAPI::UnitType& armyUnitType);
+        ~Production();
         BWAPI::UnitType getCenterType() const { return centerType; }
         BWAPI::UnitType getWorkerType() const { return workerType; }
         BWAPI::UnitType getSupplyType() const { return supplyType; }
@@ -41,33 +41,35 @@ class Race {
             const BWAPI::UnitType&) const;
 };
 
-class ProtossRace : public Race
+class ProtossProduction : public Production
 {
     private:
         bool doesPylonExist() const;
     public:
-        ProtossRace() : Race(BWAPI::UnitTypes::Enum::Protoss_Zealot) {}
+        ProtossProduction() : Production(
+            BWAPI::UnitTypes::Enum::Protoss_Zealot) {}
         void construct(const BWAPI::UnitType& buildingType) const;
         BWAPI::UnitType getNextRequiredBuilding(
             const BWAPI::UnitType& unitType) const;
 };
 
-class TerranRace : public Race
+class TerranProduction : public Production
 {
     private:
     public:
-        TerranRace() : Race(BWAPI::UnitTypes::Enum::Terran_Marine) {}
+        TerranProduction() : Production(
+            BWAPI::UnitTypes::Enum::Terran_Marine) {}
 };
 
-class ZergRace : public Race
+class ZergProduction : public Production
 {
     private:
         int incompleteOverlordCount = 0;
         static bool isIncompleteOverlord(const BWAPI::Unit& unit);
-        virtual int expectedSupplyProvided(const BWAPI::UnitType&) const;
+        int expectedSupplyProvided(const BWAPI::UnitType&) const;
         bool doesTechExist(const BWAPI::UnitType& buildingType) const;
     public:
-        ZergRace() : Race(BWAPI::UnitTypes::Enum::Zerg_Zergling) {}
+        ZergProduction() : Production(BWAPI::UnitTypes::Enum::Zerg_Zergling) {}
         void onUnitMorph(const BWAPI::Unit& morphedUnit);
         void onUnitComplete(const BWAPI::Unit& completedUnit);
         void createSupply() const;

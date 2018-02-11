@@ -5,7 +5,7 @@
 #include "Cartographer.h"
 #include "SquadCommander.h"
 #include "DecisionSequence.h"
-#include "Race.h"
+#include "Production.h"
 
 class GW : public BWAPI::AIModule
 {
@@ -13,7 +13,7 @@ private:
     int availableSupply = 0, workerBuffer = 0, armyBuffer = 0, supplyCount = 0;
     BWAPI::Player Self;
     Cartographer cartographer;
-    Race *race;  // onStart initializes with polymorphic intentions.
+    Production *production;  // onStart initializes with polymorphic intentions.
     SquadCommander squadCommander;
     DecisionSequence decisionSequence;
     void displayUnitInfo();

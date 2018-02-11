@@ -100,7 +100,7 @@
     <ClCompile Include="UnitTrainer.cpp" />
     <ClCompile Include="DecisionSequence.cpp" />
     <ClCompile Include="TechTree.cpp" />
-    <ClCompile Include="Race.cpp" />
+    <ClCompile Include="Production.cpp" />
     <ClCompile Include="GuttersnipeWiggins.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -113,7 +113,7 @@
     <ClInclude Include="UnitTrainer.h" />
     <ClInclude Include="DecisionSequence.h" />
     <ClInclude Include="TechTree.h" />
-    <ClInclude Include="Race.h" />
+    <ClInclude Include="Production.h" />
     <ClInclude Include="GuttersnipeWiggins.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,7 +1,7 @@
 #pragma once
-#include "Race.h"
+#include "Production.h"
 
-Race::Race(const BWAPI::UnitType& armyUnitType) {
+Production::Production(const BWAPI::UnitType& armyUnitType) {
     const BWAPI::Race& r = BWAPI::Broodwar->self()->getRace();
     this->centerType = r.getCenter();
     this->workerType = r.getWorker();
@@ -13,31 +13,33 @@ Race::Race(const BWAPI::UnitType& armyUnitType) {
     this->techTree = new TechTree();
 }
 
-Race::~Race() {
+Production::~Production() {
     delete buildingConstructor;
     delete resourceSupplier;
     delete unitTrainer;
     delete techTree;
 }
 
-void Race::onUnitCreate(const BWAPI::Unit& createdUnit) const {
+void Production::onUnitCreate(const BWAPI::Unit& createdUnit) const {
     if (createdUnit->getType().isBuilding())
         buildingConstructor->onCreate(createdUnit);
 }
 
-void Race::onUnitMorph(const BWAPI::Unit& morphedUnit) {
+void Production::onUnitMorph(const BWAPI::Unit& morphedUnit) {
     BWAPI::Broodwar << "Unhandled morph: " << morphedUnit->getType().c_str()
                     << std::endl;
 }
 
-void Race::onUnitComplete(const BWAPI::Unit& completedUnit) {
+void Production::onUnitComplete(const BWAPI::Unit& completedUnit) {
     if (completedUnit->getType() == workerType)
         resourceSupplier->addWorker(completedUnit);
     else if (completedUnit->getType().isBuilding())
         onCompleteBuilding(completedUnit);
 }
 
-void Race::onCompleteBuilding(const BWAPI::Unit& completedBuilding) const {
+void Production::onCompleteBuilding(
+    const BWAPI::Unit& completedBuilding) const
+{
     buildingConstructor->onComplete(completedBuilding);
     techTree->addTech(completedBuilding->getType());
     if (completedBuilding->getType().canProduce())
@@ -46,14 +48,16 @@ void Race::onCompleteBuilding(const BWAPI::Unit& completedBuilding) const {
         resourceSupplier->addBase(completedBuilding);
 }
 
-void Race::onUnitDestroy(const BWAPI::Unit& destroyedUnit) const {
+void Production::onUnitDestroy(const BWAPI::Unit& destroyedUnit) const {
     if (destroyedUnit->getType() == workerType)
         resourceSupplier->removeWorker(destroyedUnit);
     else if (destroyedUnit->getType().isBuilding())
         onDestroyedBuilding(destroyedUnit);
 }
 
-void Race::onDestroyedBuilding(const BWAPI::Unit& destroyedBuilding) const {
+void Production::onDestroyedBuilding(
+    const BWAPI::Unit& destroyedBuilding) const
+{
     buildingConstructor->onComplete(destroyedBuilding);
     if (destroyedBuilding->getType().canProduce())
         unitTrainer->removeFacility(destroyedBuilding);
@@ -61,23 +65,25 @@ void Race::onDestroyedBuilding(const BWAPI::Unit& destroyedBuilding) const {
         resourceSupplier->removeBase(destroyedBuilding);
 }
 
-void Race::update() const {
+void Production::update() const {
     buildingConstructor->updatePreparation();
 }
 
-int Race::expectedSupplyProvided(const BWAPI::UnitType& providerType) const {
+int Production::expectedSupplyProvided(
+    const BWAPI::UnitType& providerType) const
+{
     const int providerCount = BWAPI::Broodwar->self()->allUnitCount(
         providerType);
     return providerType.supplyProvided() * providerCount;
 }
 
-int Race::expectedSupplyProvided() const {
+int Production::expectedSupplyProvided() const {
     const int defaultProvided = expectedSupplyProvided(supplyType),
               centerProvided = expectedSupplyProvided(centerType);
     return defaultProvided + centerProvided;
 }
 
-int Race::potentialSupplyUsed(const BWAPI::UnitType& unitType) const {
+int Production::potentialSupplyUsed(const BWAPI::UnitType& unitType) const {
     const static float supplyBuildTime = float(supplyType.buildTime());
     const int unitsPerSupplyBuild = int(std::ceil(
              supplyBuildTime / unitType.buildTime()));
@@ -87,70 +93,70 @@ int Race::potentialSupplyUsed(const BWAPI::UnitType& unitType) const {
     return unitsPerSupplyBuild * facilityAmount * unitType.supplyRequired();
 }
 
-void Race::createSupply() const {
+void Production::createSupply() const {
     buildingConstructor->request(supplyType);
 }
 
-bool Race::canFillLackingMiners() const {
+bool Production::canFillLackingMiners() const {
     return resourceSupplier->canFillLackingMiners();
 }
 
-void Race::createWorker() const {
+void Production::createWorker() const {
     unitTrainer->trainUnits(workerType);
 }
 
-bool Race::readyToTrainArmyUnit() const {
+bool Production::readyToTrainArmyUnit() const {
     return unitTrainer->readyToTrain(armyUnitType);
 }
 
-void Race::trainWarriors() const {
+void Production::trainWarriors() const {
     unitTrainer->trainUnits(armyUnitType);
 }
 
-void Race::construct(const BWAPI::UnitType& buildingType) const {
+void Production::construct(const BWAPI::UnitType& buildingType) const {
     buildingConstructor->request(buildingType);
 }
 
-BWAPI::UnitType Race::getNextRequiredBuilding(
+BWAPI::UnitType Production::getNextRequiredBuilding(
     const BWAPI::UnitType& unitType) const
 {
     return techTree->getNextRequiredBuilding(unitType);
 }
 
-void ProtossRace::construct(const BWAPI::UnitType& buildingType) const {
+void ProtossProduction::construct(const BWAPI::UnitType& buildingType) const {
         buildingConstructor->request(buildingType);
 }
 
-BWAPI::UnitType ProtossRace::getNextRequiredBuilding(
+BWAPI::UnitType ProtossProduction::getNextRequiredBuilding(
     const BWAPI::UnitType& unitType) const
 {
-    const auto& requiredType = Race::getNextRequiredBuilding(unitType);
+    const auto& requiredType = Production::getNextRequiredBuilding(unitType);
     return (requiredType.requiresPsi() && !doesPylonExist()
         ? BWAPI::UnitTypes::Protoss_Pylon : requiredType);
 }
 
-bool ProtossRace::doesPylonExist() const {
+bool ProtossProduction::doesPylonExist() const {
     return BWAPI::Broodwar->self()->allUnitCount(supplyType) > 0;
 }
 
-void ZergRace::onUnitMorph(const BWAPI::Unit& morphedUnit) {
+void ZergProduction::onUnitMorph(const BWAPI::Unit& morphedUnit) {
     if (isIncompleteOverlord(morphedUnit))
         ++incompleteOverlordCount;
     onUnitCreate(morphedUnit);
 }
 
-bool ZergRace::isIncompleteOverlord(const BWAPI::Unit& unit) {
+bool ZergProduction::isIncompleteOverlord(const BWAPI::Unit& unit) {
     return (unit->getType() == BWAPI::UnitTypes::Zerg_Egg &&
         unit->getBuildType() == BWAPI::UnitTypes::Zerg_Overlord);
 }
 
-void ZergRace::onUnitComplete(const BWAPI::Unit& completedUnit) {
+void ZergProduction::onUnitComplete(const BWAPI::Unit& completedUnit) {
     if (completedUnit->getType() == supplyType && incompleteOverlordCount > 0)
         --incompleteOverlordCount;
-    Race::onUnitComplete(completedUnit);
+    Production::onUnitComplete(completedUnit);
 }
 
-int ZergRace::expectedSupplyProvided(
+int ZergProduction::expectedSupplyProvided(
     const BWAPI::UnitType& providerType) const
 {
     int providerCount = BWAPI::Broodwar->self()->allUnitCount(
@@ -160,17 +166,17 @@ int ZergRace::expectedSupplyProvided(
     return providerType.supplyProvided() * providerCount;
 }
 
-void ZergRace::createSupply() const {
+void ZergProduction::createSupply() const {
     unitTrainer->trainUnits(supplyType);
 }
 
-void ZergRace::construct(const BWAPI::UnitType& buildingType) const {
+void ZergProduction::construct(const BWAPI::UnitType& buildingType) const {
     if (buildingType == centerType || doesTechExist(buildingType))
         buildingConstructor->request(centerType);
     else
         buildingConstructor->request(buildingType);
 }
 
-bool ZergRace::doesTechExist(const BWAPI::UnitType& buildingType) const {
+bool ZergProduction::doesTechExist(const BWAPI::UnitType& buildingType) const {
     return BWAPI::Broodwar->self()->allUnitCount(buildingType) > 0;
 }

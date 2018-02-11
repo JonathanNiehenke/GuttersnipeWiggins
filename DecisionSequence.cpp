@@ -1,29 +1,32 @@
 #pragma once
 #include "DecisionSequence.h"
 
-void DecisionSequence::onStart(Race* race) {
-    this->race = race;
+void DecisionSequence::onStart(Production* production) {
+    this->production = production;
     Objectives["EnoughSupply"] = ConditionalResponse(
         std::bind(&DecisionSequence::needsSupply, this),
         std::bind(&DecisionSequence::createSupply, this));
     Objectives["FullSaturation"] = ConditionalResponse(
-        std::bind(&Race::canFillLackingMiners, race),
-        std::bind(&Race::createWorker, race));
+        std::bind(&Production::canFillLackingMiners, production),
+        std::bind(&Production::createWorker, production));
     // Objectives["MinimalSaturation"] = ConditionalResponse(
-        // std::bind(&Race::lackingMinimalMiners, race),
-        // std::bind(&Race::createWorkers, race));
+        // std::bind(&Production::lackingMinimalMiners, production),
+        // std::bind(&Production::createWorkers, production));
     // Objectives["EconomicExpansion"] = ConditionalResponse(
-        // std::bind(&Race::lackingExpansion, race),
-        // std::bind(&Race::constructExpansion, race));
+        // std::bind(&Production::lackingExpansion, production),
+        // std::bind(&Production::constructExpansion, production));
     Objectives["ArmyWarriors"] = ConditionalResponse(
-        std::bind(&Race::readyToTrainArmyUnit, race),
-        std::bind(&Race::trainWarriors, race));
+        std::bind(&Production::readyToTrainArmyUnit, production),
+        std::bind(&Production::trainWarriors, production));
     Objectives["TechToArmy"] = ConditionalResponse(
-        [this, race](){ return this->canProgressFor(race->getArmyUnitType()); },
-        [this, race](){ this->techTo(race->getArmyUnitType()); });
+        [this, production](){
+            return this->canProgressFor(production->getArmyUnitType()); },
+        [this, production](){ this->techTo(production->getArmyUnitType()); });
     Objectives["IncreaseArmyFacilities"] = ConditionalResponse(
-        [this, race](){ return this->canExtend(race->getArmyUnitType()); },
-        [this, race](){ this->increaseFacilities(race->getArmyUnitType()); });
+        [this, production](){
+            return this->canExtend(production->getArmyUnitType()); },
+        [this, production](){
+            this->increaseFacilities(production->getArmyUnitType()); });
     priorityList.push_back("EnoughSupply");
     priorityList.push_back("FullSaturation");
     priorityList.push_back("ArmyWarriors");
@@ -43,21 +46,23 @@ void DecisionSequence::update() {
 }
 
 bool DecisionSequence::needsSupply() const {
-    const int currentlyUsed = BWAPI::Broodwar->self()->supplyUsed(),
-              workerBuffer = race->potentialSupplyUsed(race->getWorkerType()),
-              armyBuffer = race->potentialSupplyUsed(race->getArmyUnitType());
+    const int currentlyUsed = BWAPI::Broodwar->self()->supplyUsed();
+    const int workerBuffer = production->potentialSupplyUsed(
+        production->getWorkerType());
+    const int armyBuffer = production->potentialSupplyUsed(
+        production->getArmyUnitType());
     const int expectedSupplyUsed = currentlyUsed + workerBuffer + armyBuffer;
-    return race->expectedSupplyProvided() <= expectedSupplyUsed;
+    return production->expectedSupplyProvided() <= expectedSupplyUsed;
 }
 
 void DecisionSequence::createSupply() const {
-    if (enoughResources(race->getSupplyType()))
-        race->createSupply();
+    if (enoughResources(production->getSupplyType()))
+        production->createSupply();
 }
 
 bool DecisionSequence::canProgressFor(const BWAPI::UnitType& unitType) const {
     try {
-        return canBegin(race->getNextRequiredBuilding(unitType)); }
+        return canBegin(production->getNextRequiredBuilding(unitType)); }
     catch (std::runtime_error) {
         return false; }
 }
@@ -77,7 +82,7 @@ bool DecisionSequence::enoughResources(const BWAPI::UnitType& unitType) const {
 
 void DecisionSequence::techTo(const BWAPI::UnitType& unitType) const {
     try {
-        race->construct(race->getNextRequiredBuilding(unitType)); }
+        production->construct(production->getNextRequiredBuilding(unitType)); }
     catch (const std::runtime_error& e) {
         BWAPI::Broodwar << "techTo: " << e.what() << "!!!!!" << std::endl; }
 }
@@ -94,7 +99,7 @@ bool DecisionSequence::canExtend(const BWAPI::UnitType& unitType) const {
 void DecisionSequence::increaseFacilities(
     const BWAPI::UnitType& unitType) const
 {
-    race->construct(unitType.whatBuilds().first);
+    production->construct(unitType.whatBuilds().first);
 }
 
 DecisionSequence::ConditionalResponse::ConditionalResponse() {
