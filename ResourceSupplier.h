@@ -27,6 +27,7 @@ class EcoBase
         int getMinerCount() { return Workers.size(); }
         void assignMiner(BWAPI::Unit minerUnit);
         void includeRefinery(const BWAPI::Unit& refineryUnit);
+        void removeRefinery(const BWAPI::Unit& refineryUnit);
         void removeMiner(BWAPI::Unit minerUnit) { Workers.erase(minerUnit); }
         void removeMineral(BWAPI::Unit Mineral);
         static bool isForgotten(BWAPI::Unit Mineral)
@@ -63,6 +64,7 @@ class ResourceSupplier
         void addWorker(const BWAPI::Unit& workerUnit);
         void removeWorker(BWAPI::Unit workerUnit);
         void addRefinery(const BWAPI::Unit& refineryUnit);
+        void removeRefinery(const BWAPI::Unit& refineryUnit);
         void removeMineral(BWAPI::Unit mineralUnit);
         bool canFillLackingMiners();
         bool isAtCapacity();

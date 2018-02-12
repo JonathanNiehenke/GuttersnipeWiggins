@@ -22,6 +22,12 @@ void EcoBase::includeRefinery(const BWAPI::Unit& refineryUnit) {
     Refineries.push_back(refineryUnit);
 }
 
+void EcoBase::removeRefinery(const BWAPI::Unit& refineryUnit) {
+    BWAPI::Broodwar->sendTextEx(true, "Refinery removed");
+    Refineries.erase(
+        std::find(Refineries.begin(), Refineries.end(), refineryUnit));
+}
+
 void EcoBase::removeMineral(BWAPI::Unit mineralUnit)
 {
     // Consider: Minerals as a reference to benefit map awareness.
@@ -173,6 +179,17 @@ void ResourceSupplier::addRefinery(const BWAPI::Unit& refineryUnit) {
         return; }
     Base->includeRefinery(refineryUnit);
     unitToBase[refineryUnit] = Base;
+}
+
+void ResourceSupplier::removeRefinery(const BWAPI::Unit& refineryUnit) {
+    EcoBase* Base = nullptr;
+    try {
+        Base = unitToBase.at(refineryUnit); }
+    catch (std::out_of_range) {
+        BWAPI::Broodwar->sendTextEx(true, "Wrong refinery to base");
+        return; }
+    Base->removeRefinery(refineryUnit);
+    unitToBase.erase(refineryUnit);
 }
 
 void ResourceSupplier::removeMineral(BWAPI::Unit mineralUnit)

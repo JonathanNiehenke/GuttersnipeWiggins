@@ -66,7 +66,9 @@ void Production::onDestroyedBuilding(
     const BWAPI::Unit& destroyedBuilding) const
 {
     buildingConstructor->onComplete(destroyedBuilding);
-    if (destroyedBuilding->getType().canProduce())
+    if (destroyedBuilding->getType().isRefinery())
+        resourceSupplier->removeRefinery(destroyedBuilding);
+    else if (destroyedBuilding->getType().canProduce())
         unitTrainer->removeFacility(destroyedBuilding);
     if (destroyedBuilding->getType() == centerType)
         resourceSupplier->removeBase(destroyedBuilding);
