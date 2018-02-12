@@ -13,6 +13,7 @@ class BuildingPlacer {
     public:
         BWAPI::TilePosition getPlacement(
             const BWAPI::UnitType& buildingType) const;
+        BWAPI::TilePosition getGasPlacement() const;
 };
 
 class BuildingPlacer::RadicalOffset {

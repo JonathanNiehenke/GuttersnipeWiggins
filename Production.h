@@ -13,16 +13,19 @@ class Production {
         BuildingConstructor* buildingConstructor;
         UnitTrainer* unitTrainer;
         TechTree* techTree;
-        BWAPI::UnitType centerType, workerType, supplyType, armyUnitType;
+        BWAPI::UnitType centerType, workerType, supplyType, refineryType,
+            armyUnitType;
         virtual void onCompleteBuilding(const BWAPI::Unit&) const;
         void onDestroyedBuilding(const BWAPI::Unit&) const;
         virtual int expectedSupplyProvided(const BWAPI::UnitType&) const;
+        static bool doesExist(const BWAPI::UnitType& unitType);
     public:
         Production(const BWAPI::UnitType& armyUnitType);
         ~Production();
         BWAPI::UnitType getCenterType() const { return centerType; }
         BWAPI::UnitType getWorkerType() const { return workerType; }
         BWAPI::UnitType getSupplyType() const { return supplyType; }
+        BWAPI::UnitType getRefineryType() const { return refineryType; }
         BWAPI::UnitType getArmyUnitType() const { return armyUnitType; }
         virtual void onUnitCreate(const BWAPI::Unit& createdUnit) const;
         virtual void onUnitMorph(const BWAPI::Unit& morphedUnit);
@@ -45,7 +48,6 @@ class Production {
 class ProtossProduction : public Production
 {
     private:
-        bool doesPylonExist() const;
     public:
         ProtossProduction() : Production(
             BWAPI::UnitTypes::Enum::Protoss_Zealot) {}
@@ -71,7 +73,7 @@ class ZergProduction : public Production
         int expectedSupplyProvided(const BWAPI::UnitType&) const;
         bool doesTechExist(const BWAPI::UnitType& buildingType) const;
     public:
-        ZergProduction() : Production(BWAPI::UnitTypes::Enum::Zerg_Zergling) {}
+        ZergProduction() : Production(BWAPI::UnitTypes::Enum::Zerg_Hydralisk) {}
         void onUnitMorph(const BWAPI::Unit& morphedUnit);
         void onUnitComplete(const BWAPI::Unit& completedUnit);
         void createSupply() const;

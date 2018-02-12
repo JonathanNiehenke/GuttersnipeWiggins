@@ -50,6 +50,14 @@ BWAPI::TilePosition BuildingPlacer::adjacentBuildLocation(
     return buildingLocation + BWAPI::TilePosition(2, 2);
 }
 
+BWAPI::TilePosition BuildingPlacer::getGasPlacement() const {
+    const BWAPI::TilePosition& startPos = BWAPI::Broodwar->self()->getStartLocation();
+    const BWAPI::Unit& vespeneUnit = BWAPI::Broodwar->getClosestUnit(
+        BWAPI::Position(startPos), BWAPI::Filter::GetType == BWAPI::UnitTypes::Resource_Vespene_Geyser, 200);
+    if (vespeneUnit)
+        return vespeneUnit->getTilePosition();
+    return BWAPI::TilePositions::None;
+}
 
 BuildingPlacer::RadicalOffset::iterator
     BuildingPlacer::RadicalOffset::begin()

@@ -6,6 +6,7 @@ Production::Production(const BWAPI::UnitType& armyUnitType) {
     this->centerType = r.getCenter();
     this->workerType = r.getWorker();
     this->supplyType = r.getSupplyProvider();
+    this->refineryType = r.getRefinery();
     this->armyUnitType = armyUnitType;
     this->resourceSupplier = new ResourceSupplier(workerType);
     this->buildingConstructor = new BuildingConstructor();
@@ -119,7 +120,14 @@ void Production::construct(const BWAPI::UnitType& buildingType) const {
 BWAPI::UnitType Production::getNextRequiredBuilding(
     const BWAPI::UnitType& unitType) const
 {
-    return techTree->getNextRequiredBuilding(unitType);
+    const auto& requiredType = techTree->getNextRequiredBuilding(unitType);
+    if (requiredType.gasPrice() > 0 && !doesExist(refineryType))
+        return refineryType;
+    return requiredType;
+}
+
+bool Production::doesExist(const BWAPI::UnitType& unitType) {
+    return BWAPI::Broodwar->self()->allUnitCount(unitType) > 0;
 }
 
 BWAPI::UnitType Production::facilityFor(
@@ -132,12 +140,8 @@ BWAPI::UnitType ProtossProduction::getNextRequiredBuilding(
     const BWAPI::UnitType& unitType) const
 {
     const auto& requiredType = Production::getNextRequiredBuilding(unitType);
-    return (requiredType.requiresPsi() && !doesPylonExist()
+    return (requiredType.requiresPsi() && !doesExist(supplyType)
         ? BWAPI::UnitTypes::Protoss_Pylon : requiredType);
-}
-
-bool ProtossProduction::doesPylonExist() const {
-    return BWAPI::Broodwar->self()->allUnitCount(supplyType) > 0;
 }
 
 void ZergProduction::onUnitMorph(const BWAPI::Unit& morphedUnit) {

@@ -21,7 +21,9 @@ void BuildingConstructor::beginPreparation(
     const BWAPI::UnitType& productType)
 {
     ConstructionPO Job(productType);
-    Job.placement = buildingPlacer->getPlacement(Job.productType);
+    Job.placement = (productType.isRefinery()
+        ? buildingPlacer->getGasPlacement()
+        : buildingPlacer->getPlacement(Job.productType));
     Job.contractor = getContractor(Job);
     Preparing[productType] = Job;
 }
@@ -56,7 +58,7 @@ void BuildingConstructor::updatePreparation() {
 
 bool BuildingConstructor::isPrepared(const ConstructionPO& Job) {
     const BWAPI::Position& contractorPos = Job.contractor->getPosition();
-    return (contractorPos.getApproxDistance(toJobCenter(Job)) < 64 &&
+    return (contractorPos.getApproxDistance(toJobCenter(Job)) < 90 &&
             Job.contractor->canBuild(Job.productType));
 }
 
@@ -81,8 +83,8 @@ bool BuildingConstructor::isObstructed(const ConstructionPO& Job) {
 }
 
 bool BuildingConstructor::isPreparing(const ConstructionPO& Job) {
-    return (Job.contractor->getTargetPosition().getApproxDistance(
-        toJobCenter(Job)) <= 10);
+    return (Job.contractor->isConstructing() ||
+            Job.contractor->getTargetPosition() == toJobCenter(Job));
 }
 
 void BuildingConstructor::onCreate(const BWAPI::Unit& createdBuilding) {
