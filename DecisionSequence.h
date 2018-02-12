@@ -17,6 +17,8 @@ class DecisionSequence {
         Production* production = nullptr;
         bool needsSupply() const;
         void createSupply() const;
+        bool isMissingRefinery() const;
+        void createRefinery() const;
         bool canProgressFor(const BWAPI::UnitType& unitType) const; 
         bool canBegin(const BWAPI::UnitType& unitType) const;
         bool isIncomplete(const BWAPI::UnitType& unitType) const;

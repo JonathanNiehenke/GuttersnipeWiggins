@@ -9,6 +9,9 @@ void DecisionSequence::onStart(Production* production) {
     Objectives["FullSaturation"] = ConditionalResponse(
         std::bind(&Production::canFillLackingMiners, production),
         std::bind(&Production::createWorker, production));
+    Objectives["BuildRefinery"] = ConditionalResponse(
+        std::bind(&DecisionSequence::isMissingRefinery, this),
+        std::bind(&DecisionSequence::createRefinery, this));
     // Objectives["MinimalSaturation"] = ConditionalResponse(
         // std::bind(&Production::lackingMinimalMiners, production),
         // std::bind(&Production::createWorkers, production));
@@ -29,6 +32,7 @@ void DecisionSequence::onStart(Production* production) {
             this->increaseFacilities(production->getArmyUnitType()); });
     priorityList.push_back("EnoughSupply");
     priorityList.push_back("FullSaturation");
+    priorityList.push_back("BuildRefinery");
     priorityList.push_back("ArmyWarriors");
     priorityList.push_back("TechToArmy");
     priorityList.push_back("IncreaseArmyFacilities");
@@ -58,6 +62,16 @@ bool DecisionSequence::needsSupply() const {
 void DecisionSequence::createSupply() const {
     if (enoughResources(production->getSupplyType()))
         production->createSupply();
+}
+
+bool DecisionSequence::isMissingRefinery() const {
+    return BWAPI::Broodwar->self()->allUnitCount(
+        production->getRefineryType()) == 0;
+}
+
+void DecisionSequence::createRefinery() const {
+    if (enoughResources(production->getSupplyType()))
+        production->construct(production->getRefineryType());
 }
 
 bool DecisionSequence::canProgressFor(const BWAPI::UnitType& unitType) const {
