@@ -27,8 +27,12 @@ void Production::onUnitCreate(const BWAPI::Unit& createdUnit) const {
 }
 
 void Production::onUnitMorph(const BWAPI::Unit& morphedUnit) {
-    BWAPI::Broodwar << "Unhandled morph: " << morphedUnit->getType().c_str()
-                    << std::endl;
+    if (morphedUnit->getType().isRefinery())
+        buildingConstructor->onCreate(morphedUnit);
+    else {
+        BWAPI::Broodwar << "Unhandled morph: " <<
+            morphedUnit->getType().c_str() << std::endl;
+    }
 }
 
 void Production::onUnitComplete(const BWAPI::Unit& completedUnit) {
@@ -47,6 +51,8 @@ void Production::onCompleteBuilding(
         unitTrainer->includeFacility(completedBuilding);
     if (completedBuilding->getType() == centerType)
         resourceSupplier->addBase(completedBuilding);
+    else if (completedBuilding->getType().isRefinery())
+        resourceSupplier->addRefinery(completedBuilding);
 }
 
 void Production::onUnitDestroy(const BWAPI::Unit& destroyedUnit) const {
@@ -68,6 +74,7 @@ void Production::onDestroyedBuilding(
 
 void Production::update() const {
     buildingConstructor->updatePreparation();
+    resourceSupplier->fillLackingGasGathers();
 }
 
 int Production::expectedSupplyProvided(
@@ -170,6 +177,8 @@ void ZergProduction::onCompleteBuilding(
         unitTrainer->includeFacility(completedBuilding);
     if (completedBuilding->getType() == centerType && Alone(completedBuilding))
         resourceSupplier->addBase(completedBuilding);
+    if (completedBuilding->getType().isRefinery())
+        resourceSupplier->addRefinery(completedBuilding);
 }
 
 bool ZergProduction::Alone(const BWAPI::Unit& unit) {

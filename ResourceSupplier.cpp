@@ -17,6 +17,11 @@ void EcoBase::assignMiner(BWAPI::Unit minerUnit)
     minerUnit->gather(Minerals[mineralIndex++ % Minerals.size()]);
 }
 
+void EcoBase::includeRefinery(const BWAPI::Unit& refineryUnit) {
+    BWAPI::Broodwar->sendTextEx(true, "Refinery included");
+    Refineries.push_back(refineryUnit);
+}
+
 void EcoBase::removeMineral(BWAPI::Unit mineralUnit)
 {
     // Consider: Minerals as a reference to benefit map awareness.
@@ -43,6 +48,27 @@ bool EcoBase::isLackingMiners()
     return forgottenMinerals - nearlyMining > 0;
 }
 
+void EcoBase::fillLackingGas() const {
+    for (const BWAPI::Unit& refinery: Refineries) {
+        if (!refinery->isBeingGathered() && noWorkersApproachingGas())
+            assignGasGathererTo(refinery);
+    }
+}
+
+bool EcoBase::noWorkersApproachingGas() const {
+    return !std::any_of(Workers.begin(), Workers.end(),
+        CurrentOrder == BWAPI::Orders::MoveToGas ||
+        CurrentOrder == BWAPI::Orders::WaitForGas);
+}
+
+void EcoBase::assignGasGathererTo(const BWAPI::Unit& refinery) const {
+    const BWAPI::Unit& miner = refinery->getClosestUnit(
+        IsGatheringMinerals && CurrentOrder == BWAPI::Orders::MoveToMinerals,
+        150);
+    if (miner)
+        miner->gather(refinery);
+}
+ 
 ResourceSupplier::ResourceSupplier(const BWAPI::UnitType& workerType) {
     this->workerType = workerType;
 }
@@ -136,6 +162,19 @@ void ResourceSupplier::removeWorker(BWAPI::Unit workerUnit)
     }
 }
 
+void ResourceSupplier::addRefinery(const BWAPI::Unit& refineryUnit) {
+    BWAPI::Unit fromCenter = refineryUnit->getClosestUnit(
+        IsResourceDepot, 200);
+    EcoBase* Base = nullptr;
+    try {
+        Base = unitToBase.at(fromCenter); }
+    catch (std::out_of_range) {
+        BWAPI::Broodwar->sendTextEx(true, "Wrong center to base");
+        return; }
+    Base->includeRefinery(refineryUnit);
+    unitToBase[refineryUnit] = Base;
+}
+
 void ResourceSupplier::removeMineral(BWAPI::Unit mineralUnit)
 {
     EcoBase *Base = unitToBase[mineralUnit];
@@ -170,6 +209,11 @@ bool ResourceSupplier::isAtCapacity()
         }
     }
     return true;
+}
+
+void ResourceSupplier::fillLackingGasGathers() const {
+    for (EcoBase *Base: Bases)
+        Base->fillLackingGas();
 }
 
 void ResourceSupplier::displayStatus(int &row)
