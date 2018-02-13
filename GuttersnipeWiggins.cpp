@@ -203,6 +203,8 @@ void GW::drawStatus() const {
     BWAPI::Broodwar->drawTextScreen(3, 3, "APM %d, FPS %d, avgFPS %f",
         BWAPI::Broodwar->getAPM(), BWAPI::Broodwar->getFPS(),
         BWAPI::Broodwar->getAverageFPS());
+    int row = 20;
+    squadCommander->drawStatus(row);
     drawSelectedUnitInfo();
 }
 

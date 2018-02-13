@@ -71,6 +71,16 @@ std::vector<BWAPI::Position> SquadCommander::getSquadAttackPositions() const {
 }
 */
 
+void SquadCommander::drawStatus(int& row) const {
+    BWAPI::Broodwar->drawTextScreen(
+        3, row, "Deployed %d squads", deployedForces.size());
+    for (const Squad& squad: deployedForces) {
+        row += 10;
+        BWAPI::Broodwar->drawTextScreen(3, row, "  %d members", squad.size());
+    }
+    row += 15;
+}
+
 Squad::Squad(const BWAPI::Unit& unit, const BWAPI::Position& attackPosition) {
     members.insert(unit) ;
     aggresivePosition = attackPosition;

@@ -44,6 +44,7 @@ namespace {
             BWAPI::Position aggresivePosition;
             BWAPI::Position getAvgPosition() const;
             bool isEmpty() const { return members.empty(); };
+            int size() const { return members.size(); };
             void assign(const BWAPI::Unit& armyUnit);
             void remove(const BWAPI::Unit& deadArmyUnit);
             bool isJoinable(const Squad& otherSquad) const;
@@ -69,4 +70,5 @@ class SquadCommander {
         void updateAttacking();
         std::vector<BWAPI::Position*> completed();
         void completeMissions();
+        void drawStatus(int& row) const;
 };
