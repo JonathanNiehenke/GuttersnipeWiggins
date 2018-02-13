@@ -13,23 +13,36 @@ BuildingConstructor::~BuildingConstructor() {
 void BuildingConstructor::request(
     const BWAPI::UnitType& productType)
 {
-    if (Preparing.find(productType) == Preparing.end())
-        beginPreparation(productType);
-}
-
-void BuildingConstructor::beginPreparation(
-    const BWAPI::UnitType& productType)
-{
+    if (Preparing.find(productType) != Preparing.end()) return;
     ConstructionPO Job(productType);
-    Job.placement = (productType.isRefinery()
-        ? buildingPlacer->getGasPlacement()
-        : buildingPlacer->getPlacement(Job.productType));
-    Job.contractor = getContractor(Job);
+    if (productType.whatBuilds().first.isBuilding())
+        beginMorphingPreparation(Job);
+    else
+        beginConstructionPreparation(Job);
     Preparing[productType] = Job;
 }
 
+void BuildingConstructor::beginConstructionPreparation(
+    ConstructionPO& Job) const
+{
+    Job.placement = (Job.productType.isRefinery()
+        ? buildingPlacer->getGasPlacement()
+        : buildingPlacer->getPlacement(Job.productType));
+    Job.contractor = getContractor(Job);
+}
+
+void BuildingConstructor::beginMorphingPreparation(
+    ConstructionPO& Job) const
+{
+    const BWAPI::Unit& zergBuilding = BWAPI::Broodwar->getClosestUnit(
+        BWAPI::Position(BWAPI::Broodwar->self()->getStartLocation()),
+        GetType == Job.productType.whatBuilds().first, 64);
+    Job.placement = zergBuilding->getTilePosition();
+    Job.contractor = zergBuilding;
+}
+
 BWAPI::Unit BuildingConstructor::getContractor(
-    const ConstructionPO& Job)
+    const ConstructionPO& Job) const
 {
     if (Job.placement == BWAPI::TilePositions::None) return nullptr;
     // IsGatheringMinerals assumes IsWorker && IsOwned
@@ -49,6 +62,8 @@ void BuildingConstructor::updatePreparation() {
             Job.placement = buildingPlacer->getPlacement(Job.productType);
         else if (!Job.contractor)
             Job.contractor = getContractor(Job);
+        else if (Job.contractor->getType().isBuilding())
+            Job.contractor->morph(Job.productType);
         else if (isPrepared(Job))
             construct(Job);
         else if (!isPreparing(Job))

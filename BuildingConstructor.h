@@ -12,8 +12,9 @@ class BuildingConstructor {
         std::map<BWAPI::Unit, ConstructionPO> Producing;
         BuildingPlacer* buildingPlacer;
         BWAPI::TilePosition srcLocation;
-        void beginPreparation(const BWAPI::UnitType& productType);
-        BWAPI::Unit getContractor(const ConstructionPO& Job);
+        void beginConstructionPreparation(ConstructionPO& Job) const;
+        void beginMorphingPreparation(ConstructionPO& Job) const;
+        BWAPI::Unit getContractor(const ConstructionPO& Job) const;
         static BWAPI::Position toJobCenter(const ConstructionPO& Job);
         bool isPrepared(const ConstructionPO& Job);
         void construct(ConstructionPO& Job);
