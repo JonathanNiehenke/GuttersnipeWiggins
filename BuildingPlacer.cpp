@@ -8,7 +8,8 @@ BWAPI::TilePosition BuildingPlacer::getPlacement(
     const BWAPI::TilePosition& startPos = BWAPI::Broodwar->self()->getStartLocation();
     for (int radius = 0; radius < 4; ++radius) {
         for (const BWAPI::TilePosition& offset: RadicalOffset(radius)) {
-            BWAPI::TilePosition buildLocation = startPos + offset * 5;
+            BWAPI::TilePosition buildLocation = startPos + BWAPI::TilePosition(
+                offset.x * 5, offset.y * 4);
             if (BWAPI::Broodwar->canBuildHere(buildLocation, buildingType))
                 return buildLocation;
             if (small && canBuildAdjacent(buildLocation, buildingType))
@@ -29,6 +30,8 @@ bool BuildingPlacer::canBuildAdjacent(
     auto isSimilarSize = (
         [buildingSize](const BWAPI::Unit& unit) -> bool {
             return unit->getType().tileSize() == buildingSize; });
+    if (adjacent.empty())
+        return false;
     if (!std::all_of(adjacent.begin(), adjacent.end(), isSimilarSize))
         return false;
     if (adjacent.size() >= (buildingSize.x == 2 ? size_t(4) : size_t(2)))
