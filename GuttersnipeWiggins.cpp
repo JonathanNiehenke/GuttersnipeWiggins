@@ -85,8 +85,10 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
 
 void GW::onUnitDestroy(BWAPI::Unit Unit)
 {
-    if (Unit->getPlayer() == Self)
+    if (Unit->getPlayer() == Self) {
         production->onUnitDestroy(Unit);
+        squadCommander->removeFromDuty(Unit);
+    }
     else
         cartographer->removeUnit(Unit);
 }
