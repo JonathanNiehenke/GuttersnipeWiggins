@@ -1,17 +1,18 @@
 #pragma once
 #include "Production.h"
 
-Production::Production(const BWAPI::UnitType& armyUnitType) {
+Production::Production(const BWAPI::UnitType& armyUnitType) :
+    armyUnitType(armyUnitType)
+{
     const BWAPI::Race& r = BWAPI::Broodwar->self()->getRace();
-    this->centerType = r.getCenter();
-    this->workerType = r.getWorker();
-    this->supplyType = r.getSupplyProvider();
-    this->refineryType = r.getRefinery();
-    this->armyUnitType = armyUnitType;
-    this->resourceSupplier = new ResourceSupplier(workerType);
-    this->buildingConstructor = new BuildingConstructor();
-    this->unitTrainer = new UnitTrainer();
-    this->techTree = new TechTree();
+    centerType = r.getCenter();
+    workerType = r.getWorker();
+    supplyType = r.getSupplyProvider();
+    refineryType = r.getRefinery();
+    resourceSupplier = new ResourceSupplier(workerType);
+    buildingConstructor = new BuildingConstructor();
+    unitTrainer = new UnitTrainer();
+    techTree = new TechTree();
 }
 
 Production::~Production() {

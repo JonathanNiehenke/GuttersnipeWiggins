@@ -21,7 +21,7 @@ class Production {
         static bool doesExist(const BWAPI::UnitType& unitType);
     public:
         Production(const BWAPI::UnitType& armyUnitType);
-        ~Production();
+        virtual ~Production();
         BWAPI::UnitType getCenterType() const { return centerType; }
         BWAPI::UnitType getWorkerType() const { return workerType; }
         BWAPI::UnitType getSupplyType() const { return supplyType; }

@@ -3,11 +3,25 @@
 
 using namespace BWAPI::Filter;
 
+GW::GW() {
+    cartographer = new Cartographer();
+    production = nullptr;  // Initalized in onStart
+    squadCommander = new SquadCommander();
+    decisionSequence = new DecisionSequence();
+}
+
+GW::~GW() {
+    delete cartographer;
+    // delete production;  Causes crash, but I don't undestand why.
+    delete squadCommander;
+    delete decisionSequence;
+}
+
 void GW::onStart()
 {
     BWAPI::Broodwar->enableFlag(1);  // Enabled for debugging.
     Self = BWAPI::Broodwar->self();
-    cartographer.discoverResourcePositions();
+    cartographer->discoverResourcePositions();
     switch (Self->getRace()) {
         case BWAPI::Races::Enum::Protoss:
             production = new ProtossProduction();
@@ -19,7 +33,7 @@ void GW::onStart()
             production = new ZergProduction();
             break;
     }
-    decisionSequence.onStart(production);
+    decisionSequence->onStart(production);
 }
 
 void GW::onFrame()
@@ -27,19 +41,19 @@ void GW::onFrame()
     const int actionFrames = std::max(7, BWAPI::Broodwar->getLatency());
     GW::displayStatus();  // For debugging.
     switch(BWAPI::Broodwar->getFrameCount() % actionFrames) {
-        case 0: decisionSequence.update();
+        case 0: decisionSequence->update();
             break;
         case 1: production->update();
             break;
-        case 2: cartographer.update();
+        case 2: cartographer->update();
             break;
-        case 3: squadCommander.updateGrouping();
-            for (BWAPI::Position* completedPos: squadCommander.completed())
-                *completedPos = cartographer.getNextPosition(*completedPos);
+        case 3: squadCommander->updateGrouping();
+            for (BWAPI::Position* completedPos: squadCommander->completed())
+                *completedPos = cartographer->getNextPosition(*completedPos);
             break;
-        case 4: squadCommander.updateTargeting();
+        case 4: squadCommander->updateTargeting();
             break;
-        case 5: squadCommander.updateAttacking();
+        case 5: squadCommander->updateAttacking();
             break;
         case 6:
             break;
@@ -65,8 +79,8 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
     if (Unit->getPlayer() == Self) {
         production->onUnitComplete(Unit);
         if (Unit->getType() == production->getArmyUnitType()) {
-            squadCommander.sendUnitToAttack(
-                Unit, cartographer.getNextPosition(Unit->getPosition()));
+            squadCommander->sendUnitToAttack(
+                Unit, cartographer->getNextPosition(Unit->getPosition()));
         }
     }
 }
@@ -76,15 +90,15 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
     if (Unit->getPlayer() == Self)
         production->onUnitDestroy(Unit);
     else
-        cartographer.removeUnit(Unit);
+        cartographer->removeUnit(Unit);
 }
 
 void GW::onUnitDiscover(BWAPI::Unit Unit)
 {
-    if (cartographer.lacksEnemySighting() && Self->isEnemy(Unit->getPlayer()))
-        squadCommander.commandSquadsTo(Unit->getPosition());
+    if (cartographer->lacksEnemySighting() && Self->isEnemy(Unit->getPlayer()))
+        squadCommander->commandSquadsTo(Unit->getPosition());
     if (Self->isEnemy(Unit->getPlayer()))
-        cartographer.addUnit(Unit);
+        cartographer->addUnit(Unit);
 }
 
 void GW::onUnitEvade(BWAPI::Unit Unit) {

@@ -12,14 +12,16 @@ class GW : public BWAPI::AIModule
 private:
     int availableSupply = 0, workerBuffer = 0, armyBuffer = 0, supplyCount = 0;
     BWAPI::Player Self;
-    Cartographer cartographer;
-    Production *production;  // onStart initializes with polymorphic intentions.
-    SquadCommander squadCommander;
-    DecisionSequence decisionSequence;
+    Cartographer* cartographer;
+    Production* production;
+    SquadCommander* squadCommander;
+    DecisionSequence* decisionSequence;
     void displayUnitInfo();
     void displayStatus();
 
 public:
+    GW();
+    ~GW();
     virtual void onStart();
     virtual void onFrame();
     virtual void onUnitCreate(BWAPI::Unit unit);
