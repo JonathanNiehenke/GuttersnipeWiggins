@@ -16,8 +16,8 @@ private:
     Production* production;
     SquadCommander* squadCommander;
     DecisionSequence* decisionSequence;
-    void displayUnitInfo();
-    void displayStatus();
+    void drawStatus() const;
+    void drawSelectedUnitInfo() const;
 
 public:
     GW();

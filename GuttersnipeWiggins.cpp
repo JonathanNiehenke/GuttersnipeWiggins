@@ -38,8 +38,8 @@ void GW::onStart()
 
 void GW::onFrame()
 {
-    const int actionFrames = std::max(7, BWAPI::Broodwar->getLatency());
-    GW::displayStatus();  // For debugging.
+    const int actionFrames = std::max(6, BWAPI::Broodwar->getLatency());
+    GW::drawStatus();  // For debugging.
     switch(BWAPI::Broodwar->getFrameCount() % actionFrames) {
         case 0: decisionSequence->update();
             break;
@@ -54,8 +54,6 @@ void GW::onFrame()
         case 4: squadCommander->updateTargeting();
             break;
         case 5: squadCommander->updateAttacking();
-            break;
-        case 6:
             break;
         default: break;
     }
@@ -200,43 +198,27 @@ void GW::onEnd(bool IsWinner)
     delete production;
 }
 
-void GW::displayUnitInfo()
-{
-    int row = 15;
-    for (BWAPI::Unit unit: BWAPI::Broodwar->getSelectedUnits()) {
-        int sinceCommandFrame = (BWAPI::Broodwar->getFrameCount() -
-            unit->getLastCommandFrame());
-        BWAPI::UnitCommand lastCmd = unit->getLastCommand();
-        BWAPI::Broodwar->drawTextScreen(440, row,
-            "%s: %d - %s", unit->getType().c_str(), unit->getID(),
-            unit->getOrder().c_str());
-        BWAPI::Broodwar->drawTextScreen(440, row + 10,
-            "    %d - %s", sinceCommandFrame,
-            lastCmd.getType().c_str());
-        BWAPI::Unit targetedUnit = unit->getTarget();
-        if (targetedUnit) {
-            BWAPI::Broodwar->drawLineMap(unit->getPosition(),
-                targetedUnit->getPosition(), BWAPI::Color(0, 255, 0));
-        }
-        if (lastCmd.getType() == BWAPI::UnitCommandTypes::Attack_Unit) {
-            BWAPI::Broodwar->registerEvent(
-                [unit, lastCmd](BWAPI::Game*)
-                    {
-                        BWAPI::Broodwar->drawLineMap(unit->getPosition(),
-                            lastCmd.getTarget()->getPosition(),
-                            BWAPI::Color(255, 0, 0));
-                    },
-                nullptr, 1);
-        }
-        row += 25;
-    }
-}
-
-void GW::displayStatus()
-{
-    // May perhaps reveal logic errors and bugs.
+void GW::drawStatus() const {
+    // May reveal logic errors and bugs.
     BWAPI::Broodwar->drawTextScreen(3, 3, "APM %d, FPS %d, avgFPS %f",
         BWAPI::Broodwar->getAPM(), BWAPI::Broodwar->getFPS(),
         BWAPI::Broodwar->getAverageFPS());
-    displayUnitInfo();
+    drawSelectedUnitInfo();
 }
+
+void GW::drawSelectedUnitInfo() const {
+    int row = 20;
+    for (BWAPI::Unit unit: BWAPI::Broodwar->getSelectedUnits()) {
+        int sinceCommandFrame = (BWAPI::Broodwar->getFrameCount() -
+            unit->getLastCommandFrame());
+        BWAPI::Broodwar->drawTextScreen(
+            440, row, "%s: %d", unit->getType().c_str(), unit->getID());
+        BWAPI::Broodwar->drawTextScreen(
+            440, row + 10, "  Order: %s", unit->getOrder().c_str());
+        BWAPI::Broodwar->drawTextScreen(440, row + 20, "  Command: %s - %d",
+            unit->getLastCommand().getType().c_str(), sinceCommandFrame);
+        row += 35;
+    }
+}
+
+
