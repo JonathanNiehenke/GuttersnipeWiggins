@@ -78,6 +78,13 @@ BWAPI::Position Cartographer::getClosestEnemyPosition(
     return evasionTracker.getClosestEnemyPosition(sourcePosition);
 }
 
+void Cartographer::drawStatus() {
+    for (const PositionalType positionalType: evasionTracker) {
+        BWAPI::Broodwar->drawTextMap(
+            positionalType.first, positionalType.second.c_str());
+    }
+}
+
 bool EvasionTracker::empty() const {
     return currentPositions.empty() && foggyPositions.empty();
 }
@@ -120,19 +127,12 @@ void EvasionTracker::updateFoggyPositions() {
         if (!isInFog(It->first))
             foggyPositions.erase(It++);
         else
-            draw(*(It++));
+            ++It;
     }
 }
 
 bool EvasionTracker::isInFog(const BWAPI::Position& position) {
     return !BWAPI::Broodwar->isVisible(BWAPI::TilePosition(position));
-}
-
-void EvasionTracker::draw(const PositionalType& posType) {
-    BWAPI::Broodwar->registerEvent(
-        [posType](BWAPI::Game*){ BWAPI::Broodwar->drawTextMap(
-            posType.first, posType.second.c_str()); },
-        nullptr, 5);
 }
 
 BWAPI::Position EvasionTracker::getClosestEnemyPosition(
@@ -150,3 +150,36 @@ BWAPI::Position EvasionTracker::getClosestEnemyPosition(
         Utils::Position(sourcePosition).comparePositions()));
 }
 
+EvasionTracker::iterator EvasionTracker::begin() {
+    return iterator(
+        currentPositions.cbegin(), currentPositions.cend(),
+        foggyPositions.cbegin(), foggyPositions.cend());
+}
+
+EvasionTracker::iterator EvasionTracker::end() {
+    return iterator(
+        currentPositions.cend(), currentPositions.cend(),
+        foggyPositions.cend(), foggyPositions.cend());
+}
+
+EvasionTracker::iterator& EvasionTracker::iterator::operator++() {
+    if (cIt == cEnd)
+        ++fIt;
+    else
+        ++cIt;
+    return *this;
+}
+
+bool EvasionTracker::iterator::operator==(iterator other) const {
+    return (cIt == other.cIt && fIt == other.fIt);
+}
+
+bool EvasionTracker::iterator::operator!=(iterator other) const {
+    return !(*this == other);
+}
+
+PositionalType EvasionTracker::iterator::operator*() const {
+    if (cIt != cEnd)
+        return cIt->second;
+    return *fIt;
+}

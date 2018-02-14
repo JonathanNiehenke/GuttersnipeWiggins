@@ -206,6 +206,7 @@ void GW::drawStatus() const {
         BWAPI::Broodwar->getAPM(), BWAPI::Broodwar->getFPS(),
         BWAPI::Broodwar->getAverageFPS());
     int row = 20;
+    cartographer->drawStatus();
     squadCommander->drawStatus(row);
     drawSelectedUnitInfo();
 }
