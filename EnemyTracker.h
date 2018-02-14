@@ -6,9 +6,11 @@
 typedef std::pair<BWAPI::Position, BWAPI::UnitType> PositionalType;
 typedef std::map<BWAPI::Unit,PositionalType>::const_iterator CurIt;
 typedef std::map<BWAPI::Position, BWAPI::UnitType>::const_iterator FogIt;
+typedef std::function<bool(const BWAPI::UnitType&)> Pred;
 
 class EnemyTracker {
     private:
+        class Filter;
         class iterator;
         std::map<BWAPI::Unit, PositionalType> currentPositions;
         std::map<BWAPI::Position, BWAPI::UnitType> foggyPositions;
@@ -18,6 +20,7 @@ class EnemyTracker {
         void moveToFoggyPositions(
             const std::pair<BWAPI::Unit, PositionalType>& pair);
     public:
+        Filter filter(Pred pred);
         iterator begin();
         iterator end();
         bool empty() const;
@@ -41,3 +44,28 @@ class EnemyTracker::iterator {
         PositionalType operator*() const;
 };
 
+class EnemyTracker::Filter {
+    private:
+        class iterator;
+        EnemyTracker* eTracker;
+        Pred pred;
+    public:
+        Filter(EnemyTracker* eTracker, Pred pred) :
+            eTracker(eTracker), pred(pred) {}
+        iterator begin();
+        iterator end();
+};
+
+class EnemyTracker::Filter::iterator {
+    private:
+        EnemyTracker::iterator It, itEnd;
+        Pred pred;
+        void toNextPostive();
+    public:
+        iterator(EnemyTracker::iterator It, EnemyTracker::iterator itEnd,
+            Pred pred) : It(It), itEnd(itEnd), pred(pred) { toNextPostive(); }
+        iterator& operator++();
+        bool operator==(iterator other) const;
+        bool operator!=(iterator other) const;
+        PositionalType operator*() const;
+};

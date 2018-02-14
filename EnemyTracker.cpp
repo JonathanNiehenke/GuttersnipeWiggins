@@ -80,6 +80,10 @@ EnemyTracker::iterator EnemyTracker::end() {
         foggyPositions.cend(), foggyPositions.cend());
 }
 
+EnemyTracker::Filter EnemyTracker::filter(Pred pred) {
+    return Filter(this, pred);
+}
+
 EnemyTracker::iterator& EnemyTracker::iterator::operator++() {
     if (cIt == cEnd)
         ++fIt;
@@ -100,4 +104,35 @@ PositionalType EnemyTracker::iterator::operator*() const {
     if (cIt != cEnd)
         return cIt->second;
     return *fIt;
+}
+
+EnemyTracker::Filter::iterator EnemyTracker::Filter::begin() {
+    return iterator(eTracker->begin(), eTracker->end(), pred);
+}
+
+EnemyTracker::Filter::iterator EnemyTracker::Filter::end() {
+    return iterator(eTracker->end(), eTracker->end(), pred);
+}
+
+EnemyTracker::Filter::iterator& EnemyTracker::Filter::iterator::operator++() {
+    if (It == itEnd) return *this;
+    ++It;
+    toNextPostive();
+    return *this;
+}
+
+void EnemyTracker::Filter::iterator::toNextPostive() {
+    while (It != itEnd && !pred((*It).second)) ++ It;
+}
+
+bool EnemyTracker::Filter::iterator::operator==(Filter::iterator other) const {
+    return (It == other.It);
+}
+
+bool EnemyTracker::Filter::iterator::operator!=(Filter::iterator other) const {
+    return !(*this == other);
+}
+
+PositionalType EnemyTracker::Filter::iterator::operator*() const {
+    return *It;
 }
