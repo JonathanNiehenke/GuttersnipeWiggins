@@ -44,8 +44,9 @@ std::vector<BWAPI::Position> Cartographer::getStartingPositions() {
     return startingPositions;
 }
 
-bool Cartographer::lacksEnemySighting() const {
-    return enemyTracker.empty();
+bool Cartographer::lacksEnemySighting() {
+    auto& buildingFilter = enemyTracker.filter(isTangible);
+    return buildingFilter.begin() == buildingFilter.end();
 }
 
 void Cartographer::addUnit(const BWAPI::Unit& unit) {
@@ -60,22 +61,25 @@ void Cartographer::update() {
     enemyTracker.update();
 }
 
-BWAPI::Position Cartographer::getNextPosition(
-    const BWAPI::Position& sourcePosition)
-{
-    if (!enemyTracker.empty())
-        return enemyTracker.getClosestEnemyPosition(sourcePosition);
+BWAPI::Position Cartographer::getNextPosition(const BWAPI::Position& srcPos) {
+    // TODO: Learn forward iterators for std::min_element use
+    auto& closer = Utils::Position(srcPos).comparePositions();
+    BWAPI::Position closestPos = BWAPI::Positions::None;
+    for (const PositionalType posType: enemyTracker.filter(isTangible)) {
+        if(closer(posType.first, closestPos))
+           closestPos = posType.first; 
+    }
+    if (closestPos != BWAPI::Positions::None)
+        return closestPos;
     const auto& startPositions = getUnexploredStartingPositions();
     if (!startPositions.empty())
         return startPositions[attackIdx++ % startPositions.size()];
     return BWAPI::Positions::None;
 }
 
-
-BWAPI::Position Cartographer::getClosestEnemyPosition(
-    const BWAPI::Position& sourcePosition) const
-{
-    return enemyTracker.getClosestEnemyPosition(sourcePosition);
+bool Cartographer::isTangible(const BWAPI::UnitType unitType) {
+    return !(unitType.isFlyer() || unitType.hasPermanentCloak() ||
+        unitType.isCloakable());
 }
 
 void Cartographer::drawStatus() {

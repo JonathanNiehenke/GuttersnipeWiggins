@@ -93,9 +93,8 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
         cartographer->removeUnit(Unit);
 }
 
-void GW::onUnitDiscover(BWAPI::Unit Unit)
-{
-    if (cartographer->lacksEnemySighting() && Self->isEnemy(Unit->getPlayer()))
+void GW::onUnitDiscover(BWAPI::Unit Unit) {
+    if (Self->isEnemy(Unit->getPlayer()) && cartographer->lacksEnemySighting())
         squadCommander->commandSquadsTo(Unit->getPosition());
     if (Self->isEnemy(Unit->getPlayer()))
         cartographer->addUnit(Unit);

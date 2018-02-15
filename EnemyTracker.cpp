@@ -6,10 +6,8 @@ bool EnemyTracker::empty() const {
 }
 
 void EnemyTracker::addUnit(const BWAPI::Unit& unit) {
-    if (unit->isDetected()) {
-        currentPositions[unit] = PositionalType(
-            unit->getPosition(), unit->getType());
-    }
+    currentPositions[unit] = PositionalType(
+        unit->getPosition(), unit->getType());
 }
 
 void EnemyTracker::removeUnit(const BWAPI::Unit& unit) {
