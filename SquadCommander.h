@@ -14,6 +14,9 @@ namespace {
             static bool hasWeapon(const BWAPI::UnitType& unitType);
             static int byDamage(const BWAPI::UnitType& unitType);
             static int byDurability(const BWAPI::Unit& unit);
+            void removeHarmless();
+            static bool isThreatening(const BWAPI::Unit& unit);
+            static bool isHarmless(const BWAPI::Unit& unit);
         public:
             BWAPI::Position getAvgPosition() const { return avgPosition; }
             void setTargets(const BWAPI::Unitset& targets);
@@ -28,9 +31,6 @@ namespace {
         private:
             BWAPI::Unitset members;
             TargetPrioritizer targets;
-            bool isUnderAttack() const;
-            void aquireAggresiveTargets();
-            void aquireNormalTargets();
             void attackPosition() const;
             bool isAttackingPosition(const BWAPI::Unit& squadMember) const;
             void attackTargets() const;

@@ -110,26 +110,6 @@ void Squad::join(Squad& otherSquad) {
 }
 
 void Squad::aquireTargets() {
-    if (isUnderAttack())
-        aquireAggresiveTargets();
-    else
-        aquireNormalTargets();
-}
-
-bool Squad::isUnderAttack() const {
-    for (const BWAPI::Unit& squadMember: members) {
-        if (squadMember->isUnderAttack())
-            return true;
-    }
-    return false;
-}
-
-void Squad::aquireAggresiveTargets() {
-    targets.setTargets(members.getUnitsInRadius(300, IsEnemy && IsDetected &&
-        !IsFlying && GroundWeapon != BWAPI::WeaponTypes::None));
-}
-
-void Squad::aquireNormalTargets() {
     targets.setTargets(members.getUnitsInRadius(300, IsEnemy && IsDetected &&
         !IsFlying && GetType != BWAPI::UnitTypes::Zerg_Larva));
 }
@@ -218,6 +198,8 @@ void TargetPrioritizer::setTargets(
     enemyUnits.clear();
     enemyUnits = std::vector<BWAPI::Unit>(targets.begin(), targets.end());
     std::sort(enemyUnits.begin(), enemyUnits.end(), greaterPriority);
+    if (!enemyUnits.empty() && isThreatening(enemyUnits.front()))
+        removeHarmless();
 }
 
 bool TargetPrioritizer::greaterPriority(
@@ -240,17 +222,12 @@ int TargetPrioritizer::byType(
     {
         return 5;
     }
-    if (unitType == BWAPI::UnitTypes::Protoss_High_Templar ||
-        unitType == BWAPI::UnitTypes::Protoss_Dark_Archon ||
-        unitType == BWAPI::UnitTypes::Protoss_Reaver ||
-        unitType == BWAPI::UnitTypes::Protoss_Carrier ||
-        unitType == BWAPI::UnitTypes::Protoss_Arbiter ||
-        unitType == BWAPI::UnitTypes::Terran_Medic ||
-        unitType == BWAPI::UnitTypes::Terran_Science_Vessel ||
-        unitType == BWAPI::UnitTypes::Terran_Ghost ||
-        unitType == BWAPI::UnitTypes::Zerg_Queen ||
+    if ((unitType.isSpellcaster() &&
+            unitType != BWAPI::UnitTypes::Terran_Comsat_Station &&
+            unitType != BWAPI::UnitTypes::Protoss_Shield_Battery) ||
         unitType == BWAPI::UnitTypes::Zerg_Lurker ||
-        unitType == BWAPI::UnitTypes::Zerg_Defiler)
+        unitType == BWAPI::UnitTypes::Protoss_Reaver ||
+        unitType == BWAPI::UnitTypes::Protoss_Carrier)
     {
         return 4;
     }
@@ -287,4 +264,27 @@ int TargetPrioritizer::byDurability(
 {
     return  (unit->getShields() + unit->getHitPoints() +
         unit->getType().armor() * 7);
+}
+
+
+bool TargetPrioritizer::isThreatening(const BWAPI::Unit& unit) {
+    const BWAPI::UnitType& unitType = unit->getType();
+    return (unitType.groundWeapon() != BWAPI::WeaponTypes::None ||
+            unitType.airWeapon() != BWAPI::WeaponTypes::None ||
+            unitType.isSpellcaster() ||
+            unitType == BWAPI::UnitTypes::Terran_Bunker ||
+            unitType == BWAPI::UnitTypes::Terran_Dropship ||
+            unitType == BWAPI::UnitTypes::Protoss_Shuttle ||
+            unitType == BWAPI::UnitTypes::Protoss_Reaver ||
+            unitType == BWAPI::UnitTypes::Protoss_Carrier
+    );
+}
+void TargetPrioritizer::removeHarmless() {
+    enemyUnits.erase(
+        std::find_if(enemyUnits.begin(), enemyUnits.end(), isHarmless),
+        enemyUnits.end());
+}
+
+bool TargetPrioritizer::isHarmless(const BWAPI::Unit& unit) {
+    return !isThreatening(unit);
 }
