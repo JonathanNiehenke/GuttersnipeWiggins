@@ -70,6 +70,8 @@ void GW::onUnitMorph(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self)
         production->onUnitMorph(Unit);
+    else if (Unit->getType() == BWAPI::UnitTypes::Resource_Vespene_Geyser)
+        cartographer->removeUnit(Unit);
 }
 
 void GW::onUnitComplete(BWAPI::Unit Unit)
