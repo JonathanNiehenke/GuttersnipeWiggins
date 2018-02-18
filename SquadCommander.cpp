@@ -62,15 +62,6 @@ std::vector<BWAPI::Position*> SquadCommander::completed() {
     return completedPositions;
 }
 
-/*
-std::vector<BWAPI::Position> SquadCommander::getSquadAttackPositions() const {
-    std::vector<BWAPI::Position> attackPositions;
-    for (Squad& squad: deployedForces)
-        attackPositions.push_back(squad.aggresivePosition);
-    return attackPositions;
-}
-*/
-
 void SquadCommander::drawStatus(int& row) const {
     BWAPI::Broodwar->drawTextScreen(
         3, row, "Deployed %d squads", deployedForces.size());
@@ -110,15 +101,15 @@ void Squad::join(Squad& otherSquad) {
 }
 
 void Squad::aquireTargets() {
-    targets.setTargets(members.getUnitsInRadius(300, IsEnemy && IsDetected &&
+    targets.include(members.getUnitsInRadius(300, IsEnemy && IsDetected &&
         !IsFlying && GetType != BWAPI::UnitTypes::Zerg_Larva));
 }
 
 void Squad::attack() const {
-    if (targets.empty())
-        attackPosition();
-    else
+    if (targets.available())
         attackTargets();
+    else
+        attackPosition();
 }
 
 void Squad::attackPosition() const {
@@ -138,83 +129,42 @@ bool Squad::isAttackingPosition(
 
 void Squad::attackTargets() const {
     for (const BWAPI::Unit& squadMember: members) {
-        if (squadMember->isAttackFrame()) continue;
-        if (!isAttackingTarget(squadMember))
-            moveToClosestTarget(squadMember);
+        if (!squadMember->isAttackFrame())
+            attackSingleTarget(squadMember);
     }
 }
 
-void Squad::moveToClosestTarget(
-    const BWAPI::Unit& squadMember) const
-{
-    squadMember->move(getClosestTarget(squadMember)->getPosition());
-}
-
-BWAPI::Unit Squad::getClosestTarget(
-    const BWAPI::Unit& squadMember) const
-{
-    const BWAPI::Position& squadPos = squadMember->getPosition();
-    BWAPI::Unit closestTarget = *targets.begin();
-    int closestDist = squadPos.getApproxDistance(closestTarget->getPosition());
-    for (const BWAPI::Unit& enemyTarget: targets) {
-        int dist = squadPos.getApproxDistance(enemyTarget->getPosition());
-        if (dist < closestDist) {
-            closestTarget = enemyTarget;
-            closestDist = dist;
-        }
-    }
-    return closestTarget;
-}
-
-bool Squad::isAttackingTarget(
-    const BWAPI::Unit& squadMember) const
-{
-    for (const BWAPI::Unit& enemyTarget: targets) {
-        if (memberIsTargeting(squadMember, enemyTarget))
-            return true;
-        if (squadMember->isInWeaponRange(enemyTarget))
-            return squadMember->attack(enemyTarget);
-    }
-    return false;
+void Squad::attackSingleTarget(const BWAPI::Unit& squadMember) const {
+    const BWAPI::Unit& enemyTarget = targets.bestFor(squadMember);
+    if (!memberIsTargeting(squadMember, enemyTarget))
+        squadMember->attack(enemyTarget);
 }
 
 bool Squad::memberIsTargeting(
-    const BWAPI::Unit& squadMember, const BWAPI::Unit& target) const
+    const BWAPI::Unit& squadMember, const BWAPI::Unit& enemyTarget)
 {
     const auto& lastCmd = squadMember->getLastCommand();
     return (lastCmd.getType() == BWAPI::UnitCommandTypes::Attack_Unit &&
-        lastCmd.getTarget() == target);
+        lastCmd.getTarget() == enemyTarget);
 }
 
 bool Squad::completedAttack() const {
-    return (targets.empty() &&
+    return (!targets.available() &&
         aggresivePosition.getApproxDistance(members.getPosition()) < 150);
 }
 
-void TargetPrioritizer::setTargets(
-    const BWAPI::Unitset& targets)
+bool Prioritizer::operator()(
+    const BWAPI::Unit& u1, const BWAPI::Unit& u2) const
 {
-    avgPosition = targets.getPosition();
-    enemyUnits.clear();
-    enemyUnits = std::vector<BWAPI::Unit>(targets.begin(), targets.end());
-    std::sort(enemyUnits.begin(), enemyUnits.end(), greaterPriority);
-    if (!enemyUnits.empty() && isThreatening(enemyUnits.front()))
-        removeHarmless();
+    const BWAPI::UnitType& u1Type = u1->getType(), u2Type = u2->getType();
+    if (byType(u1Type) != byType(u2Type))
+        return byType(u1Type) > byType(u2Type);
+    if (byDamage(u1Type) != byDamage(u2Type))
+        return byDamage(u1Type) > byDamage(u2Type);
+    return byDurability(u1) < byDurability(u2);
 }
 
-bool TargetPrioritizer::greaterPriority(
-    const BWAPI::Unit& unit1, const BWAPI::Unit& unit2)
-{
-    const BWAPI::UnitType& unit1Type = unit1->getType();
-    const BWAPI::UnitType& unit2Type = unit2->getType();
-    if (byType(unit1Type) != byType(unit2Type))
-        return byType(unit1Type) > byType(unit2Type);
-    if (byDamage(unit1Type) != byDamage(unit2Type))
-        return byDamage(unit1Type) > byDamage(unit2Type);
-    return byDurability(unit1) < byDurability(unit2);
-}
-
-int TargetPrioritizer::byType(
+int Prioritizer::byType(
     const BWAPI::UnitType& unitType)
 {
     if (unitType == BWAPI::UnitTypes::Protoss_Shuttle ||
@@ -222,9 +172,7 @@ int TargetPrioritizer::byType(
     {
         return 5;
     }
-    if ((unitType.isSpellcaster() &&
-            unitType != BWAPI::UnitTypes::Terran_Comsat_Station &&
-            unitType != BWAPI::UnitTypes::Protoss_Shield_Battery) ||
+    if ((unitType.isSpellcaster() && !unitType.isBuilding()) ||
         unitType == BWAPI::UnitTypes::Zerg_Lurker ||
         unitType == BWAPI::UnitTypes::Protoss_Reaver ||
         unitType == BWAPI::UnitTypes::Protoss_Carrier)
@@ -244,14 +192,14 @@ int TargetPrioritizer::byType(
     return 0;
 }
 
-bool TargetPrioritizer::hasWeapon(
+bool Prioritizer::hasWeapon(
     const BWAPI::UnitType& unitType)
 {
     return (unitType.groundWeapon() != BWAPI::WeaponTypes::None ||
             unitType.airWeapon() != BWAPI::WeaponTypes::None);
 }
 
-int TargetPrioritizer::byDamage(
+int Prioritizer::byDamage(
     const BWAPI::UnitType& unitType)
 {
     BWAPI::WeaponType unitWeapon = unitType.groundWeapon();
@@ -259,15 +207,26 @@ int TargetPrioritizer::byDamage(
         (unitWeapon.damageType() == BWAPI::DamageTypes::Normal ? 1 : 0.65));
 }
 
-int TargetPrioritizer::byDurability(
+int Prioritizer::byDurability(
     const BWAPI::Unit& unit)
 {
     return  (unit->getShields() + unit->getHitPoints() +
         unit->getType().armor() * 7);
 }
 
+void Targets::include(const BWAPI::Unitset& targets) {
+    enemyUnits.clear();
+    enemyUnits = std::vector<BWAPI::Unit>(targets.begin(), targets.end());
+    std::sort(enemyUnits.begin(), enemyUnits.end(), prioritizer);
+    if (!enemyUnits.empty() && isThreatening(enemyUnits.front()))
+        removeHarmless();
+}
 
-bool TargetPrioritizer::isThreatening(const BWAPI::Unit& unit) {
+bool Targets::available() const {
+    return !enemyUnits.empty();
+}
+
+bool Targets::isThreatening(const BWAPI::Unit& unit) {
     const BWAPI::UnitType& unitType = unit->getType();
     return (unitType.groundWeapon() != BWAPI::WeaponTypes::None ||
             unitType.airWeapon() != BWAPI::WeaponTypes::None ||
@@ -279,12 +238,24 @@ bool TargetPrioritizer::isThreatening(const BWAPI::Unit& unit) {
             unitType == BWAPI::UnitTypes::Protoss_Carrier
     );
 }
-void TargetPrioritizer::removeHarmless() {
+void Targets::removeHarmless() {
     enemyUnits.erase(
         std::find_if(enemyUnits.begin(), enemyUnits.end(), isHarmless),
         enemyUnits.end());
 }
 
-bool TargetPrioritizer::isHarmless(const BWAPI::Unit& unit) {
+bool Targets::isHarmless(const BWAPI::Unit& unit) {
     return !isThreatening(unit);
+}
+
+BWAPI::Unit Targets::bestFor(const BWAPI::Unit& attacker) const {
+    BWAPI::Unit closestTarget = enemyUnits.front();
+    auto closer = Utils::Position(attacker->getPosition()).comparePositions();
+    for (const BWAPI::Unit& enemyTarget: enemyUnits) {
+        if (attacker->isInWeaponRange(enemyTarget))
+            return enemyTarget;
+        if (closer(enemyTarget->getPosition(), closestTarget->getPosition()))
+            closestTarget = enemyTarget;
+    }
+    return closestTarget;
 }

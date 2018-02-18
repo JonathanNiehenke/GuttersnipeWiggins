@@ -4,41 +4,39 @@
 
 namespace {
 
-    class TargetPrioritizer {
+    class Prioritizer {
         private:
-            std::vector<BWAPI::Unit> enemyUnits;
-            BWAPI::Position avgPosition;
-            static bool greaterPriority(
-                const BWAPI::Unit&, const BWAPI::Unit&);
             static int byType(const BWAPI::UnitType& unitType);
             static bool hasWeapon(const BWAPI::UnitType& unitType);
             static int byDamage(const BWAPI::UnitType& unitType);
             static int byDurability(const BWAPI::Unit& unit);
-            void removeHarmless();
+        public:
+            bool operator()(const BWAPI::Unit&, const BWAPI::Unit&) const;
+    };
+
+    class Targets {
+        private:
+            Prioritizer prioritizer;
+            std::vector<BWAPI::Unit> enemyUnits;
             static bool isThreatening(const BWAPI::Unit& unit);
+            void removeHarmless();
             static bool isHarmless(const BWAPI::Unit& unit);
         public:
-            BWAPI::Position getAvgPosition() const { return avgPosition; }
-            void setTargets(const BWAPI::Unitset& targets);
-            std::vector<BWAPI::Unit>::const_iterator begin() const
-                { return enemyUnits.cbegin(); }
-            std::vector<BWAPI::Unit>::const_iterator end() const
-                { return enemyUnits.cend(); }
-            bool empty() const { return enemyUnits.empty(); }
+            void include(const BWAPI::Unitset& targets);
+            bool available() const;
+            BWAPI::Unit bestFor(const BWAPI::Unit& attacker) const;
     };
 
     class Squad {
         private:
             BWAPI::Unitset members;
-            TargetPrioritizer targets;
+            Targets targets;
+            void attackTargets() const;
+            void attackSingleTarget(const BWAPI::Unit& squadMember) const;
+            static bool memberIsTargeting(
+                const BWAPI::Unit&, const BWAPI::Unit&);
             void attackPosition() const;
             bool isAttackingPosition(const BWAPI::Unit& squadMember) const;
-            void attackTargets() const;
-            void moveToClosestTarget(const BWAPI::Unit& squadMember) const;
-            BWAPI::Unit getClosestTarget(const BWAPI::Unit& squadMember) const;
-            bool isAttackingTarget(const BWAPI::Unit& squadMember) const;
-            bool memberIsTargeting(
-                const BWAPI::Unit&, const BWAPI::Unit&) const;
         public:
             Squad(const BWAPI::Unit&, const BWAPI::Position&);
             BWAPI::Position aggresivePosition;
