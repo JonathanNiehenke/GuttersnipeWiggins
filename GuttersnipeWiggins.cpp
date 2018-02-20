@@ -48,8 +48,6 @@ void GW::onFrame()
         case 2: cartographer->update();
             break;
         case 3: squadCommander->updateGrouping();
-            for (BWAPI::Position* completedPos: squadCommander->completed())
-                *completedPos = cartographer->getNextPosition(*completedPos);
             break;
         case 4: squadCommander->updateTargeting();
             break;
