@@ -3,10 +3,6 @@
 
 using namespace BWAPI::Filter;
 
-Combat::Combat(const BWAPI::Position& attackPosition) :
-    attackPosition(attackPosition) {
-}
-
 BWAPI::Position Combat::position() const {
     return attackPosition;
 }

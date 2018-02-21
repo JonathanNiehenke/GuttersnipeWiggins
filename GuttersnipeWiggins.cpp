@@ -47,11 +47,11 @@ void GW::onFrame()
             break;
         case 2: cartographer->update();
             break;
-        case 3: squadCommander->updateGrouping();
+        case 3: squadCommander->group();
             break;
-        case 4: squadCommander->updateTargeting();
+        case 4: squadCommander->prepare();
             break;
-        case 5: squadCommander->updateAttacking();
+        case 5: squadCommander->engage();
             break;
         default: break;
     }
@@ -77,8 +77,9 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
     if (Unit->getPlayer() == Self) {
         production->onUnitComplete(Unit);
         if (Unit->getType() == production->getArmyUnitType()) {
-            squadCommander->sendUnitToAttack(
-                Unit, cartographer->getNextPosition(Unit->getPosition()));
+            BWAPI::Unitset temp;
+            temp.insert(Unit);
+            squadCommander->incorporate(temp);
         }
     }
 }
@@ -87,7 +88,7 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self) {
         production->onUnitDestroy(Unit);
-        squadCommander->removeFromDuty(Unit);
+        squadCommander->deactivate(Unit);
     }
     else
         cartographer->removeUnit(Unit);
@@ -95,7 +96,7 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
 
 void GW::onUnitDiscover(BWAPI::Unit Unit) {
     if (Self->isEnemy(Unit->getPlayer()) && cartographer->lacksEnemySighting())
-        squadCommander->commandSquadsTo(Unit->getPosition());
+        squadCommander->focus(Unit->getPosition());
     if (Self->isEnemy(Unit->getPlayer()))
         cartographer->addUnit(Unit);
 }

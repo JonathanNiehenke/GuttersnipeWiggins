@@ -1,52 +1,48 @@
 #pragma once
 #include "SquadCommander.h"
 
-void SquadCommander::sendUnitToAttack(
-    const BWAPI::Unit& unit, const BWAPI::Position& attackPos)
-{
-    deployedForces.push_back(Squad(unit, attackPos));
+void SquadCommander::incorporate(const BWAPI::Unitset& units) {
+    deployedForces.push_back(Squad(units));
 }
 
-void SquadCommander::removeFromDuty(const BWAPI::Unit& deadArmyUnit) {
+void SquadCommander::deactivate(const BWAPI::Unit& deadArmyUnit) {
     for (Squad& squad: deployedForces)
         squad.remove(deadArmyUnit);
 };
 
-void SquadCommander::updateGrouping() {
-    uniteNearBySquads();
-    removeEmptySquads();
+void SquadCommander::group() {
+    funnel();
+    terminate();
 }
 
-void SquadCommander::updateTargeting() {
+void SquadCommander::prepare() {
     for (Squad& squad: deployedForces)
         squad.prepareCombat();
 }
 
-void SquadCommander::updateAttacking() {
+void SquadCommander::engage() const {
     for (const auto& squad: deployedForces)
         squad.engageCombat();
 }
 
-void SquadCommander::uniteNearBySquads() {
+void SquadCommander::funnel() {
     // Preferring iteration by index to prevent pointers of pointers
     if (deployedForces.size() < 2) return;
     int forcesLength = deployedForces.size();
     for (int i = 0; i < forcesLength - 1; ++ i) {
-        for (int j = i + 1; j < forcesLength; ++j) {
-            if (deployedForces[i].isJoinable(deployedForces[j]))
-                deployedForces[i].join(deployedForces[j]);
-        }
+        for (int j = i + 1; j < forcesLength; ++j)
+            deployedForces[i].join(deployedForces[j]);
     }
 }
 
-void SquadCommander::removeEmptySquads() {
+void SquadCommander::terminate() {
     deployedForces.erase(
         std::remove_if(deployedForces.begin(), deployedForces.end(), 
             [](Squad squad) { return squad.isEmpty(); }),
         deployedForces.end());
 }
 
-void SquadCommander::commandSquadsTo(const BWAPI::Position& attackPosition) {
+void SquadCommander::focus(const BWAPI::Position& attackPosition) {
     for (Squad& squad: deployedForces)
         squad.attackPosition(attackPosition);
 }
@@ -61,10 +57,7 @@ void SquadCommander::drawStatus(int& row) const {
     row += 15;
 }
 
-Squad::Squad(const BWAPI::Unit& unit, const BWAPI::Position& attackPosition) :
-    combat(attackPosition)
-{
-    members.insert(unit);
+Squad::Squad(const BWAPI::Unitset& units) : members(units) {
 }
 
 BWAPI::Position Squad::getAvgPosition() const {
@@ -79,15 +72,16 @@ void Squad::remove(const BWAPI::Unit& armyUnit) {
     members.erase(armyUnit);
 }
 
+void Squad::join(Squad& other) {
+    if (!isJoinable(other)) return;
+    members.insert(other.members.begin(), other.members.end());
+    other.members.clear();
+}
+
 bool Squad::isJoinable(const Squad& other) const {
     if (combat.position() != other.combat.position()) return false;
     return (members.getPosition().getApproxDistance(
         other.members.getPosition()) < 250);
-}
-
-void Squad::join(Squad& otherSquad) {
-    members.insert(otherSquad.members.begin(), otherSquad.members.end());
-    otherSquad.members.clear();
 }
 
 void Squad::attackPosition(const BWAPI::Position& position) {

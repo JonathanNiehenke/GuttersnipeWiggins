@@ -39,7 +39,6 @@ class Combat {
         void advance(const BWAPI::Unit& attacker) const;
         bool isAdvancing(const BWAPI::Unit& squadMember) const;
     public:
-        Combat(const BWAPI::Position& attackPosition);
         BWAPI::Position position() const;
         void position(const BWAPI::Position& attackPosition);
         void prepare(const BWAPI::Unitset& members);
