@@ -1,136 +1,70 @@
 #pragma once
 #include "EnemyTracker.h"
 
-bool EnemyTracker::empty() const {
-    return currentPositions.empty() && foggyPositions.empty();
-}
-
 void EnemyTracker::addUnit(const BWAPI::Unit& unit) {
-    currentPositions[unit] = PositionalType(
-        unit->getPosition(), unit->getType());
+    visibleUnits.push_back(std::make_pair(
+        unit, PositionalType(unit->getPosition(), unit->getType())));
 }
 
 void EnemyTracker::removeUnit(const BWAPI::Unit& unit) {
-    currentPositions.erase(unit);
+    visibleUnits.erase(
+        std::remove_if(visibleUnits.begin(), visibleUnits.end(), 
+            [unit](const UnitRecord& uR){ return uR.first == unit; }),
+        visibleUnits.end());
 }
 
 void EnemyTracker::update() {
-    updateCurrentPositions();
-    updateFoggyPositions();
+    discardVisible();
+    updateVisible();
 }
 
-void EnemyTracker::updateCurrentPositions() {
-    for (auto& It = currentPositions.begin(); It != currentPositions.end();) {
-        PositionalType& positionalType = It->second;
-        if (It->first->isVisible())
-            positionalType.first = (It++)->first->getPosition();
-        else if (isInFog(positionalType.first))
-            moveToFoggyPositions(*(It++));
-        else
-            ++It;
+void EnemyTracker::discardVisible() {
+    enemyPositions.erase(
+        std::remove_if(enemyPositions.begin(), enemyPositions.end(), isVisible),
+        enemyPositions.end());
+}
+
+bool EnemyTracker::isVisible(const PositionalType& posType) {
+    return BWAPI::Broodwar->isVisible(BWAPI::TilePosition(posType.first));
+}
+
+void EnemyTracker::updateVisible() {
+    for (UnitRecord& unitRecord: visibleUnits) {
+        if (unitRecord.first->isVisible())
+            updatePosition(unitRecord.second, unitRecord.first->getPosition());
     }
 }
 
-void EnemyTracker::moveToFoggyPositions(
-    const std::pair<BWAPI::Unit, PositionalType>& pair)
+void EnemyTracker::updatePosition(
+    PositionalType& positionaType, const BWAPI::Position& position)
 {
-    foggyPositions[pair.second.first] = pair.second.second;
-    currentPositions.erase(pair.first);
+    positionaType.first = position;
+    enemyPositions.push_back(positionaType);
 }
 
-void EnemyTracker::updateFoggyPositions() {
-    for (auto& It = foggyPositions.begin(); It != foggyPositions.end();) {
-        if (!isInFog(It->first))
-            foggyPositions.erase(It++);
-        else
-            ++It;
+bool EnemyTracker::lacking(TypePred typePred) const {
+    if (!typePred) return false;
+    return !any_of(enemyPositions.begin(), enemyPositions.end(),
+        [typePred](const PositionalType& posType)
+            { return typePred(posType.second); });
+}
+
+BWAPI::Position EnemyTracker::closestTo(
+    const BWAPI::Position& srcPos, TypePred typePred) const
+{
+    auto closer = Utils::Position(srcPos).comparePositions();
+    auto closest = BWAPI::Positions::None;
+    for (const PositionalType& positionalType: enemyPositions) {
+        if (!closer(positionalType.first, closest)) continue;
+        if (!typePred || typePred(positionalType.second))
+            closest = positionalType.first;
     }
+    return closest;
 }
 
-bool EnemyTracker::isInFog(const BWAPI::Position& position) {
-    return !BWAPI::Broodwar->isVisible(BWAPI::TilePosition(position));
-}
-
-BWAPI::Position EnemyTracker::getClosestEnemyPosition(
-    const BWAPI::Position& sourcePosition) const
-{
-    if (empty())
-        return BWAPI::Positions::None;
-    std::vector<BWAPI::Position> loggedPositions;
-    for (const std::pair<BWAPI::Unit, PositionalType>& pair: currentPositions)
-        loggedPositions.push_back(pair.second.first);
-    for (const auto& pair: foggyPositions)
-        loggedPositions.push_back(pair.first);
-    return (*std::min_element(
-        loggedPositions.begin(), loggedPositions.end(),
-        Utils::Position(sourcePosition).comparePositions()));
-}
-
-EnemyTracker::iterator EnemyTracker::begin() {
-    return iterator(
-        currentPositions.cbegin(), currentPositions.cend(),
-        foggyPositions.cbegin(), foggyPositions.cend());
-}
-
-EnemyTracker::iterator EnemyTracker::end() {
-    return iterator(
-        currentPositions.cend(), currentPositions.cend(),
-        foggyPositions.cend(), foggyPositions.cend());
-}
-
-EnemyTracker::Filter EnemyTracker::filter(Pred pred) {
-    return Filter(this, pred);
-}
-
-EnemyTracker::iterator& EnemyTracker::iterator::operator++() {
-    if (cIt == cEnd)
-        ++fIt;
-    else
-        ++cIt;
-    return *this;
-}
-
-bool EnemyTracker::iterator::operator==(iterator other) const {
-    return (cIt == other.cIt && fIt == other.fIt);
-}
-
-bool EnemyTracker::iterator::operator!=(iterator other) const {
-    return !(*this == other);
-}
-
-PositionalType EnemyTracker::iterator::operator*() const {
-    if (cIt != cEnd)
-        return cIt->second;
-    return *fIt;
-}
-
-EnemyTracker::Filter::iterator EnemyTracker::Filter::begin() {
-    return iterator(eTracker->begin(), eTracker->end(), pred);
-}
-
-EnemyTracker::Filter::iterator EnemyTracker::Filter::end() {
-    return iterator(eTracker->end(), eTracker->end(), pred);
-}
-
-EnemyTracker::Filter::iterator& EnemyTracker::Filter::iterator::operator++() {
-    if (It == itEnd) return *this;
-    ++It;
-    toNextPostive();
-    return *this;
-}
-
-void EnemyTracker::Filter::iterator::toNextPostive() {
-    while (It != itEnd && !pred((*It).second)) ++ It;
-}
-
-bool EnemyTracker::Filter::iterator::operator==(Filter::iterator other) const {
-    return (It == other.It);
-}
-
-bool EnemyTracker::Filter::iterator::operator!=(Filter::iterator other) const {
-    return !(*this == other);
-}
-
-PositionalType EnemyTracker::Filter::iterator::operator*() const {
-    return *It;
+void EnemyTracker::drawStatus() const {
+    for (const PositionalType& positionalType: enemyPositions) {
+        BWAPI::Broodwar->drawTextMap(
+            positionalType.first, positionalType.second.c_str());
+    }
 }

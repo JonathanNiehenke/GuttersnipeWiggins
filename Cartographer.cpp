@@ -45,8 +45,7 @@ std::vector<BWAPI::Position> Cartographer::getStartingPositions() {
 }
 
 bool Cartographer::lacksEnemySighting() {
-    auto& buildingFilter = enemyTracker.filter(isTangible);
-    return buildingFilter.begin() == buildingFilter.end();
+    return enemyTracker.lacking(isTangible);
 }
 
 void Cartographer::addUnit(const BWAPI::Unit& unit) {
@@ -63,12 +62,7 @@ void Cartographer::update() {
 
 BWAPI::Position Cartographer::getNextPosition(const BWAPI::Position& srcPos) {
     // TODO: Learn forward iterators for std::min_element use
-    auto& closer = Utils::Position(srcPos).comparePositions();
-    BWAPI::Position closestPos = BWAPI::Positions::None;
-    for (const PositionalType posType: enemyTracker.filter(isTangible)) {
-        if(closer(posType.first, closestPos))
-           closestPos = posType.first; 
-    }
+    BWAPI::Position closestPos = enemyTracker.closestTo(srcPos, isTangible);
     if (closestPos != BWAPI::Positions::None)
         return closestPos;
     const auto& startPositions = getUnexploredStartingPositions();
@@ -83,8 +77,5 @@ bool Cartographer::isTangible(const BWAPI::UnitType unitType) {
 }
 
 void Cartographer::drawStatus() {
-    for (const PositionalType positionalType: enemyTracker) {
-        BWAPI::Broodwar->drawTextMap(
-            positionalType.first, positionalType.second.c_str());
-    }
+    enemyTracker.drawStatus();
 }
