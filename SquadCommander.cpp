@@ -2,7 +2,7 @@
 #include "SquadCommander.h"
 
 void SquadCommander::incorporate(const BWAPI::Unitset& units) {
-    deployedForces.push_back(Squad(units));
+    deployedForces.push_back(Squad(units, nextTargetFrom));
 }
 
 void SquadCommander::deactivate(const BWAPI::Unit& deadArmyUnit) {
@@ -55,9 +55,6 @@ void SquadCommander::drawStatus(int& row) const {
         // BWAPI::Broodwar->drawTextScreen(3, row, "  %d members", squad.size());
     }
     row += 15;
-}
-
-Squad::Squad(const BWAPI::Unitset& units) : members(units) {
 }
 
 BWAPI::Position Squad::getAvgPosition() const {

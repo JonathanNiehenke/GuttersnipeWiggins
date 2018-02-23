@@ -31,6 +31,7 @@ namespace {
 
 class Combat {
     private:
+        std::function<BWAPI::Position(BWAPI::Position)> nextTargetFrom;
         Targets targets;
         BWAPI::Position attackPosition;
         void engageTargets(const BWAPI::Unit& attacker) const;
@@ -39,6 +40,10 @@ class Combat {
         void advance(const BWAPI::Unit& attacker) const;
         bool isAdvancing(const BWAPI::Unit& squadMember) const;
     public:
+        Combat(
+            std::function<BWAPI::Position(BWAPI::Position)> nextTargetFrom,
+            BWAPI::Position attackPosition) :
+            nextTargetFrom(nextTargetFrom), attackPosition(attackPosition) {}
         BWAPI::Position position() const;
         void position(const BWAPI::Position& attackPosition);
         void prepare(const BWAPI::Unitset& members);

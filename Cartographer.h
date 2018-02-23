@@ -22,7 +22,7 @@ class Cartographer {
         void addUnit(const BWAPI::Unit& unit);
         void removeUnit(const BWAPI::Unit& unit);
         void update();
-        BWAPI::Position getNextPosition(const BWAPI::Position& sourcePosition);
+        BWAPI::Position nextPosition(const BWAPI::Position& sourcePosition);
         std::function<bool(
                 const PositionalType&, const PositionalType&)>
             closerPositionalType(const BWAPI::Position& srcPos) const;

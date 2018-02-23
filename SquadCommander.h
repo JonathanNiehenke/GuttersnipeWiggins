@@ -10,7 +10,9 @@ namespace {
             Combat combat;
             bool isJoinable(const Squad& otherSquad) const;
         public:
-            Squad(const BWAPI::Unitset& units);
+            Squad(const BWAPI::Unitset& units,
+                std::function<BWAPI::Position(BWAPI::Position)> nextTargetFrom)
+                : members(units), combat(nextTargetFrom, units.getPosition()) {}
             BWAPI::Position getAvgPosition() const;
             bool isEmpty() const { return members.empty(); };
             void assign(const BWAPI::Unit& armyUnit);
@@ -25,10 +27,14 @@ namespace {
 
 class SquadCommander {
     private:
+        std::function<BWAPI::Position(BWAPI::Position)> nextTargetFrom;
         std::vector<Squad> deployedForces;
         void funnel();
         void terminate();
     public:
+        SquadCommander(
+            std::function<BWAPI::Position(BWAPI::Position)> nextTargetFrom) :
+            nextTargetFrom(nextTargetFrom) {}
         void focus(const BWAPI::Position& attackPosition);
         void incorporate(const BWAPI::Unitset&);
         void deactivate(const BWAPI::Unit& armyUnit);

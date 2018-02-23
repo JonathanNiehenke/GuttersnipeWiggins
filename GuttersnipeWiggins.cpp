@@ -6,7 +6,8 @@ using namespace BWAPI::Filter;
 GW::GW() {
     cartographer = new Cartographer();
     production = nullptr;  // Initalized in onStart
-    squadCommander = new SquadCommander();
+    squadCommander = new SquadCommander(std::bind(
+        &Cartographer::nextPosition, cartographer, std::placeholders::_1));
     decisionSequence = new DecisionSequence();
 }
 

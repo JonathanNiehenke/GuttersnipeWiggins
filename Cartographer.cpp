@@ -60,9 +60,8 @@ void Cartographer::update() {
     enemyTracker.update();
 }
 
-BWAPI::Position Cartographer::getNextPosition(const BWAPI::Position& srcPos) {
-    // TODO: Learn forward iterators for std::min_element use
-    BWAPI::Position closestPos = enemyTracker.closestTo(srcPos, isTangible);
+BWAPI::Position Cartographer::nextPosition(const BWAPI::Position& srcPos) {
+    BWAPI::Position closestPos = enemyTracker.closestTo(srcPos);
     if (closestPos != BWAPI::Positions::None)
         return closestPos;
     const auto& startPositions = getUnexploredStartingPositions();
