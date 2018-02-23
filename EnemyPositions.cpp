@@ -1,55 +1,55 @@
 #pragma once
-#include "EnemyTracker.h"
+#include "EnemyPositions.h"
 
-void EnemyTracker::addUnit(const BWAPI::Unit& unit) {
+void EnemyPositions::include(const BWAPI::Unit& unit) {
     visibleUnits.push_back(std::make_pair(
         unit, PositionalType(unit->getPosition(), unit->getType())));
 }
 
-void EnemyTracker::removeUnit(const BWAPI::Unit& unit) {
+void EnemyPositions::discard(const BWAPI::Unit& unit) {
     visibleUnits.erase(
         std::remove_if(visibleUnits.begin(), visibleUnits.end(), 
             [unit](const UnitRecord& uR){ return uR.first == unit; }),
         visibleUnits.end());
 }
 
-void EnemyTracker::update() {
+void EnemyPositions::update() {
     discardVisible();
     updateVisible();
 }
 
-void EnemyTracker::discardVisible() {
+void EnemyPositions::discardVisible() {
     enemyPositions.erase(
         std::remove_if(enemyPositions.begin(), enemyPositions.end(), isVisible),
         enemyPositions.end());
 }
 
-bool EnemyTracker::isVisible(const PositionalType& posType) {
+bool EnemyPositions::isVisible(const PositionalType& posType) {
     return BWAPI::Broodwar->isVisible(BWAPI::TilePosition(posType.first));
 }
 
-void EnemyTracker::updateVisible() {
+void EnemyPositions::updateVisible() {
     for (UnitRecord& unitRecord: visibleUnits) {
         if (unitRecord.first->isVisible())
             updatePosition(unitRecord.second, unitRecord.first->getPosition());
     }
 }
 
-void EnemyTracker::updatePosition(
+void EnemyPositions::updatePosition(
     PositionalType& positionaType, const BWAPI::Position& position)
 {
     positionaType.first = position;
     enemyPositions.push_back(positionaType);
 }
 
-bool EnemyTracker::lacking(TypePred typePred) const {
+bool EnemyPositions::lacking(TypePred typePred) const {
     if (!typePred) return false;
     return !any_of(enemyPositions.begin(), enemyPositions.end(),
         [typePred](const PositionalType& posType)
             { return typePred(posType.second); });
 }
 
-BWAPI::Position EnemyTracker::closestTo(
+BWAPI::Position EnemyPositions::closestTo(
     const BWAPI::Position& srcPos, TypePred typePred) const
 {
     auto closer = Utils::Position(srcPos).comparePositions();
@@ -62,7 +62,7 @@ BWAPI::Position EnemyTracker::closestTo(
     return closest;
 }
 
-void EnemyTracker::drawStatus() const {
+void EnemyPositions::drawStatus() const {
     for (const PositionalType& positionalType: enemyPositions) {
         BWAPI::Broodwar->drawTextMap(
             positionalType.first, positionalType.second.c_str());

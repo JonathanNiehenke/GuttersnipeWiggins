@@ -1,11 +1,11 @@
 #pragma once
 #include <map>
 #include <BWAPI.h>
-#include "EnemyTracker.h"
+#include "EnemyPositions.h"
 
 class Cartographer {
     private:
-        EnemyTracker enemyTracker;
+        EnemyPositions enemyPositions;
         std::vector<BWAPI::Position> resourcePositions;
         int attackIdx = 0;
         static std::map<int, BWAPI::Unitset> getStarcraftMappedResources();

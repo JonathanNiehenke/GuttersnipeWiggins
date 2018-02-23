@@ -45,23 +45,23 @@ std::vector<BWAPI::Position> Cartographer::getStartingPositions() {
 }
 
 bool Cartographer::lacksEnemySighting() {
-    return enemyTracker.lacking(isTangible);
+    return enemyPositions.lacking(isTangible);
 }
 
 void Cartographer::addUnit(const BWAPI::Unit& unit) {
-    enemyTracker.addUnit(unit);
+    enemyPositions.include(unit);
 }
 
 void Cartographer::removeUnit(const BWAPI::Unit& unit) {
-    enemyTracker.removeUnit(unit);
+    enemyPositions.discard(unit);
 }
 
 void Cartographer::update() {
-    enemyTracker.update();
+    enemyPositions.update();
 }
 
 BWAPI::Position Cartographer::nextPosition(const BWAPI::Position& srcPos) {
-    BWAPI::Position closestPos = enemyTracker.closestTo(srcPos);
+    BWAPI::Position closestPos = enemyPositions.closestTo(srcPos);
     if (closestPos != BWAPI::Positions::None)
         return closestPos;
     const auto& startPositions = getUnexploredStartingPositions();
@@ -76,5 +76,5 @@ bool Cartographer::isTangible(const BWAPI::UnitType unitType) {
 }
 
 void Cartographer::drawStatus() {
-    enemyTracker.drawStatus();
+    enemyPositions.drawStatus();
 }

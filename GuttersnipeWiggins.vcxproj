@@ -94,7 +94,7 @@
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="ResourceSupplier.cpp" />
     <ClCompile Include="Cartographer.cpp" />
-    <ClCompile Include="EnemyTracker.cpp" />
+    <ClCompile Include="EnemyPositions.cpp" />
     <ClCompile Include="SquadCommander.cpp" />
     <ClCompile Include="Combat.cpp" />
     <ClCompile Include="BuildingConstructor.cpp" />
@@ -109,7 +109,7 @@
     <ClInclude Include="Utils.h" />
     <ClInclude Include="ResourceSupplier.h" />
     <ClInclude Include="Cartographer.h" />
-    <ClInclude Include="EnemyTracker.h" />
+    <ClInclude Include="EnemyPositions.h" />
     <ClInclude Include="SquadCommander.h" />
     <ClInclude Include="Combat.h" />
     <ClInclude Include="BuildingConstructor.h" />
