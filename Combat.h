@@ -40,10 +40,9 @@ class Combat {
         void advance(const BWAPI::Unit& attacker) const;
         bool isAdvancing(const BWAPI::Unit& squadMember) const;
     public:
-        Combat(
-            std::function<BWAPI::Position(BWAPI::Position)> nextTargetFrom,
-            BWAPI::Position attackPosition) :
-            nextTargetFrom(nextTargetFrom), attackPosition(attackPosition) {}
+        Combat(BWAPI::Position attackPosition) :
+            attackPosition(attackPosition) {}
+        bool complete(const BWAPI::Unitset& members) const;
         BWAPI::Position position() const;
         void position(const BWAPI::Position& attackPosition);
         void prepare(const BWAPI::Unitset& members);

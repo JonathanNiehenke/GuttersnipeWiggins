@@ -3,6 +3,10 @@
 
 using namespace BWAPI::Filter;
 
+bool Combat::complete(const BWAPI::Unitset& members) const {
+    return attackPosition.getApproxDistance(members.getPosition()) < 150;
+}
+
 BWAPI::Position Combat::position() const {
     return attackPosition;
 }
@@ -14,8 +18,6 @@ void Combat::position(const BWAPI::Position& attackPosition) {
 void Combat::prepare(const BWAPI::Unitset& members) {
     targets.include(members.getUnitsInRadius(300, IsEnemy && IsDetected &&
         !IsFlying && GetType != BWAPI::UnitTypes::Zerg_Larva));
-    if (attackPosition.getApproxDistance(members.getPosition()) < 150)
-        attackPosition = nextTargetFrom(members.getPosition());
 }
 
 void Combat::engage(const BWAPI::Unitset& members) const {

@@ -96,8 +96,6 @@ void GW::onUnitDestroy(BWAPI::Unit Unit)
 }
 
 void GW::onUnitDiscover(BWAPI::Unit Unit) {
-    if (Self->isEnemy(Unit->getPlayer()) && cartographer->lacksEnemySighting())
-        squadCommander->focus(Unit->getPosition());
     if (Self->isEnemy(Unit->getPlayer()))
         cartographer->addUnit(Unit);
 }

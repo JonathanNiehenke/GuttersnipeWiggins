@@ -2,7 +2,7 @@
 #include "SquadCommander.h"
 
 void SquadCommander::incorporate(const BWAPI::Unitset& units) {
-    deployedForces.push_back(Squad(units, nextTargetFrom));
+    deployedForces.push_back(Squad(units));
 }
 
 void SquadCommander::deactivate(const BWAPI::Unit& deadArmyUnit) {
@@ -16,8 +16,17 @@ void SquadCommander::group() {
 }
 
 void SquadCommander::prepare() {
-    for (Squad& squad: deployedForces)
+    for (Squad& squad: deployedForces) {
+        if (squad.combatComplete())
+            assignCombatPosition(squad);
         squad.prepareCombat();
+    }
+}
+
+void SquadCommander::assignCombatPosition(Squad& squad) const {
+    BWAPI::Position position = nextTargetFrom(squad.combatPosition());
+    if (position.isValid())
+        squad.combatPosition(position);
 }
 
 void SquadCommander::engage() const {
@@ -42,9 +51,9 @@ void SquadCommander::terminate() {
         deployedForces.end());
 }
 
-void SquadCommander::focus(const BWAPI::Position& attackPosition) {
+void SquadCommander::focus(const BWAPI::Position& focusPosition) {
     for (Squad& squad: deployedForces)
-        squad.attackPosition(attackPosition);
+        squad.combatPosition(focusPosition);
 }
 
 void SquadCommander::drawStatus(int& row) const {
@@ -81,7 +90,15 @@ bool Squad::isJoinable(const Squad& other) const {
         other.members.getPosition()) < 250);
 }
 
-void Squad::attackPosition(const BWAPI::Position& position) {
+bool Squad::combatComplete() {
+    return combat.complete(members);
+}
+
+BWAPI::Position Squad::combatPosition() {
+    return combat.position();
+}
+
+void Squad::combatPosition(const BWAPI::Position& position) {
     combat.position(position);
 }
 
