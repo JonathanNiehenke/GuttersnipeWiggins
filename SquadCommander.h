@@ -1,6 +1,7 @@
 #pragma once
 #include <BWAPI.h>
 #include "Combat.h"
+#include "Utils.h"
 
 namespace {
 
@@ -9,6 +10,7 @@ namespace {
             BWAPI::Unitset members;
             Combat combat;
             bool isJoinable(const Squad& otherSquad) const;
+            Squad(const BWAPI::Unit& unit, const BWAPI::Position& position);
         public:
             Squad(const BWAPI::Unitset& units)
                 : members(units), combat(units.getPosition()) {}
@@ -17,7 +19,7 @@ namespace {
             void assign(const BWAPI::Unit& armyUnit);
             void remove(const BWAPI::Unit& deadArmyUnit);
             void join(Squad& otherSquad);
-            // void split(const int& newSquadAmount);
+            std::vector<Squad> spreadTo(std::vector<BWAPI::Position> sPos);
             bool combatComplete();
             BWAPI::Position combatPosition();
             void combatPosition(const BWAPI::Position& position);
@@ -28,18 +30,19 @@ namespace {
 
 class SquadCommander {
     private:
-        std::function<BWAPI::Position(BWAPI::Position)> nextTargetFrom;
+        typedef std::vector<BWAPI::Position> PosSeries;
+        typedef std::function<BWAPI::Position(BWAPI::Position)> PosToPos;
+        PosToPos nextPosition;
         std::vector<Squad> deployedForces;
         void assignCombatPosition(Squad& squad) const;
         void funnel();
         void terminate();
     public:
-        SquadCommander(
-            std::function<BWAPI::Position(BWAPI::Position)> nextTargetFrom) :
-            nextTargetFrom(nextTargetFrom) {}
         void focus(const BWAPI::Position& attackPosition);
+        SquadCommander(PosToPos nextPosition) : nextPosition(nextPosition) {}
         void incorporate(const BWAPI::Unitset&);
         void deactivate(const BWAPI::Unit& armyUnit);
+        void search(PosSeries searchPositions);
         void group();
         void prepare();
         void engage() const;

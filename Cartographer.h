@@ -11,13 +11,11 @@ class Cartographer {
         static std::map<int, BWAPI::Unitset> getStarcraftMappedResources();
         static void groupResources(const BWAPI::Unitset &Resources,
             std::map<int, BWAPI::Unitset> &groupedResources);
+        std::vector<BWAPI::Position> unexploredStarts() const;
         static bool isTangible(const BWAPI::UnitType unitType);
     public:
         void discoverResourcePositions();
-        std::vector<BWAPI::Position> getResourcePositions() const
-            { return resourcePositions; }
-        static std::vector<BWAPI::Position> getUnexploredStartingPositions();
-        static std::vector<BWAPI::Position> getStartingPositions();
+        std::vector<BWAPI::Position> searchPositions() const;
         bool lacksEnemySighting();
         void addUnit(const BWAPI::Unit& unit);
         void removeUnit(const BWAPI::Unit& unit);

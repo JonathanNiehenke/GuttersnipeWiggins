@@ -48,7 +48,11 @@ void GW::onFrame()
             break;
         case 2: cartographer->update();
             break;
-        case 3: squadCommander->group();
+        case 3:
+            if (cartographer->lacksEnemySighting())
+                squadCommander->search(cartographer->searchPositions());
+            else
+                squadCommander->group();
             break;
         case 4: squadCommander->prepare();
             break;

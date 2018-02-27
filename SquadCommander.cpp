@@ -10,6 +10,15 @@ void SquadCommander::deactivate(const BWAPI::Unit& deadArmyUnit) {
         squad.remove(deadArmyUnit);
 };
 
+void SquadCommander::search(PosSeries searchPositions) {
+    int originalLength = deployedForces.size();
+    for (int i = 0; i < originalLength; ++i) {
+        auto splitSquads = deployedForces[i].spreadTo(searchPositions);
+        deployedForces.insert(
+            deployedForces.end(), splitSquads.begin(), splitSquads.end());
+    }
+}
+
 void SquadCommander::group() {
     funnel();
     terminate();
@@ -24,7 +33,7 @@ void SquadCommander::prepare() {
 }
 
 void SquadCommander::assignCombatPosition(Squad& squad) const {
-    BWAPI::Position position = nextTargetFrom(squad.combatPosition());
+    BWAPI::Position position = nextPosition(squad.combatPosition());
     if (position.isValid())
         squad.combatPosition(position);
 }
@@ -88,6 +97,24 @@ bool Squad::isJoinable(const Squad& other) const {
     if (combat.position() != other.combat.position()) return false;
     return (members.getPosition().getApproxDistance(
         other.members.getPosition()) < 250);
+}
+
+std::vector<Squad> Squad::spreadTo(std::vector<BWAPI::Position> sPos) {
+    if (members.size() <= size_t(1)) return std::vector<Squad>();
+    std::vector<Squad> squadSplit;
+    auto closer = Utils::Position(members.getPosition()).comparePositions();
+    std::sort(sPos.begin(), sPos.end(), closer);
+    int i = 0;
+    for (const BWAPI::Unit& squadMember: members)
+        squadSplit.push_back(Squad(squadMember, sPos[i++ % sPos.size()]));
+    members.clear();
+    return squadSplit;
+}
+
+Squad::Squad(const BWAPI::Unit& unit, const BWAPI::Position& position)
+    : combat(position)
+{
+    members.insert(unit);
 }
 
 bool Squad::combatComplete() {

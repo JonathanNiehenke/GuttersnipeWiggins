@@ -25,23 +25,20 @@ void Cartographer::groupResources(
         groupedResources[Resource->getResourceGroup()].insert(Resource);
 }
 
-std::vector<BWAPI::Position> Cartographer::getUnexploredStartingPositions() {
+std::vector<BWAPI::Position> Cartographer::unexploredStarts() const {
     std::vector<BWAPI::Position> startingPositions;
-    for (BWAPI::TilePosition Start:BWAPI::Broodwar->getStartLocations()) {
+    for (BWAPI::TilePosition Start: BWAPI::Broodwar->getStartLocations()) {
         if (!BWAPI::Broodwar->isExplored(Start))
             startingPositions.push_back(BWAPI::Position(Start));
     }
     return startingPositions;
 }
 
-std::vector<BWAPI::Position> Cartographer::getStartingPositions() {
-    std::vector<BWAPI::Position> startingPositions;
-    // Prevents scouting for our and allies bases.
-    for (BWAPI::TilePosition Start:BWAPI::Broodwar->getStartLocations()) {
-        if (!BWAPI::Broodwar->isVisible(Start))
-            startingPositions.push_back(BWAPI::Position(Start));
-    }
-    return startingPositions;
+std::vector<BWAPI::Position> Cartographer::searchPositions() const {
+    std::vector<BWAPI::Position> starts = unexploredStarts();
+    if (starts.empty())
+        return resourcePositions;
+    return starts;
 }
 
 bool Cartographer::lacksEnemySighting() {
@@ -61,13 +58,7 @@ void Cartographer::update() {
 }
 
 BWAPI::Position Cartographer::nextPosition(const BWAPI::Position& srcPos) {
-    BWAPI::Position closestPos = enemyPositions.closestTo(srcPos);
-    if (closestPos != BWAPI::Positions::None)
-        return closestPos;
-    const auto& startPositions = getUnexploredStartingPositions();
-    if (!startPositions.empty())
-        return startPositions[attackIdx++ % startPositions.size()];
-    return BWAPI::Positions::None;
+    return enemyPositions.closestTo(srcPos);
 }
 
 bool Cartographer::isTangible(const BWAPI::UnitType unitType) {
