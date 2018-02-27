@@ -94,7 +94,8 @@ void Squad::join(Squad& other) {
 }
 
 bool Squad::isJoinable(const Squad& other) const {
-    if (combat.position() != other.combat.position()) return false;
+    if (combat.position().getApproxDistance(other.combat.position()) > 200)
+        return false;
     return (members.getPosition().getApproxDistance(
         other.members.getPosition()) < 250);
 }

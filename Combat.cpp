@@ -16,8 +16,9 @@ void Combat::position(const BWAPI::Position& attackPosition) {
 }
 
 void Combat::prepare(const BWAPI::Unitset& members) {
-    targets.include(members.getUnitsInRadius(300, IsEnemy && IsDetected &&
-        !IsFlying && GetType != BWAPI::UnitTypes::Zerg_Larva));
+    targets.include(members.getUnitsInRadius(232 + 24*members.size(),
+        IsEnemy && IsDetected && !IsFlying &&
+        GetType != BWAPI::UnitTypes::Zerg_Larva));
 }
 
 void Combat::engage(const BWAPI::Unitset& members) const {
@@ -42,15 +43,8 @@ bool Combat::attackerIsTargetingEnemy(
 }
 
 void Combat::advance(const BWAPI::Unit& attacker) const {
-    if (!isAdvancing(attacker))
+    if (attacker->getTargetPosition() != attackPosition)
         attacker->move(attackPosition);
-}
-
-bool Combat::isAdvancing(const BWAPI::Unit& attacker) const
-{
-    const auto& lastCmd = attacker->getLastCommand();
-    return ((lastCmd.getType() == BWAPI::UnitCommandTypes::Move &&
-        attacker->getTargetPosition() == attackPosition));
 }
 
 bool Prioritizer::operator()(

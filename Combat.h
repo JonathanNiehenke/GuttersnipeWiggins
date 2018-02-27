@@ -38,7 +38,6 @@ class Combat {
         static bool attackerIsTargetingEnemy(
             const BWAPI::Unit& attacker, const BWAPI::Unit& enemyTarget);
         void advance(const BWAPI::Unit& attacker) const;
-        bool isAdvancing(const BWAPI::Unit& squadMember) const;
     public:
         Combat(BWAPI::Position attackPosition) :
             attackPosition(attackPosition) {}
