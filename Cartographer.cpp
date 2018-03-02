@@ -58,12 +58,14 @@ void Cartographer::update() {
 }
 
 BWAPI::Position Cartographer::nextPosition(const BWAPI::Position& srcPos) {
-    return enemyPositions.closestTo(srcPos);
+    return enemyPositions.closestTo(srcPos, isTangible);
 }
 
 bool Cartographer::isTangible(const BWAPI::UnitType unitType) {
     return !(unitType.isFlyer() || unitType.hasPermanentCloak() ||
-        unitType.isCloakable());
+        unitType.isCloakable() ||
+        unitType == BWAPI::UnitTypes::Zerg_Lurker ||
+        unitType == BWAPI::UnitTypes::Zerg_Larva);
 }
 
 void Cartographer::drawStatus() {
