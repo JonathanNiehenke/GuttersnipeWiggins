@@ -50,7 +50,10 @@ void Cartographer::addUnit(const BWAPI::Unit& unit) {
 }
 
 void Cartographer::removeUnit(const BWAPI::Unit& unit) {
-    enemyPositions.discard(unit);
+    if (unit->getType() == BWAPI::UnitTypes::Resource_Vespene_Geyser)
+        enemyPositions.discard(unit);
+    else
+        enemyPositions.morph(unit);
 }
 
 void Cartographer::update() {

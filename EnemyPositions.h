@@ -19,6 +19,7 @@ class EnemyPositions {
     public:
         void include(const BWAPI::Unit& unit);
         void discard(const BWAPI::Unit& unit);
+        void morph(const BWAPI::Unit& unit);
         void update();
         bool lacking(TypePred typePred=nullptr) const;
         BWAPI::Position closestTo(

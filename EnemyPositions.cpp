@@ -8,10 +8,18 @@ void EnemyPositions::include(const BWAPI::Unit& unit) {
 
 void EnemyPositions::discard(const BWAPI::Unit& unit) {
     visibleUnits.erase(
-        std::remove_if(visibleUnits.begin(), visibleUnits.end(), 
+        std::remove_if(visibleUnits.begin(), visibleUnits.end(),
             [unit](const UnitRecord& uR){ return uR.first == unit; }),
         visibleUnits.end());
 }
+
+void EnemyPositions::morph(const BWAPI::Unit& unit) {
+    auto It = std::find_if(visibleUnits.begin(), visibleUnits.end(),
+        [unit](const UnitRecord& uR){ return uR.first == unit; });
+    if (It != visibleUnits.end())
+        It->second.second = unit->getType();
+}
+
 
 void EnemyPositions::update() {
     discardVisible();
