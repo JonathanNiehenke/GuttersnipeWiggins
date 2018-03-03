@@ -1,80 +1,149 @@
 #pragma once
 #include "SquadCommander.h"
 
-void SquadCommander::incorporate(const BWAPI::Unitset& units) {
-    deployedForces.push_back(Squad(units));
+void SquadCommander::include(const BWAPI::Unit& unit) {
+    if (!unit->getType().isWorker() && unit->canAttack())
+        reservedForces.include(unit);
 }
 
 void SquadCommander::deactivate(const BWAPI::Unit& deadArmyUnit) {
-    for (Squad& squad: deployedForces)
+    deployedForces.deactivate(deadArmyUnit);
+};
+
+void SquadCommander::search(std::vector<BWAPI::Position> searchPositions) {
+    deploy();
+    deployedForces.search(searchPositions);
+}
+
+void SquadCommander::charge() {
+    deploy();
+    deployedForces.charge();
+}
+
+void SquadCommander::deploy() {
+    try {
+        deployedForces.incorporate(reservedForces.release()); }
+    catch (std::runtime_error) {}  // Expected
+}
+
+void SquadCommander::execute() const {
+    deployedForces.execute();
+}
+
+void SquadCommander::focus(const BWAPI::Position& focusPosition) {
+    deployedForces.focus(focusPosition);
+}
+
+void SquadCommander::drawStatus(int row) const {
+    reservedForces.drawStatus(row);
+    deployedForces.drawStatus(row + 10);
+}
+
+void ReservedForces::include(const BWAPI::Unit& unit) {
+    auto position = Utils::Position(unit->getPosition());
+    auto It = std::min_element(forces.begin(), forces.end(),
+        position.compareUnitsets());
+    if (It == forces.end() || position - It->getPosition() > 500)
+        includeForce(unit);
+    else
+        It->insert(unit);
+}
+
+void ReservedForces::includeForce(const BWAPI::Unit& unit) {
+    BWAPI::Unitset newForce;
+    newForce.insert(unit);
+    forces.push_back(newForce);
+}
+
+void ReservedForces::discard(const BWAPI::Unit& unit) {
+    for (BWAPI::Unitset& force: forces)
+        force.erase(unit);
+}
+
+BWAPI::Unitset ReservedForces::release() {
+    auto It = std::find_if(forces.begin(), forces.end(), deploymentPred);
+    if (It == forces.end())
+        throw std::runtime_error("Did not meet deployment condition");
+    BWAPI::Broodwar->sendTextEx(true, "deploy!!");
+    auto temp = *It;
+    forces.erase(It);
+    return temp;
+}
+
+void ReservedForces::drawStatus(int row) const {
+    BWAPI::Broodwar->drawTextScreen(
+        3, row, "Reserved %d squads", forces.size());
+}
+
+void DeployedForces::incorporate(const BWAPI::Unitset& units) {
+    forces.push_back(Squad(units));
+}
+
+void DeployedForces::deactivate(const BWAPI::Unit& deadArmyUnit) {
+    for (Squad& squad: forces)
         squad.remove(deadArmyUnit);
 };
 
-void SquadCommander::search(PosSeries searchPositions) {
-    int originalLength = deployedForces.size();
+void DeployedForces::search(std::vector<BWAPI::Position> searchPositions) {
+    int originalLength = forces.size();
     for (int i = 0; i < originalLength; ++i) {
-        auto splitSquads = deployedForces[i].spreadTo(searchPositions);
-        deployedForces.insert(
-            deployedForces.end(), splitSquads.begin(), splitSquads.end());
+        auto splitSquads = forces[i].spreadTo(searchPositions);
+        forces.insert(
+            forces.end(), splitSquads.begin(), splitSquads.end());
     }
     terminate();
 }
 
-void SquadCommander::charge() {
+void DeployedForces::charge() {
     funnel();
     prepare();
 }
 
-void SquadCommander::funnel() {
+void DeployedForces::funnel() {
     // Preferring iteration by index to prevent pointers of pointers
-    if (deployedForces.size() < 2) return;
-    int forcesLength = deployedForces.size();
+    if (forces.size() < 2) return;
+    int forcesLength = forces.size();
     for (int i = 0; i < forcesLength - 1; ++ i) {
         for (int j = i + 1; j < forcesLength; ++j)
-            deployedForces[i].join(deployedForces[j]);
+            forces[i].join(forces[j]);
     }
     terminate();
 }
 
-void SquadCommander::terminate() {
-    deployedForces.erase(
-        std::remove_if(deployedForces.begin(), deployedForces.end(),
+void DeployedForces::terminate() {
+    forces.erase(
+        std::remove_if(forces.begin(), forces.end(),
             [](Squad squad) { return squad.isEmpty(); }),
-        deployedForces.end());
+        forces.end());
 }
 
-void SquadCommander::prepare() {
-    for (Squad& squad: deployedForces) {
+void DeployedForces::prepare() {
+    for (Squad& squad: forces) {
         if (squad.combatComplete())
             assignCombatPosition(squad);
         squad.prepareCombat();
     }
 }
 
-void SquadCommander::assignCombatPosition(Squad& squad) const {
+void DeployedForces::assignCombatPosition(Squad& squad) const {
     BWAPI::Position position = nextPosition(squad.combatPosition());
     if (position.isValid())
         squad.combatPosition(position);
 }
 
-void SquadCommander::execute() const {
-    for (const auto& squad: deployedForces)
+void DeployedForces::execute() const {
+    for (const auto& squad: forces)
         squad.engageCombat();
 }
 
-void SquadCommander::focus(const BWAPI::Position& focusPosition) {
-    for (Squad& squad: deployedForces)
+void DeployedForces::focus(const BWAPI::Position& focusPosition) {
+    for (Squad& squad: forces)
         squad.combatPosition(focusPosition);
 }
 
-void SquadCommander::drawStatus(int& row) const {
+void DeployedForces::drawStatus(int row) const {
     BWAPI::Broodwar->drawTextScreen(
-        3, row, "Deployed %d squads", deployedForces.size());
-    for (const Squad& squad: deployedForces) {
-        row += 10;
-        // BWAPI::Broodwar->drawTextScreen(3, row, "  %d members", squad.size());
-    }
-    row += 15;
+        3, row, "Deployed %d squads", forces.size());
 }
 
 BWAPI::Position Squad::getAvgPosition() const {

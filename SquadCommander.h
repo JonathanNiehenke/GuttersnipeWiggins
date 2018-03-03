@@ -5,6 +5,21 @@
 
 namespace {
 
+    class ReservedForces {
+        private:
+            typedef std::function<bool(BWAPI::Unitset)> DeploymentPred;
+            DeploymentPred deploymentPred;
+            std::vector<BWAPI::Unitset> forces;
+            void includeForce(const BWAPI::Unit& unit);
+        public:
+            ReservedForces(DeploymentPred deploymentPred)
+                : deploymentPred(deploymentPred) {}
+            void include(const BWAPI::Unit& unit);
+            void discard(const BWAPI::Unit& unit);
+            BWAPI::Unitset release();
+            void drawStatus(int row) const;
+    };
+
     class Squad {
         private:
             BWAPI::Unitset members;
@@ -26,25 +41,45 @@ namespace {
             void prepareCombat();
             void engageCombat() const;
     };
+
+    class DeployedForces {
+        private:
+            typedef std::vector<BWAPI::Position> PosSeries;
+            typedef std::function<BWAPI::Position(BWAPI::Position)> PosToPos;
+            PosToPos nextPosition;
+            std::vector<Squad> forces;
+            void funnel();
+            void terminate();
+            void assignCombatPosition(Squad& squad) const;
+            void prepare();
+        public:
+            DeployedForces(PosToPos nextPosition) : nextPosition(nextPosition) {}
+            void incorporate(const BWAPI::Unitset& units);
+            void deactivate(const BWAPI::Unit& armyUnit);
+            void search(PosSeries searchPositions);
+            void charge();
+            void execute() const;
+            void focus(const BWAPI::Position& attackPosition);
+            void drawStatus(int row) const;
+    };
+
 }
 
 class SquadCommander {
     private:
-        typedef std::vector<BWAPI::Position> PosSeries;
+        typedef std::function<bool(BWAPI::Unitset)> DeploymentPred;
         typedef std::function<BWAPI::Position(BWAPI::Position)> PosToPos;
-        PosToPos nextPosition;
-        std::vector<Squad> deployedForces;
-        void funnel();
-        void terminate();
-        void assignCombatPosition(Squad& squad) const;
-        void prepare();
+        ReservedForces reservedForces;
+        DeployedForces deployedForces;
+        void deploy();
     public:
-        SquadCommander(PosToPos nextPosition) : nextPosition(nextPosition) {}
-        void incorporate(const BWAPI::Unitset&);
+        SquadCommander(DeploymentPred deploymentPred, PosToPos nextPosition)
+            : reservedForces(deploymentPred), deployedForces(nextPosition) {}
+        void include(const BWAPI::Unit& unit);
         void deactivate(const BWAPI::Unit& armyUnit);
-        void search(PosSeries searchPositions);
+        void search(std::vector<BWAPI::Position> searchPositions);
         void charge();
         void execute() const;
         void focus(const BWAPI::Position& attackPosition);
-        void drawStatus(int& row) const;
+        void drawStatus(int row) const;
 };

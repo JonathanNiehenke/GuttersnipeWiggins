@@ -6,8 +6,11 @@ using namespace BWAPI::Filter;
 GW::GW() {
     cartographer = new Cartographer();
     production = nullptr;  // Initalized in onStart
-    squadCommander = new SquadCommander(std::bind(
-        &Cartographer::nextPosition, cartographer, std::placeholders::_1));
+    squadCommander = new SquadCommander(
+        [this](const BWAPI::Unitset units)
+            {return !this->cartographer->lacksEnemySighting() && units.size() > 5;},
+        std::bind(
+            &Cartographer::nextPosition, cartographer, std::placeholders::_1));
     decisionSequence = new DecisionSequence();
 }
 
@@ -79,11 +82,7 @@ void GW::onUnitComplete(BWAPI::Unit Unit)
 {
     if (Unit->getPlayer() == Self) {
         production->onUnitComplete(Unit);
-        if (Unit->getType() == production->getArmyUnitType()) {
-            BWAPI::Unitset temp;
-            temp.insert(Unit);
-            squadCommander->incorporate(temp);
-        }
+        squadCommander->include(Unit);
     }
 }
 
