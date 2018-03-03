@@ -34,17 +34,17 @@ class SquadCommander {
         typedef std::function<BWAPI::Position(BWAPI::Position)> PosToPos;
         PosToPos nextPosition;
         std::vector<Squad> deployedForces;
-        void assignCombatPosition(Squad& squad) const;
         void funnel();
         void terminate();
+        void assignCombatPosition(Squad& squad) const;
+        void prepare();
     public:
-        void focus(const BWAPI::Position& attackPosition);
         SquadCommander(PosToPos nextPosition) : nextPosition(nextPosition) {}
         void incorporate(const BWAPI::Unitset&);
         void deactivate(const BWAPI::Unit& armyUnit);
         void search(PosSeries searchPositions);
-        void group();
-        void prepare();
-        void engage() const;
+        void charge();
+        void execute() const;
+        void focus(const BWAPI::Position& attackPosition);
         void drawStatus(int& row) const;
 };

@@ -17,11 +17,30 @@ void SquadCommander::search(PosSeries searchPositions) {
         deployedForces.insert(
             deployedForces.end(), splitSquads.begin(), splitSquads.end());
     }
+    terminate();
 }
 
-void SquadCommander::group() {
+void SquadCommander::charge() {
     funnel();
+    prepare();
+}
+
+void SquadCommander::funnel() {
+    // Preferring iteration by index to prevent pointers of pointers
+    if (deployedForces.size() < 2) return;
+    int forcesLength = deployedForces.size();
+    for (int i = 0; i < forcesLength - 1; ++ i) {
+        for (int j = i + 1; j < forcesLength; ++j)
+            deployedForces[i].join(deployedForces[j]);
+    }
     terminate();
+}
+
+void SquadCommander::terminate() {
+    deployedForces.erase(
+        std::remove_if(deployedForces.begin(), deployedForces.end(),
+            [](Squad squad) { return squad.isEmpty(); }),
+        deployedForces.end());
 }
 
 void SquadCommander::prepare() {
@@ -38,26 +57,9 @@ void SquadCommander::assignCombatPosition(Squad& squad) const {
         squad.combatPosition(position);
 }
 
-void SquadCommander::engage() const {
+void SquadCommander::execute() const {
     for (const auto& squad: deployedForces)
         squad.engageCombat();
-}
-
-void SquadCommander::funnel() {
-    // Preferring iteration by index to prevent pointers of pointers
-    if (deployedForces.size() < 2) return;
-    int forcesLength = deployedForces.size();
-    for (int i = 0; i < forcesLength - 1; ++ i) {
-        for (int j = i + 1; j < forcesLength; ++j)
-            deployedForces[i].join(deployedForces[j]);
-    }
-}
-
-void SquadCommander::terminate() {
-    deployedForces.erase(
-        std::remove_if(deployedForces.begin(), deployedForces.end(), 
-            [](Squad squad) { return squad.isEmpty(); }),
-        deployedForces.end());
 }
 
 void SquadCommander::focus(const BWAPI::Position& focusPosition) {

@@ -39,7 +39,7 @@ void GW::onStart()
 
 void GW::onFrame()
 {
-    const int actionFrames = std::max(6, BWAPI::Broodwar->getLatency());
+    const int actionFrames = std::max(5, BWAPI::Broodwar->getLatency());
     GW::drawStatus();  // For debugging.
     switch(BWAPI::Broodwar->getFrameCount() % actionFrames) {
         case 0: decisionSequence->update();
@@ -52,12 +52,10 @@ void GW::onFrame()
             if (cartographer->lacksEnemySighting())
                 squadCommander->search(cartographer->searchPositions());
             else
-                squadCommander->group();
+                squadCommander->charge();
             break;
-        case 4: squadCommander->prepare();
-            break;
-        case 5: squadCommander->engage();
-            break;
+        case 4:
+            squadCommander->execute();
         default: break;
     }
 }
