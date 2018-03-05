@@ -185,7 +185,7 @@ void ZergProduction::onCompleteBuilding(
 }
 
 bool ZergProduction::Alone(const BWAPI::Unit& unit) {
-    return unit->getUnitsInRadius(300, GetType == unit->getType()).empty();
+    return unit->getUnitsInRadius(300, ProducesLarva).empty();
 }
 
 int ZergProduction::expectedSupplyProvided(
