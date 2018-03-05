@@ -76,8 +76,8 @@ class ZergProduction : public Production
         int expectedSupplyProvided(const BWAPI::UnitType&) const;
         bool doesTechExist(const BWAPI::UnitType& buildingType) const;
     public:
-        ZergProduction() : Production(BWAPI::UnitTypes::Enum::Zerg_Hydralisk,
-            new BuildingConstructor(new BuildingPlacer())) {}
+        ZergProduction() : Production(BWAPI::UnitTypes::Enum::Zerg_Mutalisk,
+            new MorphingConstructor(new BuildingPlacer())) {}
         void onUnitMorph(const BWAPI::Unit& morphedUnit);
         void onUnitComplete(const BWAPI::Unit& completedUnit);
         void createSupply() const;

@@ -14,10 +14,7 @@ void BuildingConstructor::request(
 {
     if (Preparing.find(productType) != Preparing.end()) return;
     ConstructionPO Job(productType);
-    if (productType.whatBuilds().first.isBuilding())
-        beginMorphingPreparation(Job);
-    else
-        beginConstructionPreparation(Job);
+    beginConstructionPreparation(Job);
     Preparing[productType] = Job;
 }
 
@@ -28,16 +25,6 @@ void BuildingConstructor::beginConstructionPreparation(
         ? buildingPlacer->getGasPlacement()
         : buildingPlacer->getPlacement(Job.productType));
     Job.contractor = getContractor(Job);
-}
-
-void BuildingConstructor::beginMorphingPreparation(
-    ConstructionPO& Job) const
-{
-    const BWAPI::Unit& zergBuilding = BWAPI::Broodwar->getClosestUnit(
-        BWAPI::Position(BWAPI::Broodwar->self()->getStartLocation()),
-        GetType == Job.productType.whatBuilds().first, 64);
-    Job.placement = zergBuilding->getTilePosition();
-    Job.contractor = zergBuilding;
 }
 
 BWAPI::Unit BuildingConstructor::getContractor(
@@ -61,8 +48,6 @@ void BuildingConstructor::updatePreparation() {
             Job.placement = buildingPlacer->getPlacement(Job.productType);
         else if (!Job.contractor)
             Job.contractor = getContractor(Job);
-        else if (Job.contractor->getType().isBuilding())
-            Job.contractor->morph(Job.productType);
         else if (isPrepared(Job))
             construct(Job);
         else if (!isPreparing(Job))
@@ -116,6 +101,44 @@ void BuildingConstructor::onCreate(const BWAPI::Unit& createdBuilding) {
 
 void BuildingConstructor::onComplete(const BWAPI::Unit& completedBuilding) {
     Producing.erase(completedBuilding);
+}
+
+void MorphingConstructor::request(
+    const BWAPI::UnitType& productType)
+{
+    if (Preparing.find(productType) != Preparing.end()) return;
+    ConstructionPO Job(productType);
+    if (productType.whatBuilds().first.isWorker())
+        beginConstructionPreparation(Job);
+    else
+        beginMorphingPreparation(Job);
+    Preparing[productType] = Job;
+}
+
+void MorphingConstructor::beginMorphingPreparation(
+    ConstructionPO& Job) const
+{
+    const BWAPI::Unit& zergBuilding = BWAPI::Broodwar->getClosestUnit(
+        BWAPI::Position(BWAPI::Broodwar->self()->getStartLocation()),
+        GetType == Job.productType.whatBuilds().first, 64);
+    Job.placement = zergBuilding->getTilePosition();
+    Job.contractor = zergBuilding;
+}
+
+void MorphingConstructor::updatePreparation() {
+    for (auto& prepPair: Preparing) {
+        ConstructionPO& Job = prepPair.second;
+        if (Job.placement == BWAPI::TilePositions::None)
+            Job.placement = buildingPlacer->getPlacement(Job.productType);
+        else if (!Job.contractor)
+            Job.contractor = getContractor(Job);
+        else if (Job.contractor->getType().isBuilding())
+            Job.contractor->morph(Job.productType);
+        else if (isPrepared(Job))
+            construct(Job);
+        else if (!isPreparing(Job))
+            Job.contractor->move(toJobCenter(Job));
+    }
 }
 
 BuildingConstructor::ConstructionPO::ConstructionPO() {
