@@ -20,7 +20,8 @@ class Production {
         virtual int expectedSupplyProvided(const BWAPI::UnitType&) const;
         static bool doesExist(const BWAPI::UnitType& unitType);
     public:
-        Production(const BWAPI::UnitType& armyUnitType);
+        Production(const BWAPI::UnitType& armyUnitType,
+            BuildingConstructor* buildingConstructor);
         virtual ~Production();
         BWAPI::UnitType getCenterType() const { return centerType; }
         BWAPI::UnitType getWorkerType() const { return workerType; }
@@ -50,7 +51,8 @@ class ProtossProduction : public Production
     private:
     public:
         ProtossProduction() : Production(
-            BWAPI::UnitTypes::Enum::Protoss_Zealot) {}
+            BWAPI::UnitTypes::Enum::Protoss_Zealot,
+            new BuildingConstructor(new BuildingPlacer())) {}
         BWAPI::UnitType getNextRequiredBuilding(
             const BWAPI::UnitType& unitType) const;
 };
@@ -60,7 +62,8 @@ class TerranProduction : public Production
     private:
     public:
         TerranProduction() : Production(
-            BWAPI::UnitTypes::Enum::Terran_Marine) {}
+            BWAPI::UnitTypes::Enum::Terran_Marine,
+            new BuildingConstructor(new BuildingPlacer())) {}
 };
 
 class ZergProduction : public Production
@@ -73,7 +76,8 @@ class ZergProduction : public Production
         int expectedSupplyProvided(const BWAPI::UnitType&) const;
         bool doesTechExist(const BWAPI::UnitType& buildingType) const;
     public:
-        ZergProduction() : Production(BWAPI::UnitTypes::Enum::Zerg_Hydralisk) {}
+        ZergProduction() : Production(BWAPI::UnitTypes::Enum::Zerg_Hydralisk,
+            new BuildingConstructor(new BuildingPlacer())) {}
         void onUnitMorph(const BWAPI::Unit& morphedUnit);
         void onUnitComplete(const BWAPI::Unit& completedUnit);
         void createSupply() const;

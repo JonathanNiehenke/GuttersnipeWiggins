@@ -22,7 +22,7 @@ class BuildingConstructor {
         static bool isObstructed(const ConstructionPO& Job);
         static bool isPreparing(const ConstructionPO& Job);
     public:
-        BuildingConstructor();
+        BuildingConstructor(BuildingPlacer* buildingPlacer);
         ~BuildingConstructor();
         void request(const BWAPI::UnitType& productType);
         void updatePreparation();

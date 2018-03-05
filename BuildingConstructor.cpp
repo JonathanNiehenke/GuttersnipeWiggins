@@ -1,10 +1,9 @@
 #pragma once
 #include "BuildingConstructor.h"
 
-BuildingConstructor::BuildingConstructor() {
-    this->srcLocation = BWAPI::Broodwar->self()->getStartLocation();
-    buildingPlacer = new BuildingPlacer();
-}
+BuildingConstructor::BuildingConstructor(BuildingPlacer* buildingPlacer) :
+    srcLocation(BWAPI::Broodwar->self()->getStartLocation()),
+    buildingPlacer(buildingPlacer) {}
 
 BuildingConstructor::~BuildingConstructor() {
     delete buildingPlacer;

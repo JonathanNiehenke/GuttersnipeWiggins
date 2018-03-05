@@ -1,8 +1,9 @@
 #pragma once
 #include "Production.h"
 
-Production::Production(const BWAPI::UnitType& armyUnitType) :
-    armyUnitType(armyUnitType)
+Production::Production(const BWAPI::UnitType& armyUnitType,
+    BuildingConstructor* buildingConstructor) : armyUnitType(armyUnitType),
+    buildingConstructor(buildingConstructor)
 {
     const BWAPI::Race& r = BWAPI::Broodwar->self()->getRace();
     centerType = r.getCenter();
@@ -10,7 +11,6 @@ Production::Production(const BWAPI::UnitType& armyUnitType) :
     supplyType = r.getSupplyProvider();
     refineryType = r.getRefinery();
     resourceSupplier = new ResourceSupplier(workerType);
-    buildingConstructor = new BuildingConstructor();
     unitTrainer = new UnitTrainer();
     techTree = new TechTree();
 }
