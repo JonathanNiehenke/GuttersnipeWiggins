@@ -9,9 +9,7 @@ BuildingConstructor::~BuildingConstructor() {
     delete buildingPlacer;
 }
 
-void BuildingConstructor::request(
-    const BWAPI::UnitType& productType)
-{
+void BuildingConstructor::request(const BWAPI::UnitType& productType) {
     if (Preparing.find(productType) != Preparing.end()) return;
     ConstructionPO Job(productType);
     beginConstructionPreparation(Job);
@@ -103,9 +101,7 @@ void BuildingConstructor::onComplete(const BWAPI::Unit& completedBuilding) {
     Producing.erase(completedBuilding);
 }
 
-void MorphingConstructor::request(
-    const BWAPI::UnitType& productType)
-{
+void MorphingConstructor::request(const BWAPI::UnitType& productType) {
     if (Preparing.find(productType) != Preparing.end()) return;
     ConstructionPO Job(productType);
     if (productType.whatBuilds().first.isWorker())
@@ -115,12 +111,12 @@ void MorphingConstructor::request(
     Preparing[productType] = Job;
 }
 
-void MorphingConstructor::beginMorphingPreparation(
-    ConstructionPO& Job) const
-{
+void MorphingConstructor::beginMorphingPreparation(ConstructionPO& Job) const {
     const BWAPI::Unit& zergBuilding = BWAPI::Broodwar->getClosestUnit(
-        BWAPI::Position(BWAPI::Broodwar->self()->getStartLocation()),
-        GetType == Job.productType.whatBuilds().first, 64);
+        BWAPI::Position(srcLocation),
+        GetType == Job.productType.whatBuilds().first,
+        64);
+    if (!zergBuilding) return;
     Job.placement = zergBuilding->getTilePosition();
     Job.contractor = zergBuilding;
 }
@@ -134,6 +130,45 @@ void MorphingConstructor::updatePreparation() {
             Job.contractor = getContractor(Job);
         else if (Job.contractor->getType().isBuilding())
             Job.contractor->morph(Job.productType);
+        else if (isPrepared(Job))
+            construct(Job);
+        else if (!isPreparing(Job))
+            Job.contractor->move(toJobCenter(Job));
+    }
+}
+
+void AddonConstructor::request(const BWAPI::UnitType& productType) {
+    if (Preparing.find(productType) != Preparing.end()) return;
+    ConstructionPO Job(productType);
+    if (productType.isAddon())
+        beginAddonPreparation(Job);
+    else
+        beginConstructionPreparation(Job);
+    Preparing[productType] = Job;
+}
+
+void AddonConstructor::beginAddonPreparation(ConstructionPO& Job) const {
+    const BWAPI::UnitType& contractorType = Job.productType.whatBuilds().first;
+    const BWAPI::Unit& terranBuilding = BWAPI::Broodwar->getClosestUnit(
+        BWAPI::Position(srcLocation), GetType == contractorType, 300);
+    if (!terranBuilding) return;
+    Job.placement = terranBuilding->getTilePosition();
+    Job.contractor = terranBuilding;
+}
+
+void AddonConstructor::updatePreparation() {
+    for (auto& prepPair: Preparing) {
+        ConstructionPO& Job = prepPair.second;
+        if (Job.placement == BWAPI::TilePositions::None)
+            Job.placement = buildingPlacer->getPlacement(Job.productType);
+        else if (!Job.contractor)
+            Job.contractor = getContractor(Job);
+        else if (Job.productType.isAddon()) {
+            BWAPI::Broodwar->sendTextEx(true, "%s (%d, %d) - %s",
+                Job.productType.c_str(), Job.placement.x, Job.placement.y,
+                Job.contractor->getType().c_str());
+            Job.contractor->buildAddon(Job.productType);
+        }
         else if (isPrepared(Job))
             construct(Job);
         else if (!isPreparing(Job))

@@ -62,8 +62,8 @@ class TerranProduction : public Production
     private:
     public:
         TerranProduction() : Production(
-            BWAPI::UnitTypes::Enum::Terran_Marine,
-            new BuildingConstructor(new BuildingPlacer())) {}
+            BWAPI::UnitTypes::Enum::Terran_Siege_Tank_Tank_Mode,
+            new AddonConstructor(new BuildingPlacer())) {}
 };
 
 class ZergProduction : public Production

@@ -40,6 +40,16 @@ class MorphingConstructor : public BuildingConstructor {
         void updatePreparation();
 };
 
+class AddonConstructor : public BuildingConstructor {
+    private:
+        void beginAddonPreparation(ConstructionPO& Job) const;
+    public:
+        AddonConstructor(BuildingPlacer* buildingPlacer)
+            : BuildingConstructor(buildingPlacer) {}
+        void request(const BWAPI::UnitType& productType);
+        void updatePreparation();
+};
+
 struct BuildingConstructor::ConstructionPO {
     BWAPI::UnitType productType;
     BWAPI::TilePosition placement;
