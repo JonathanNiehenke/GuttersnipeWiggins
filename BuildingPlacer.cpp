@@ -15,11 +15,18 @@ BWAPI::TilePosition BuildingPlacer::getPlacement(
         for (const BWAPI::TilePosition& offset: RadicalOffset(radius)) {
             BWAPI::TilePosition buildLocation = startPos + BWAPI::TilePosition(
                 offset.x * columnWidth, offset.y * rowHeight);
-            if (BWAPI::Broodwar->canBuildHere(buildLocation, buildingType))
+            if (suitableLocationFor(buildLocation, buildingType))
                 return buildLocation;
         }
     }
     return BWAPI::TilePositions::None;
+}
+
+bool BuildingPlacer::suitableLocationFor(
+    const BWAPI::TilePosition& buildLocation,
+    const BWAPI::UnitType& buildingType) const
+{
+    return BWAPI::Broodwar->canBuildHere(buildLocation, buildingType);
 }
 
 BWAPI::TilePosition BuildingPlacer::getGasPlacement() const {
@@ -69,4 +76,25 @@ BWAPI::TilePosition BuildingPlacer::RadicalOffset::iterator::operator*()
     if (count <= radius*6)
         return BWAPI::TilePosition(radius*5 - count, radius);
     return BWAPI::TilePosition(-radius, radius*7 - count);
+}
+
+AddonPlacer::AddonPlacer() : BuildingPlacer(8, 3) {}
+
+bool AddonPlacer::suitableLocationFor(
+    const BWAPI::TilePosition& buildLocation,
+    const BWAPI::UnitType& buildingType) const
+{
+    if (buildingType.canBuildAddon())
+        return addonSuitableLocation(buildLocation, buildingType);
+    return BuildingPlacer::suitableLocationFor(buildLocation, buildingType);
+}
+
+bool AddonPlacer::addonSuitableLocation(
+    const BWAPI::TilePosition& buildLocation,
+    const BWAPI::UnitType& buildingType) const
+{
+    // Ensures enough space for addon and produced units
+    const BWAPI::TilePosition shift = BWAPI::TilePosition(4, 0);
+    return (BWAPI::Broodwar->canBuildHere(buildLocation, buildingType) &&
+        BWAPI::Broodwar->canBuildHere(buildLocation + shift, buildingType));
 }

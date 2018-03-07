@@ -142,7 +142,7 @@ void MorphingConstructor::updatePreparation() {
 }
 
 AddonConstructor::AddonConstructor()
-    : BuildingConstructor(new BuildingPlacer(8, 3)) {}
+    : BuildingConstructor(new AddonPlacer()) {}
 
 void AddonConstructor::request(const BWAPI::UnitType& productType) {
     if (Preparing.find(productType) != Preparing.end()) return;

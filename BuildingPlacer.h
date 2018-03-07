@@ -2,10 +2,13 @@
 #include <BWAPI.h>
 
 class BuildingPlacer {
-    private:
+    protected:
         class RadicalOffset;
         int columnWidth, rowHeight;
         BWAPI::TilePosition srcLocation;
+        virtual bool suitableLocationFor(
+            const BWAPI::TilePosition& buildLocation,
+            const BWAPI::UnitType& buildingType) const;
     public:
         BuildingPlacer(int columnWidth, int rowHeight);
         BWAPI::TilePosition getPlacement(
@@ -33,4 +36,16 @@ class BuildingPlacer::RadicalOffset::iterator {
         bool operator==(iterator other) const;
         bool operator!=(iterator other) const;
         BWAPI::TilePosition operator*() const;
+};
+
+class AddonPlacer : public BuildingPlacer {
+    private:
+        bool suitableLocationFor (
+            const BWAPI::TilePosition& buildLocation,
+            const BWAPI::UnitType& buildingType) const;
+        bool addonSuitableLocation(
+            const BWAPI::TilePosition& buildLocation,
+            const BWAPI::UnitType& buildingType) const;
+    public:
+        AddonPlacer();
 };
