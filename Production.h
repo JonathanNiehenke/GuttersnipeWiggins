@@ -52,7 +52,7 @@ class ProtossProduction : public Production
     public:
         ProtossProduction() : Production(
             BWAPI::UnitTypes::Enum::Protoss_Zealot,
-            new BuildingConstructor(new BuildingPlacer())) {}
+            new BuildingConstructor(new BuildingPlacer(5, 4))) {}
         BWAPI::UnitType getNextRequiredBuilding(
             const BWAPI::UnitType& unitType) const;
 };
@@ -63,7 +63,7 @@ class TerranProduction : public Production
     public:
         TerranProduction() : Production(
             BWAPI::UnitTypes::Enum::Terran_Siege_Tank_Tank_Mode,
-            new AddonConstructor(new BuildingPlacer())) {}
+            new AddonConstructor()) {}
 };
 
 class ZergProduction : public Production
@@ -77,7 +77,7 @@ class ZergProduction : public Production
         bool doesTechExist(const BWAPI::UnitType& buildingType) const;
     public:
         ZergProduction() : Production(BWAPI::UnitTypes::Enum::Zerg_Mutalisk,
-            new MorphingConstructor(new BuildingPlacer())) {}
+            new MorphingConstructor()) {}
         void onUnitMorph(const BWAPI::Unit& morphedUnit);
         void onUnitComplete(const BWAPI::Unit& completedUnit);
         void createSupply() const;

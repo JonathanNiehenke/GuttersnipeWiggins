@@ -4,13 +4,10 @@
 class BuildingPlacer {
     private:
         class RadicalOffset;
-        static bool canBuildAdjacent(
-            const BWAPI::TilePosition& buildingLocation,
-            const BWAPI::UnitType& buildingType);
-        static BWAPI::TilePosition adjacentBuildLocation(
-            const BWAPI::TilePosition& buildingLocation,
-            const BWAPI::UnitType& buildingType);
+        int columnWidth, rowHeight;
+        BWAPI::TilePosition srcLocation;
     public:
+        BuildingPlacer(int columnWidth, int rowHeight);
         BWAPI::TilePosition getPlacement(
             const BWAPI::UnitType& buildingType) const;
         BWAPI::TilePosition getGasPlacement() const;

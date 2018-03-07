@@ -34,8 +34,7 @@ class MorphingConstructor : public BuildingConstructor {
     private:
         void beginMorphingPreparation(ConstructionPO& Job) const;
     public:
-        MorphingConstructor(BuildingPlacer* buildingPlacer)
-            : BuildingConstructor(buildingPlacer) {}
+        MorphingConstructor();
         void request(const BWAPI::UnitType& productType);
         void updatePreparation();
 };
@@ -44,8 +43,7 @@ class AddonConstructor : public BuildingConstructor {
     private:
         void beginAddonPreparation(ConstructionPO& Job) const;
     public:
-        AddonConstructor(BuildingPlacer* buildingPlacer)
-            : BuildingConstructor(buildingPlacer) {}
+        AddonConstructor();
         void request(const BWAPI::UnitType& productType);
         void updatePreparation();
 };

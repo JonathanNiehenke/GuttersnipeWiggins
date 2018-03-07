@@ -1,9 +1,10 @@
 #pragma once
 #include "BuildingConstructor.h"
 
-BuildingConstructor::BuildingConstructor(BuildingPlacer* buildingPlacer) :
-    srcLocation(BWAPI::Broodwar->self()->getStartLocation()),
-    buildingPlacer(buildingPlacer) {}
+BuildingConstructor::BuildingConstructor(BuildingPlacer* buildingPlacer)
+    : srcLocation(BWAPI::Broodwar->self()->getStartLocation()),
+      buildingPlacer(buildingPlacer)
+{}
 
 BuildingConstructor::~BuildingConstructor() {
     delete buildingPlacer;
@@ -101,6 +102,9 @@ void BuildingConstructor::onComplete(const BWAPI::Unit& completedBuilding) {
     Producing.erase(completedBuilding);
 }
 
+MorphingConstructor::MorphingConstructor()
+    : BuildingConstructor(new BuildingPlacer(5, 4)) {}
+
 void MorphingConstructor::request(const BWAPI::UnitType& productType) {
     if (Preparing.find(productType) != Preparing.end()) return;
     ConstructionPO Job(productType);
@@ -136,6 +140,9 @@ void MorphingConstructor::updatePreparation() {
             Job.contractor->move(toJobCenter(Job));
     }
 }
+
+AddonConstructor::AddonConstructor()
+    : BuildingConstructor(new BuildingPlacer(8, 3)) {}
 
 void AddonConstructor::request(const BWAPI::UnitType& productType) {
     if (Preparing.find(productType) != Preparing.end()) return;
